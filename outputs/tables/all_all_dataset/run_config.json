@@ -17,10 +17,21 @@
     "studio_M2"
   ],
   "evaluation_split": "all_dataset",
+  "schema_version": 2,
+  "metrics_schema_version": 2,
+  "parameter_selection_set": "train",
+  "evaluation_protocol": "train_selected_reused_test",
+  "historical_test_exposure": true,
+  "training_files": [
+    "phone_F1",
+    "phone_M1",
+    "studio_F1",
+    "studio_M1"
+  ],
   "parameter_selection": {
-    "tt1": "training_only_parameters",
-    "tt2": "test_tuned_not_independent",
-    "tt3": "training_only_parameters"
+    "tt1": "train_selected_reused_test",
+    "tt2": "train_selected_reused_test",
+    "tt3": "train_selected_reused_test"
   },
   "frame_ms": 25.0,
   "hop_ms": 10.0,
