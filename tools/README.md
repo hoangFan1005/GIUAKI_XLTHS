@@ -2,6 +2,17 @@
 
 Các main chạy bài tập không phụ thuộc thư mục này. Công cụ này giúp cập nhật slide và ZIP sau khi có kết quả mới hoặc bổ sung họ tên/MSSV.
 
+## Mã nguồn Jupyter Notebook
+
+```powershell
+.\.venv\Scripts\python.exe tools/build_notebooks.py
+.\.venv\Scripts\python.exe tools/run_notebooks.py
+```
+
+Builder đưa hàm tính toán vào ba notebook độc lập. Runner thực thi bằng kernel mới, lưu số liệu/đồ thị vào `.ipynb`, đối chiếu biên/MAE trên cả 8 WAV với pipeline Python và tạo `submission/JUPYTER_NOTEBOOKS_CODE_ONLY.zip` không chứa WAV/LAB. Các module Python, bảng và slide cũ không bị cập nhật bởi runner.
+
+`--validate-only` chỉ kiểm tra outputs đã lưu và đóng gói lại. `--group-number N` đặt STT nhóm thật trong tên thư mục ZIP. Xem [notebooks/README.md](../notebooks/README.md).
+
 ## Slide
 
 1. Cập nhật kết quả bằng main cần thiết.

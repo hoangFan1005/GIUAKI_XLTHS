@@ -2,6 +2,18 @@
 
 Ba thuật toán Python: **TT1 Binary Search**, **TT2 Histogram chỉ Energy**, **TT3 Gaussian**. Đặc trưng, ngưỡng và metrics được tự tính; Matplotlib dùng để vẽ. Cấu hình chung: frame **25 ms**, hop **10 ms**, khoảng lặng nội bộ tối thiểu **200 ms**, vùng nói tối thiểu **100 ms**. Không tính F0.
 
+## Mã nguồn Jupyter theo yêu cầu bổ sung
+
+Mỗi sinh viên có một notebook riêng, chứa toàn bộ code và kết quả đã chạy:
+
+- [TT1 — Binary Search](notebooks/THUAT_TOAN_1.ipynb)
+- [TT2 — Histogram Energy](notebooks/THUAT_TOAN_2.ipynb)
+- [TT3 — Gaussian](notebooks/THUAT_TOAN_3.ipynb)
+
+[Hướng dẫn mở/chạy notebook](notebooks/README.md) · [ZIP chỉ chứa 3 notebook](submission/JUPYTER_NOTEBOOKS_CODE_ONLY.zip).
+
+Kết quả số và đồ thị nằm trong `.ipynb`; xem không cần âm thanh. Gói mã nguồn notebook không chứa WAV/LAB. Mở trên máy này bằng `.\.venv\Scripts\python.exe -m jupyterlab notebooks` từ thư mục dự án. Các lệnh và ZIP Python ở các mục dưới là phiên bản trước khi bổ sung yêu cầu notebook.
+
 ## 1. Chạy chương trình
 
 Yêu cầu Python ≥ 3.10, có Tkinter để mở cửa sổ biểu đồ.
@@ -58,6 +70,7 @@ GIUAKI_XLTHS/
   submission/       Ba ZIP nộp bài độc lập
   tests/            Bộ kiểm tra hiện có
   tools/            Công cụ tái tạo slide và ZIP
+  notebooks/        Ba notebook độc lập, kèm outputs đã chạy
 ```
 
 Đã dọn snapshot code cũ, báo cáo debug lịch sử, bản giải nén ZIP, cache, hình render kiểm tra và kết quả `single/` cũ. Chạy chương trình có thể sinh lại `__pycache__` và kết quả của lượt chạy mới.
