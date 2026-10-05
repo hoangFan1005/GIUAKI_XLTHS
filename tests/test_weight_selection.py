@@ -1,18 +1,17 @@
 """Final-region W selection: balanced errors, valid counts, deterministic ties."""
 import unittest
-import json
 from app import pipeline
-from app.config import TEST_DIR,OUTPUT_DIR
+from app.config import TRAIN_DIR
 
 def row(weight,name,error,gt=1,pred=1):
-    return dict(W=weight,filename=name,boundary_MAE_ms=error,
+    return dict(W=weight,filename=name,final_region_mae_ms=error,
                 ground_truth_region_count=gt,predicted_region_count=pred)
 
 class FinalWeightSelectionTests(unittest.TestCase):
-    def select(self,rows,current=20):
-        return pipeline.select_final_weight(rows,current)
+    def select(self,rows,tie_preference=20):
+        return pipeline.select_final_weight(rows,tie_preference)
 
-    def test_all_four_optimal_keeps_current_weight(self):
+    def test_all_four_optimal_uses_declared_tie_preference(self):
         rows=[row(w,n,e) for w in (1,5,20) for n,e in [('a',32.5),('b',7.5),('c',7.5),('d',7.5)]]
         result=self.select(rows)
         self.assertEqual(result['selected_W'],20)
@@ -45,19 +44,26 @@ class FinalWeightSelectionTests(unittest.TestCase):
         with self.assertRaises(ValueError):self.select([row(1,'a',1),row(1,'a',2)])
         with self.assertRaises(ValueError):self.select([row(1,'a',1),row(1,'b',2),row(3,'a',3)])
 
-    def test_real_four_file_sweep_uses_weight_but_keeps_final_boundaries(self):
-        model=json.loads((OUTPUT_DIR/'models/tt2.json').read_text(encoding='utf-8'))
-        before=json.dumps(model,sort_keys=True)
-        records=pipeline.prepare_records(pipeline.load_audio_folder(TEST_DIR),True)
-        result,rows=pipeline.sweep_final_weights(records,model,pipeline.predict_and_score,candidates=(1,5,20))
+    def test_tie_preference_is_not_the_model_candidate_frame_weight(self):
+        result=pipeline.select_final_weight([row(w,'a',10) for w in (1,5,20)],tie_preference_W=20)
         self.assertEqual(result['selected_W'],20)
-        self.assertEqual(result['shared_optimal_W'],[1,5,20])
-        self.assertEqual(result['evaluation_protocol'],'test_tuned_not_independent')
-        self.assertEqual(len(rows),12)
-        for record in records:
-            same=[r for r in rows if r['filename']==record['name']]
-            self.assertEqual(len(set(r['final_regions'] for r in same)),1)
-            self.assertGreater(len(set(r['energy_threshold'] for r in same)),1)
-        self.assertEqual(before,json.dumps(model,sort_keys=True))
+        self.assertEqual(result['tie_preference_W'],20)
+        self.assertNotIn('previous_W',result)
+
+    def test_real_four_train_file_sweep_scores_final_regions(self):
+        self.assertTrue(callable(getattr(pipeline,'fit_training_model',None)))
+        records=pipeline.prepare_records(pipeline.load_audio_folder(TRAIN_DIR),True)
+        model,rows=pipeline.fit_training_model('tt2',records)
+        result=model['W_selection_train']
+        self.assertEqual(result['evaluation_protocol'],'train_final_calibration')
+        self.assertEqual(result['selection_set'],'train')
+        self.assertEqual(set(result['evaluated_files']),{r['name'] for r in records})
+        self.assertEqual(len(rows),200)
+        self.assertEqual(model['W'],result['selected_W'])
+        for row_ in rows:
+            record=next(r for r in records if r['name']==row_['filename'])
+            score=pipeline.predict_and_score('tt2',record,dict(model,W=row_['W']))
+            self.assertEqual(row_['final_region_mae_ms'],score['metrics']['mae_ms'])
+            self.assertEqual(row_['predicted_region_count'],len(score['final_regions']))
 
 if __name__=='__main__':unittest.main()

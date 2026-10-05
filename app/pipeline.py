@@ -34,8 +34,10 @@ def write_csv(path, rows):
     Input: path là Path đích; rows là list dict, thứ tự gặp key đặt thứ tự
     cột. Output: None; tạo thư mục cha và ghi header/dữ liệu vào path.
     """
-    path.parent.mkdir(parents=True, exist_ok=True)
     fields = list(dict.fromkeys(key for row in rows for key in row))
+    if len(fields) != len({key.casefold() for key in fields}):
+        raise ValueError('CSV column headers must be unique ignoring case')
+    path.parent.mkdir(parents=True, exist_ok=True)
     with path.open("w", newline="", encoding="utf-8-sig") as handle:
         writer = csv.DictWriter(handle, fieldnames=fields)
         writer.writeheader()
@@ -67,7 +69,9 @@ def load_audio_file(path):
     samples, sample_rate = read_wav(path)
     duration = len(samples) / sample_rate
     intervals = read_lab(lab_path, duration)
-    return dict(name=path.stem, wav_path=str(path), samples=samples,
+    split = ('train' if path.parent == TRAIN_DIR.resolve() else
+             'test' if path.parent == TEST_DIR.resolve() else 'external')
+    return dict(name=path.stem, split=split, wav_path=str(path), samples=samples,
                 sample_rate=sample_rate, duration=duration, intervals=intervals)
 
 
@@ -125,28 +129,28 @@ def prepare_records(audio_records, source_histogram=False):
     return records
 
 
-def predict_and_score(algorithm, record, params):
-    """Tạo candidate, xác nhận FINAL regions bằng hysteresis rồi đánh giá.
+def detect_regions(algorithm, features, duration, params):
+    """Detect FINAL speech from features and a fitted model, without LAB or I/O.
 
-    Input: algorithm là tt1/tt2/tt3/tt2-context, record có features/timing/
-    LAB, params là model train. Output: FINAL regions/mask/boundaries,
-    metrics và diagnostic; LAB chỉ dùng để đánh giá sau detection.
+    Input: algorithm, frame features/supports, duration and frozen TRAIN model.
+    Output: mask/final_regions/diagnostic and derived predicted_boundaries.
+    Missing endpoint_noise requires explicit training before inference.
     """
-    features = record["features"]
+    noise = params.get('endpoint_noise')
+    if noise is None:
+        raise ValueError('Fitted model requires endpoint_noise; call fit_training_model on TRAIN before inference')
     if algorithm == "tt1":
         mask, diagnostic = tt1.predict(features, params), {"threshold": params["threshold"]}
     elif algorithm == "tt3":
         mask, diagnostic = tt3.predict(features, params), {"threshold": params["threshold"]}
-    else:
+    elif algorithm in ('tt2', 'tt2-context'):
         mask, diagnostic = tt2.predict(features, params)
+    else:
+        raise ValueError(f'Unknown algorithm: {algorithm}')
 
     # Algorithm masks are candidates. Final endpoints require HIGH confirmation,
     # LOW continuation, short-gap merging and duration filtering.
-    candidate_regions=[(s,e) for s,e,state in mask_segments(mask,features['starts'],record['duration'],features['ends']) if state]
-    noise=params.get('endpoint_noise')
-    if noise is None:
-        # Old JSON compatibility: refit noise on TRAIN, never target LAB.
-        noise=fit_noise_floor(prepare_records(load_audio_folder(TRAIN_DIR)))
+    candidate_regions=[(s,e) for s,e,state in mask_segments(mask,features['starts'],duration,features['ends']) if state]
     source_histogram=algorithm=='tt2' and params.get('variant','source')=='source'
     if algorithm in ('tt1','tt3'):
         base_threshold=params['threshold'];seed=mask
@@ -156,11 +160,28 @@ def predict_and_score(algorithm, record, params):
         seed=[int(e>diagnostic['energy_threshold'])
               for e in features['energy']] if source_histogram else mask
     low,high=endpoint_thresholds(base_threshold,noise,histogram=algorithm in ('tt2','tt2-context'))
-    final_regions=hysteresis_regions(features['ste_norm'],features['starts'],features['ends'],record['duration'],
+    final_regions=hysteresis_regions(features['ste_norm'],features['starts'],features['ends'],duration,
         low,high,MIN_SILENCE_SECONDS,MIN_SPEECH_SECONDS,seed_mask=seed)
     mask=regions_to_mask(final_regions,features['starts'],features['ends'])
+    diagnostic.update(candidate_regions=candidate_regions,final_regions=final_regions,
+        low_ste_threshold=low,high_ste_threshold=high,endpoint_noise=noise,
+        minimum_speech_ms=MIN_SPEECH_SECONDS*1000,minimum_silence_ms=MIN_SILENCE_SECONDS*1000,
+        endpoint_policy='raw STE hysteresis; candidates/debug excluded; no fixed final padding')
+    return dict(mask=mask, final_regions=final_regions, diagnostic=diagnostic,
+                predicted_boundaries=[b for region in final_regions for b in region])
+
+
+def predict_and_score(algorithm, record, params):
+    """Invoke LAB-free detection, then score complete regions and frames.
+
+    Input: algorithm, prepared annotated record, fitted TRAIN parameters.
+    Output: detection plus reference regions, metrics and scoring status.
+    LAB and filename enter only after detect_regions has returned.
+    """
+    detected = detect_regions(algorithm, record['features'], record['duration'], params)
+    mask, final_regions, diagnostic = detected['mask'], detected['final_regions'], detected['diagnostic']
     expected_regions=ground_truth_regions(record['intervals'])
-    predicted_boundaries=[b for region in final_regions for b in region]
+    predicted_boundaries=detected['predicted_boundaries']
     expected_boundaries=[b for region in expected_regions for b in region]
     # Match complete regions in time order. Missing/extra regions make primary
     # MAE undefined; matched-only MAE remains separate to expose the failure.
@@ -183,26 +204,84 @@ def predict_and_score(algorithm, record, params):
     if far_inside:flags.append('boundary inside silence')
     scores.update(status='; '.join(dict.fromkeys(flags)) if flags else 'OK' if expected_regions or final_regions else 'both_no_speech',
                   boundary_inside_silence_count=inside,boundary_inside_silence_far_count=far_inside)
-    diagnostic.update(candidate_regions=candidate_regions,final_regions=final_regions,
-        low_ste_threshold=low,high_ste_threshold=high,endpoint_noise=noise,
-        minimum_speech_ms=MIN_SPEECH_SECONDS*1000,minimum_silence_ms=MIN_SILENCE_SECONDS*1000,
-        endpoint_policy='raw STE hysteresis; candidates/debug excluded; no fixed final padding')
     frames = frame_metrics(record["labels"], mask)
     events = boundary_metrics(expected_boundaries, predicted_boundaries,
                               BOUNDARY_TOLERANCE_SECONDS)
     scores.update({f"frame_{key}": value for key, value in frames.items()})
-    scores.update({f"boundary_{key}": value for key, value in events.items() if key != "pairs"})
+    scores.update({f"tolerance_boundary_{key}": value for key, value in events.items() if key != "pairs"})
     scores.update(gt_start_s=reference[0] if reference else None,
                   gt_end_s=reference[1] if reference else None,
                   predicted_start_s=predicted[0] if predicted else None,
                   predicted_end_s=predicted[1] if predicted else None)
-    tuned=algorithm=='tt2' and 'W_selection_test' in params
-    scores.update(parameter_selection_set='test' if tuned else 'train',
-                  evaluation_protocol='test_tuned_not_independent' if tuned else 'training_only_parameters')
+    # Imported historical JSON remains usable without relabeling its TEST W
+    # calibration as TRAIN. Fresh fit_training_model outputs never have this key.
+    legacy_test_tuned = algorithm == 'tt2' and 'W_selection_test' in params
+    scores.update(metrics_schema_version=2, model_schema_version=params.get('schema_version', 1),
+                  parameter_selection_set='test' if legacy_test_tuned else params.get('parameter_selection_set', 'train'),
+                  evaluation_protocol='test_tuned_not_independent' if legacy_test_tuned else params.get('evaluation_protocol', 'train_selected_reused_test'),
+                  historical_test_exposure=True if legacy_test_tuned else params.get('historical_test_exposure', True))
     return dict(file=record["name"], algorithm=algorithm, mask=mask, metrics=scores,
                 final_regions=final_regions, ground_truth_regions=expected_regions,region_pairs=region_scores['region_pairs'],
                 predicted_boundaries=predicted_boundaries,
                 ground_truth_boundaries=expected_boundaries, diagnostic=diagnostic)
+
+
+def fit_training_model(algorithm, train_records):
+    """Fit and lock parameters and FINAL W from supplied prepared TRAIN only.
+
+    Input: prepared records with explicit split=train; array records need no
+    path and support future folds. Known TEST/external paths are rejected.
+    Output: (schema-v2 model, FINAL W sweep rows), empty rows for other methods.
+    No files are loaded here, including during the histogram calibration.
+    """
+    if not train_records:
+        raise ValueError('fit_training_model requires TRAIN records')
+    for record in train_records:
+        if record.get('split') != 'train':
+            raise ValueError('Training records require explicit TRAIN provenance (split=train)')
+        if 'wav_path' in record and Path(record['wav_path']).resolve().parent != TRAIN_DIR.resolve():
+            raise ValueError('Training record path must belong to TRAIN, never TEST/external')
+    if algorithm == 'tt1':
+        model = tt1.fit(train_records)
+    elif algorithm == 'tt3':
+        model = tt3.fit(train_records)
+    elif algorithm in ('tt2', 'tt2-context'):
+        model = tt2.fit(train_records, variant='context' if algorithm == 'tt2-context' else 'source')
+    else:
+        raise ValueError(f'Unknown algorithm: {algorithm}')
+    model.update(schema_version=2, metrics_schema_version=2,
+                 parameter_selection_set='train', evaluation_protocol='train_selected_reused_test',
+                 historical_test_exposure=True, training_files=[record['name'] for record in train_records],
+                 frame_ms=FRAME_MS, hop_ms=HOP_MS, sample_rounding=SAMPLE_ROUNDING,
+                 minimum_internal_silence_ms=MIN_SILENCE_SECONDS*1000,
+                 minimum_speech_ms=MIN_SPEECH_SECONDS*1000,
+                 endpoint_noise=fit_noise_floor(train_records),
+                 endpoint_policy='hysteresis final regions; no fixed final padding',
+                 boundary_convention='union of active frame supports')
+    sweep_rows = []
+    if algorithm == 'tt2':
+        # Preserve the core's candidate-stage proposal under explicit names.
+        # Its F1 is not a score for the W selected below by FINAL-region MAE.
+        model['candidate_frame_selected_W'] = model['W']
+        model['candidate_frame_f1'] = model.pop('train_frame_f1')
+        model['candidate_frame_selection_scores'] = [
+            dict(W=row['W'], candidate_frame_f1=row['train_frame_f1'],
+                 **{key: value for key, value in row.items() if key not in ('W', 'train_frame_f1')})
+            for row in model.pop('selection_scores')]
+        model['candidate_cleanup_records'] = {
+            key: model.pop(key) for key in ('full_pipeline_records', 'predict_only_fallback_records')}
+        model['candidate_frame_selection_applicable'] = True
+        selection, sweep_rows = sweep_final_weights(train_records, model, predict_and_score,
+                                                    tie_preference_W=HISTOGRAM_W_TIE_PREFERENCE)
+        model.update(W=selection['selected_W'], finalW=selection['selected_W'],
+                     tie_preference_W=HISTOGRAM_W_TIE_PREFERENCE, W_selection_train=selection,
+                     parameter_rule=selection['selection_rule'])
+    elif algorithm == 'tt2-context':
+        # Context W is declared by the report and has no candidate F1 fit.
+        model.update(candidate_frame_selected_W=None, candidate_frame_f1=None,
+                     candidate_frame_selection_scores=[], candidate_cleanup_records=None,
+                     candidate_frame_selection_applicable=False, finalW=model['W'], tie_preference_W=None)
+    return model, sweep_rows
 
 
 def data_statistics(records, split):
@@ -251,7 +330,8 @@ def summarize(metrics):
         ordered=sorted(row['mae_ms'] for row in valid)
         median=(ordered[len(ordered)//2] if len(ordered)%2 else (ordered[len(ordered)//2-1]+ordered[len(ordered)//2])/2) if ordered else None
         count_correct=sum(row.get('ground_truth_region_count')==row.get('predicted_region_count') for row in selected)
-        rows.append(dict(algorithm=algorithm, files=len(selected), evaluated_files=len(valid),
+        rows.append(dict(algorithm=algorithm, metrics_schema_version=2,
+                         files=len(selected), evaluated_files=len(valid),
                          missing_speech_files=len(selected) - len(valid),
                          mean_file_mae_ms=sum(row["mae_ms"] for row in valid) / len(valid) if valid else None,
                          mean_file_rmse_ms=sum(row["rmse_ms"] for row in valid) / len(valid) if valid else None,
@@ -260,7 +340,8 @@ def summarize(metrics):
                          region_count_correct_files=count_correct,region_count_incorrect_files=len(selected)-count_correct,
                          top_mae_files='; '.join(f"{r['file']}:{r['mae_ms']:.2f}ms" for r in sorted(valid,key=lambda r:r['mae_ms'],reverse=True)[:3]),
                          parameter_selection_set=selected[0].get('parameter_selection_set','train'),
-                         evaluation_protocol=selected[0].get('evaluation_protocol','training_only_parameters'),
+                         evaluation_protocol=selected[0].get('evaluation_protocol','train_selected_reused_test'),
+                         historical_test_exposure=selected[0].get('historical_test_exposure', True),
                          mean_frame_f1=sum(row["frame_f1"] for row in selected) / len(selected)))
     return rows
 
@@ -344,18 +425,24 @@ def run_experiment(args):
     file_argument = getattr(args, "file", None)
     input_path = resolve_input_file(file_argument) if file_argument else None
     audio_train = load_audio_folder(TRAIN_DIR)
+    train_common = prepare_records(audio_train)
+    selected = ["tt1", "tt2", "tt3"] if args.algorithm == "all" else [args.algorithm]
+    if args.compare_context and "tt2-context" not in selected:
+        selected.append("tt2-context")
+
+    # Lock every model, including FINAL W and noise, before TEST WAV/LAB I/O.
+    models, sweeps = {}, {}
+    for key in selected:
+        models[key], sweeps[key] = fit_training_model(key, train_common)
+
     evaluate_all=getattr(args,'evaluate_all',False)
-    audio_test = [load_audio_file(input_path)] if input_path else audio_train+[load_audio_file(p) for p in sorted(TEST_DIR.glob('*.wav'))] if evaluate_all else load_audio_folder(TEST_DIR)
-    for r in audio_test:r['split']='train' if Path(r['wav_path']).parent==TRAIN_DIR.resolve() else 'test' if Path(r['wav_path']).parent==TEST_DIR.resolve() else 'external'
+    audio_test = [load_audio_file(input_path)] if input_path else audio_train+load_audio_folder(TEST_DIR) if evaluate_all else load_audio_folder(TEST_DIR)
     evaluated_names = [record["name"] for record in audio_test]
     display_order = [name for name in FILE_ORDER if name in evaluated_names]
     display_order.extend(name for name in evaluated_names if name not in display_order)
     evaluation_split = 'all_dataset' if evaluate_all else "train" if input_path and input_path.parent == TRAIN_DIR.resolve() else "external" if input_path and input_path.parent != TEST_DIR.resolve() else "test"
-    train_common, test_common = prepare_records(audio_train), prepare_records(audio_test)
-    selected = ["tt1", "tt2", "tt3"] if args.algorithm == "all" else [args.algorithm]
-    if args.compare_context and "tt2-context" not in selected:
-        selected.append("tt2-context")
-    train_source, test_source = (prepare_records(audio_train, True), prepare_records(audio_test, True)) if "tt2" in selected else ([], [])
+    test_common = prepare_records(audio_test)
+    records_by_algorithm = {key: test_common for key in selected}
     tables = OUTPUT_DIR / "tables"
     figures_root = OUTPUT_DIR / "figures"
     tables.mkdir(parents=True, exist_ok=True)
@@ -366,43 +453,20 @@ def run_experiment(args):
     if input_path:
         # Một lần thử file không ghi đè metric tổng hợp của batch bốn test.
         run_folder = run_folder / "single" / input_path.stem
-        print(f"Chạy WAV: {input_path} | tập {evaluation_split}; học ngưỡng trên 4 WAV train.")
+        print(f"Chạy WAV: {input_path} | tập {evaluation_split}; ngưỡng/noise/W đã chọn trên 4 WAV TRAIN.")
 
-    # Core fits and noise statistics use TRAIN. At the user request, TT2 W is
-    # then selected once on all four test LABs, explicitly tagged as test-tuned.
-    models, records_by_algorithm = {}, {}
-    endpoint_noise=fit_noise_floor(train_common)
+    # Export the already locked TRAIN models and calibration audit.
     for key in selected:
-        training, testing = (train_source, test_source) if key == "tt2" else (train_common, test_common)
-        if key == "tt1":
-            model = tt1.fit(training)
-        elif key == "tt3":
-            model = tt3.fit(training)
-        else:
-            model = tt2.fit(training, variant="context" if key == "tt2-context" else "source")
-        model.update(frame_ms=FRAME_MS, hop_ms=HOP_MS, sample_rounding=SAMPLE_ROUNDING,
-                     minimum_internal_silence_ms=MIN_SILENCE_SECONDS * 1000,
-                     minimum_speech_ms=MIN_SPEECH_SECONDS*1000,endpoint_noise=endpoint_noise,
-                     endpoint_policy='hysteresis final regions; no fixed final padding',
-                     boundary_convention="union of active frame supports")
+        model = models[key]
         if key=='tt2':
-            # Even a single-file demo selects a single GLOBAL W on all four tests.
-            calibration=[r for r in test_source if Path(r['wav_path']).parent==TEST_DIR.resolve()]
-            if len(calibration)!=4:calibration=prepare_records(load_audio_folder(TEST_DIR),True)
-            training_weight=model['W']
-            selection,sweep_rows=sweep_final_weights(calibration,dict(model,W=HISTOGRAM_W_TIE_PREFERENCE),predict_and_score)
-            model.update(training_selected_W=training_weight,W=selection['selected_W'],W_selection_test=selection,
-                         W_tie_preference=HISTOGRAM_W_TIE_PREFERENCE,
-                         parameter_rule=selection['selection_rule'],
-                         train_frame_f1=next((row['train_frame_f1'] for row in model['selection_scores'] if row['W']==selection['selected_W']),None))
+            selection, sweep_rows = model['W_selection_train'], sweeps[key]
             audit=tables/'tt2_w_selection'
             write_csv(audit/'sweep.csv',sweep_rows)
             write_csv(audit/'summary.csv',selection['summaries'])
             write_csv(audit/'best_by_file.csv',[dict(filename=name,**values) for name,values in selection['best_by_file'].items()])
             write_json(audit/'selection.json',selection)
-            print(f"TT2 W={model['W']:g}: selected on four test LABs (test-tuned, not independent); "
+            print(f"TT2 W={model['W']:g}: selected on four TRAIN LABs; TEST scoring reuses historically exposed data; "
                   f"mean final MAE={selection['selected_summary']['mean_MAE_ms']} ms")
-        models[key], records_by_algorithm[key] = model, testing
         write_json(OUTPUT_DIR / "models" / f"{key}.json", model)
 
     # Lưu dữ liệu thống kê giúp kiểm tra lại mean/std, normalization và LAB.
@@ -431,7 +495,7 @@ def run_experiment(args):
         folder.mkdir(exist_ok=True)
         for record in records_by_algorithm[key]:
             result = predict_and_score(key, record, models[key])
-            metric_rows.append(dict(file=record["name"],split=record.get('split',evaluation_split),algorithm=key,boundary_MAE_ms=result['metrics']['mae_ms'], **result["metrics"]))
+            metric_rows.append(dict(file=record["name"],split=record.get('split',evaluation_split),algorithm=key, **result["metrics"]))
             threshold_rows.append(dict(file=record["name"], algorithm=key,
                                        **{name: value for name, value in result["diagnostic"].items() if not isinstance(value, (dict, list))}))
             results_by_file.setdefault(record["name"], {})[key] = (record, result)
@@ -479,7 +543,10 @@ def run_experiment(args):
     write_json(run_folder / "run_config.json", dict(algorithm=args.algorithm, selected=selected,
                input_file=str(input_path) if input_path else None, evaluated_files=evaluated_names,
                evaluation_split=evaluation_split,
-               parameter_selection={key:('test_tuned_not_independent' if 'W_selection_test' in model else 'training_only_parameters') for key,model in models.items()},
+               schema_version=2, metrics_schema_version=2,
+               parameter_selection_set='train', evaluation_protocol='train_selected_reused_test',
+               historical_test_exposure=True, training_files=[record['name'] for record in train_common],
+               parameter_selection={key:model['evaluation_protocol'] for key,model in models.items()},
                frame_ms=FRAME_MS, hop_ms=HOP_MS, sample_rounding=SAMPLE_ROUNDING,
                minimum_internal_silence_ms=MIN_SILENCE_SECONDS * 1000,minimum_speech_ms=MIN_SPEECH_SECONDS*1000,
                snr_study=args.snr_study, normalization="per_recording_max", lab_center_convention="sample_exact_half_open",

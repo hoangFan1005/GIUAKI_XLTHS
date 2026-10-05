@@ -16,7 +16,7 @@ def parse_args(argv=None, fixed_algorithm=None):
     # Argparse xử lý cờ sai ngay tại CLI để tránh sinh bộ kết quả không hợp lệ.
     if fixed_algorithm not in (None, "tt1", "tt2", "tt3"):
         raise ValueError("Main riêng phải là tt1, tt2 hoặc tt3")
-    parser = argparse.ArgumentParser(description="Chạy endpoint detection; TT1/TT3 học train, TT2 Histogram Energy-only chọn W bằng final MAE của 4 test theo yêu cầu.")
+    parser = argparse.ArgumentParser(description="Chạy endpoint detection; học ngưỡng/noise và chọn TT2 W bằng FINAL MAE trên TRAIN, sau đó chấm điểm TEST đã dùng trong lịch sử.")
     if fixed_algorithm is None:
         parser.add_argument("--algorithm", choices=("all", "tt1", "tt2", "tt3", "tt2-context"), default="all",
                             help="all so sánh ba thuật toán; mỗi tt chạy thuật toán tương ứng.")
@@ -25,7 +25,7 @@ def parse_args(argv=None, fixed_algorithm=None):
     parser.add_argument("--file", metavar="WAV", default=None,
                         help="Tên WAV trong data/test hoặc data/train, hoặc đường dẫn WAV có LAB cùng tên.")
     parser.add_argument("--no-show", action="store_true", help="Chỉ xuất ảnh/CSV; không mở cửa sổ.")
-    parser.add_argument('--evaluate-all',action='store_true',help='Chạy cả 8 WAV train+test, headless. TT2 W được tune trên 4 test; noise và tham số TT1/TT3 học train.')
+    parser.add_argument('--evaluate-all',action='store_true',help='Chạy cả 8 WAV train+test, headless. Mọi tham số và TT2 W chọn trên TRAIN; chấm điểm TRAIN/TEST bằng model đã khóa.')
     parser.add_argument("--snr-study", action="store_true", help="Thêm khảo sát nhiễu tổng hợp 20/10/0 dB.")
     # Benchmark ngữ cảnh cần đủ 4 test, còn main riêng chỉ chạy thuật toán được giao.
     if fixed_algorithm is None:
