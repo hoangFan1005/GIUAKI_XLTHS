@@ -106,3 +106,5 @@ Cả **15 PNG nhúng** đã được xem trực quan. [ZIP CODE](../submission/J
 [Bảng hồi quy](../outputs/tables/all_all_dataset/regression_before_after.csv) xác nhận 24/24 trường hợp giữ nguyên so với `111ab37`, **0 regression**; đối chiếu SHA256 xác nhận **28 file data/Source** không đổi. W20 vẫn là lựa chọn theo hòa của toàn bộ W1…50 trên TRAIN FINAL, khác candidate W1/F1 ≈ 0.898698. Năm trường hợp END muộn ở mục 4 vẫn còn.
 
 Tích hợp cục bộ trên branch `codex/endpoint-train-calibration`, giữ `main`, chưa push GitHub. Giai đoạn 2/3/5 hoãn. Cả chín binary PPTX/PDF và `THUAT_TOAN_1/2/3.zip` giữ nguyên byte, là **previous version trước Stage1**, chưa dùng làm gói nộp hiện hành. STT nhóm/họ tên/MSSV còn placeholder vì người dùng chưa cung cấp.
+
+**Giới hạn review:** các phần core, notebook và công cụ/tài liệu đã qua review subagent từng phần. Vòng review độc lập cuối trên toàn nhánh chưa hoàn tất: subagent dừng vì workspace hết credit. Các kết quả chạy và nghiệm thu ở trên đã thực hiện thật; chưa có kết luận từ vòng review cuối. Bằng chứng tạm được giữ để tiếp tục review khi có credit.
