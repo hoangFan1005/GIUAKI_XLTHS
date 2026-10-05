@@ -97,7 +97,7 @@ Stage1 tách detector khỏi chấm LAB, fit toàn bộ TRAIN trước TEST, hi�
 
 [Bảng before/after](../outputs/tables/all_all_dataset/regression_before_after.csv) lưu đối chiếu 24 file/thuật toán. Lượt tái tạo Python do tác vụ tích hợp chạy xác nhận FINAL regions, LOW/HIGH, MAE/RMSE, frame F1, số vùng và status không đổi so với baseline. Mean TEST vẫn 20.00 / 13.75 / 12.50 ms; năm trường hợp END muộn trong mục 4 vẫn còn. Thay đổi giao thức không tạo tuyên bố cải thiện độ chính xác.
 
-Đã hoàn tất Stage1 và Stage4 bắt buộc ngày 05/10/2026 tại thư mục chính `H:/GIUAKI_XLTHS`. Bộ test cuối đạt **98/98 trong 22.091 s**. Ba notebook đã chạy bằng **ba kernel mới**, mỗi notebook khớp đầy đủ model/metric/FINAL/ngưỡng với Python ở 8/8 WAV, tổng **24/24**; TT2 kiểm tra 200 dòng TRAIN và digest model đã khóa. Auditor xác nhận saved outputs hợp lệ.
+Đã hoàn tất Stage1 và Stage4 bắt buộc ngày 05/10/2026 tại thư mục chính `H:/GIUAKI_XLTHS`. Bộ test cuối khi tiếp tục công việc đạt **98/98 trong 21.788 s**. Ba notebook đã chạy bằng **ba kernel mới**, mỗi notebook khớp đầy đủ model/metric/FINAL/ngưỡng với Python ở 8/8 WAV, tổng **24/24**; TT2 kiểm tra 200 dòng TRAIN và digest model đã khóa. Auditor xác nhận saved outputs hợp lệ.
 
 Các lệnh nghiệm thu đã chạy bằng Python trong `.venv/Scripts/python.exe`: `-m unittest discover -s tests -v`; `tools/build_notebooks.py`; `tools/run_notebooks.py`; `tools/run_notebooks.py --validate-only`. Các lệnh trên đều hoàn tất thành công; đối chiếu hồi quy, hash input và manifest ZIP được kiểm tra riêng trong tác vụ tích hợp.
 
@@ -107,4 +107,8 @@ Cả **15 PNG nhúng** đã được xem trực quan. [ZIP CODE](../submission/J
 
 Tích hợp cục bộ trên branch `codex/endpoint-train-calibration`, giữ `main`, chưa push GitHub. Giai đoạn 2/3/5 hoãn. Cả chín binary PPTX/PDF và `THUAT_TOAN_1/2/3.zip` giữ nguyên byte, là **previous version trước Stage1**, chưa dùng làm gói nộp hiện hành. STT nhóm/họ tên/MSSV còn placeholder vì người dùng chưa cung cấp.
 
-**Giới hạn review:** các phần core, notebook và công cụ/tài liệu đã qua review subagent từng phần. Vòng review độc lập cuối trên toàn nhánh chưa hoàn tất: subagent dừng vì workspace hết credit. Các kết quả chạy và nghiệm thu ở trên đã thực hiện thật; chưa có kết luận từ vòng review cuối. Bằng chứng tạm được giữ để tiếp tục review khi có credit.
+**Review cuối đã hoàn tất:** subagent đã review độc lập toàn nhánh từ `111ab37` đến `2629237`, đọc source diff, code/metadata notebook thật, hình xuất và bằng chứng nghiệm thu. Không phát hiện lỗi Critical, Important hoặc Minor; phần tài liệu bàn giao đạt specification/quality PASS. Không cần sửa code thêm.
+
+Sau khi tiếp tục công việc bị dừng do credit, đã chạy lại đủ 98 test và kiểm tra hồi quy 24 trường hợp; kết quả vẫn giữ nguyên, không file nào xấu đi. Kiểm tra saved outputs và SHA256 xác nhận ba notebook/ZIP vẫn trùng artifacts đã thực thi; 28 file data/Source không đổi. Không chạy lại kernel vì code và artifacts không thay đổi. Bằng chứng tạm được dọn sau khi chốt báo cáo.
+
+Kết luận review chỉ áp dụng cho Stage1 và Stage4 đã duyệt. Các ablation giảm MAE, guard mở rộng của Stage3, slide chung/refresh binary cũ, runtime Python 3.10 và đánh giá trên holdout chưa từng được xem vẫn chưa được xác minh trong đợt này. Thông tin nhóm/thành viên tiếp tục chờ người dùng cung cấp.

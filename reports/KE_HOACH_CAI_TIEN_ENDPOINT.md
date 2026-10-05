@@ -155,7 +155,7 @@ Giai đoạn 1 sửa quy trình/names có thể không giảm MAE. Giai đoạn 
 
 **Phạm vi đã duyệt và hoàn tất ngày 05/10/2026:** giai đoạn 1 kèm kiểm chứng và đồng bộ notebook/báo cáo ở giai đoạn 4. Giai đoạn 2, 3 và 5 vẫn hoãn. Công thức Gaussian, thuật toán Binary, framing và HIGH/LOW được giữ theo cấu hình baseline.
 
-Bằng chứng nghiệm thu: 98/98 test đạt trong 22.091 s; ba notebook trong thư mục chính chạy bằng ba kernel mới, khớp Python ở đủ 24/24 trường hợp về model, metric và FINAL/ngưỡng. TT2 có 200 dòng khảo sát TRAIN và kiểm tra digest khóa model. Có 15 PNG nhúng đã được xem trực quan; ZIP CODE chứa đúng ba notebook đã chạy, byte trùng file ngoài, không WAV/LAB/audio. Ba notebook cũng đã chạy độc lập trước đó, mỗi thư mục chỉ có notebook riêng và data. Runtime thực tế là Python 3.14; Python 3.10 chỉ được kiểm tra cú pháp, chưa chạy runtime.
+Bằng chứng nghiệm thu: lần kiểm tra cuối khi tiếp tục công việc đạt 98/98 test trong 21.788 s; ba notebook trong thư mục chính chạy bằng ba kernel mới, khớp Python ở đủ 24/24 trường hợp về model, metric và FINAL/ngưỡng. TT2 có 200 dòng khảo sát TRAIN và kiểm tra digest khóa model. Có 15 PNG nhúng đã được xem trực quan; ZIP CODE chứa đúng ba notebook đã chạy, byte trùng file ngoài, không WAV/LAB/audio. Ba notebook cũng đã chạy độc lập trước đó, mỗi thư mục chỉ có notebook riêng và data. Runtime thực tế là Python 3.14; Python 3.10 chỉ được kiểm tra cú pháp, chưa chạy runtime.
 
 Đối chiếu commit baseline `111ab37`: đủ 24 trường hợp giữ nguyên FINAL regions, HIGH/LOW và metric chính/phụ; 0 regression, mean TEST TT1/TT2/TT3 vẫn 20.00/13.75/12.50 ms. Cả 28 file gốc trong `data`/`Source` có SHA256 không đổi. Năm trường hợp END muộn đã ghi trong báo cáo vẫn còn; Stage1 cải thiện giao thức và tên metric, chưa chứng minh giảm MAE.
 
@@ -168,3 +168,5 @@ Ba quyết định bàn giao:
 Bằng chứng lưu trong [bảng hồi quy 24 trường hợp](../outputs/tables/all_all_dataset/regression_before_after.csv), [ba notebook hiện hành](../notebooks/README.md) và [ZIP CODE](../submission/JUPYTER_NOTEBOOKS_CODE_ONLY.zip). Cả chín binary PPTX/PDF và ZIP Python cũ giữ nguyên byte.
 
 Các lệnh đã chạy bằng `.venv/Scripts/python.exe`: `-m unittest discover -s tests -v`, `tools/build_notebooks.py`, `tools/run_notebooks.py`, `tools/run_notebooks.py --validate-only`; tất cả hoàn tất thành công. Kết quả kiểm tra hồi quy/hash/manifest riêng đã được ghi ở trên.
+
+Vòng review độc lập toàn nhánh bị dừng do credit đã được tiếp tục và hoàn tất: không phát hiện lỗi Critical/Important/Minor, tài liệu bàn giao đạt specification/quality PASS. Kiểm tra hồi quy 24 trường hợp và hash notebook/ZIP/data/Source được xác nhận lại; không cần sửa thuật toán hay chạy lại kernel. Giai đoạn 2/3/5 và các giới hạn runtime/holdout/thông tin nhóm vẫn giữ đúng phạm vi đã công bố trong [báo cáo kết quả](KET_QUA_HIEN_TAI.md).
