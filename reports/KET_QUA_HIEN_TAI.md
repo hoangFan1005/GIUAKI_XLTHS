@@ -97,4 +97,12 @@ Stage1 tách detector khỏi chấm LAB, fit toàn bộ TRAIN trước TEST, hi�
 
 [Bảng before/after](../outputs/tables/all_all_dataset/regression_before_after.csv) lưu đối chiếu 24 file/thuật toán. Lượt tái tạo Python do tác vụ tích hợp chạy xác nhận FINAL regions, LOW/HIGH, MAE/RMSE, frame F1, số vùng và status không đổi so với baseline. Mean TEST vẫn 20.00 / 13.75 / 12.50 ms; năm trường hợp END muộn trong mục 4 vẫn còn. Thay đổi giao thức không tạo tuyên bố cải thiện độ chính xác.
 
-Notebook và ZIP CODE đang được tác vụ tích hợp tái tạo/kiểm tra kernel mới; phần tài liệu này không tự xác nhận kết quả kernel. PPTX/PDF và THUAT_TOAN_1/2/3.zip là previous version trước Stage1.
+Đã hoàn tất Stage1 và Stage4 bắt buộc ngày 05/10/2026 tại thư mục chính `H:/GIUAKI_XLTHS`. Bộ test cuối đạt **98/98 trong 22.091 s**. Ba notebook đã chạy bằng **ba kernel mới**, mỗi notebook khớp đầy đủ model/metric/FINAL/ngưỡng với Python ở 8/8 WAV, tổng **24/24**; TT2 kiểm tra 200 dòng TRAIN và digest model đã khóa. Auditor xác nhận saved outputs hợp lệ.
+
+Các lệnh nghiệm thu đã chạy bằng Python trong `.venv/Scripts/python.exe`: `-m unittest discover -s tests -v`; `tools/build_notebooks.py`; `tools/run_notebooks.py`; `tools/run_notebooks.py --validate-only`. Các lệnh trên đều hoàn tất thành công; đối chiếu hồi quy, hash input và manifest ZIP được kiểm tra riêng trong tác vụ tích hợp.
+
+Cả **15 PNG nhúng** đã được xem trực quan. [ZIP CODE](../submission/JUPYTER_NOTEBOOKS_CODE_ONLY.zip) chứa đúng **ba notebook đã thực thi**, byte trùng các file ngoài ZIP, không WAV/LAB/audio; xem [hướng dẫn notebook](../notebooks/README.md). Trước đó, cả ba notebook cũng chạy bằng kernel mới trong ba thư mục độc lập, mỗi thư mục chỉ có notebook tương ứng và data, không có module Python của dự án. Runtime thực tế là **Python 3.14**; source cells chỉ được kiểm tra cú pháp theo Python 3.10, chưa xác minh runtime 3.10.
+
+[Bảng hồi quy](../outputs/tables/all_all_dataset/regression_before_after.csv) xác nhận 24/24 trường hợp giữ nguyên so với `111ab37`, **0 regression**; đối chiếu SHA256 xác nhận **28 file data/Source** không đổi. W20 vẫn là lựa chọn theo hòa của toàn bộ W1…50 trên TRAIN FINAL, khác candidate W1/F1 ≈ 0.898698. Năm trường hợp END muộn ở mục 4 vẫn còn.
+
+Tích hợp cục bộ trên branch `codex/endpoint-train-calibration`, giữ `main`, chưa push GitHub. Giai đoạn 2/3/5 hoãn. Cả chín binary PPTX/PDF và `THUAT_TOAN_1/2/3.zip` giữ nguyên byte, là **previous version trước Stage1**, chưa dùng làm gói nộp hiện hành. STT nhóm/họ tên/MSSV còn placeholder vì người dùng chưa cung cấp.
