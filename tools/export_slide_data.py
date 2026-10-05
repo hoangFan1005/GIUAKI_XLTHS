@@ -34,6 +34,22 @@ def numeric_parameters(model: dict) -> dict:
             model.get("evaluation_protocol") != "train_selected_reused_test" or
             model.get("historical_test_exposure") is not True or "W_selection_test" in model):
         raise ValueError("Unsupported schema 2 selection provenance")
+    selection = model.get("W_selection_train")
+    histogram = ("W" in model or "W_selection_train" in model or model.get("feature") == "energy")
+    if histogram:
+        required = {"selected_W", "shared_optimal_W", "candidate_W", "evaluated_files",
+                    "selection_set", "evaluation_protocol", "tie_preference_W"}
+        if not isinstance(selection, dict) or not required.issubset(selection):
+            raise ValueError("Unsupported TRAIN calibration provenance: incomplete selection manifest")
+        if not {"W", "finalW", "tie_preference_W"}.issubset(model):
+            raise ValueError("Unsupported TRAIN calibration provenance: missing FINAL weight metadata")
+        if (selection["selection_set"] != "train" or
+                selection["evaluation_protocol"] != "train_final_calibration"):
+            raise ValueError("Unsupported TRAIN calibration provenance")
+        if not model["W"] == model["finalW"] == selection["selected_W"]:
+            raise ValueError("Inconsistent TRAIN calibration provenance: W/finalW/selected_W differ")
+        if model["tie_preference_W"] != selection["tie_preference_W"]:
+            raise ValueError("Inconsistent TRAIN calibration provenance: tie preferences differ")
     fields = ("threshold", "frame_ms", "hop_ms", "iterations", "muSil",
               "stdSil", "muSp", "stdSp", "silence_count", "speech_count",
               "bins", "smooth_radius", "padding_ms", "W",
@@ -46,13 +62,7 @@ def numeric_parameters(model: dict) -> dict:
     out = {key: model[key] for key in fields if key in model}
     out["endpoint_noise"] = {key: value for key, value in model["endpoint_noise"].items()
                              if isinstance(value, (int, float))}
-    selection = model.get("W_selection_train")
-    if "W" in model and selection is None:
-        raise ValueError("Unsupported schema 2 histogram model: missing TRAIN selection")
-    if selection:
-        if (selection.get("selection_set") != "train" or
-                selection.get("evaluation_protocol") != "train_final_calibration"):
-            raise ValueError("Unsupported schema 2 TRAIN calibration provenance")
+    if histogram:
         out["selection"] = dict(selection)
     return out
 

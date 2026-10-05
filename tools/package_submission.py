@@ -19,10 +19,20 @@ def model_readme(number, model):
             'trong phát triển trước đây, không khẳng định holdout độc lập. --file chỉ fit TRAIN. '
             'Metric chính mae_ms/rmse_ms trên FINAL regions; tolerance_boundary_* là diagnostic.\n')
     if number == 2:
-        selection = model.get('W_selection_train', {})
-        if (selection.get('selection_set') != 'train' or
-                selection.get('evaluation_protocol') != 'train_final_calibration'):
-            raise ValueError('Unsupported TRAIN calibration provenance')
+        selection = model.get('W_selection_train')
+        required = {"selected_W", "shared_optimal_W", "candidate_W", "evaluated_files",
+                    "selection_set", "evaluation_protocol", "tie_preference_W"}
+        if not isinstance(selection, dict) or not required.issubset(selection):
+            raise ValueError("Unsupported TRAIN calibration provenance: incomplete selection manifest")
+        if not {"W", "finalW", "tie_preference_W"}.issubset(model):
+            raise ValueError("Unsupported TRAIN calibration provenance: missing FINAL weight metadata")
+        if (selection["selection_set"] != "train" or
+                selection["evaluation_protocol"] != "train_final_calibration"):
+            raise ValueError("Unsupported TRAIN calibration provenance")
+        if not model["W"] == model["finalW"] == selection["selected_W"]:
+            raise ValueError("Inconsistent TRAIN calibration provenance: W/finalW/selected_W differ")
+        if model["tie_preference_W"] != selection["tie_preference_W"]:
+            raise ValueError("Inconsistent TRAIN calibration provenance: tie preferences differ")
         text += (f"TT2 chỉ Energy. W = {model['W']}; chọn trên TRAIN FINAL với final_region_mae_ms. "
                  f"TRAIN: {', '.join(selection['evaluated_files'])}. "
                  f"Shared optimal W: {selection['shared_optimal_W']}; tie_preference_W = {selection['tie_preference_W']}. "
