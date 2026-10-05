@@ -1,0 +1,5 @@
+﻿file,algorithm,threshold,low_ste_threshold,high_ste_threshold,minimum_speech_ms,minimum_silence_ms,endpoint_policy
+phone_F2,tt3,0.0028777336852328582,0.0028777336852328582,0.004316600527849287,100.0,200.0,raw STE hysteresis; candidates/debug excluded; no fixed final padding
+phone_M2,tt3,0.0028777336852328582,0.0028777336852328582,0.004316600527849287,100.0,200.0,raw STE hysteresis; candidates/debug excluded; no fixed final padding
+studio_F2,tt3,0.0028777336852328582,0.0028777336852328582,0.004316600527849287,100.0,200.0,raw STE hysteresis; candidates/debug excluded; no fixed final padding
+studio_M2,tt3,0.0028777336852328582,0.0028777336852328582,0.004316600527849287,100.0,200.0,raw STE hysteresis; candidates/debug excluded; no fixed final padding

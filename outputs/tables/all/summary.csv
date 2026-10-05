@@ -1,0 +1,4 @@
+﻿algorithm,files,evaluated_files,missing_speech_files,mean_file_mae_ms,mean_file_rmse_ms,pooled_endpoint_rmse_ms,median_file_mae_ms,min_file_mae_ms,max_file_mae_ms,region_count_correct_files,region_count_incorrect_files,top_mae_files,parameter_selection_set,evaluation_protocol,mean_frame_f1
+tt1,4,4,0,19.999999999999993,24.691629451723344,38.07886595129645,10.002834467120248,2.4943310657596918,57.49999999999978,4,0,phone_F2:57.50ms; phone_M2:12.50ms; studio_F2:7.51ms,train,training_only_parameters,0.9936706156594951
+tt2,4,4,0,13.749999999999986,15.811389926850397,20.916501431568612,7.50283446712019,7.494331065759696,32.499999999999865,4,0,phone_F2:32.50ms; studio_F2:7.51ms; phone_M2:7.50ms,test,test_tuned_not_independent,0.9954630755123366
+tt3,4,4,0,12.50000000000001,14.078275245327559,17.677670438630052,7.50283446712019,7.494331065759696,27.499999999999968,4,0,phone_F2:27.50ms; studio_F2:7.51ms; phone_M2:7.50ms,train,training_only_parameters,0.9958708838262248

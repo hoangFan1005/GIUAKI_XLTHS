@@ -1,0 +1,53 @@
+{
+  "threshold": 0.0028777336852328582,
+  "candidate_regions": [
+    [
+      1.01,
+      1.895
+    ],
+    [
+      1.91,
+      2.225
+    ],
+    [
+      2.23,
+      2.615
+    ],
+    [
+      2.7,
+      3.325
+    ],
+    [
+      3.33,
+      3.545
+    ],
+    [
+      3.61,
+      3.795
+    ],
+    [
+      3.8,
+      4.085
+    ]
+  ],
+  "final_regions": [
+    [
+      1.01,
+      4.085
+    ]
+  ],
+  "low_ste_threshold": 0.0028777336852328582,
+  "high_ste_threshold": 0.004316600527849287,
+  "endpoint_noise": {
+    "noise_mean": 0.00038711079659476316,
+    "noise_std": 0.0007092854827602364,
+    "noise_q95": 0.0012140144555334857,
+    "noise_upper": 0.0025149672448754727,
+    "noise_count": 497,
+    "calibration": "training silence only; population std; Q95 nearest rank",
+    "high_multiplier": 1.5
+  },
+  "minimum_speech_ms": 100.0,
+  "minimum_silence_ms": 200.0,
+  "endpoint_policy": "raw STE hysteresis; candidates/debug excluded; no fixed final padding"
+}

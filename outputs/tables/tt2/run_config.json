@@ -1,0 +1,28 @@
+{
+  "algorithm": "tt2",
+  "selected": [
+    "tt2"
+  ],
+  "input_file": null,
+  "evaluated_files": [
+    "phone_F2",
+    "phone_M2",
+    "studio_F2",
+    "studio_M2"
+  ],
+  "evaluation_split": "test",
+  "parameter_selection": {
+    "tt2": "test_tuned_not_independent"
+  },
+  "frame_ms": 25.0,
+  "hop_ms": 10.0,
+  "sample_rounding": "nearest_integer_samples_python_round_ties_to_even",
+  "minimum_internal_silence_ms": 200.0,
+  "minimum_speech_ms": 100.0,
+  "snr_study": false,
+  "normalization": "per_recording_max",
+  "lab_center_convention": "sample_exact_half_open",
+  "boundary_convention": "final confirmed regions; union of active frame supports",
+  "primary_metric": "ordered final-region START/END MAE; unmatched regions explicitly undefined",
+  "noise_seed": 20261001
+}
