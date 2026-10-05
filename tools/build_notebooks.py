@@ -71,75 +71,85 @@ def algorithm_code(algorithm: str) -> tuple[str, str]:
         )
     helpers = functions("algorithms/tt2_histogram.py", "histogram", "local_maxima", "threshold_from_histogram")
     prediction = functions("algorithms/tt2_histogram.py", "pad_speech", "_validate_source_framing", "predict", "fit")
-    # These implementations are unchanged; only their now-local helper import is
-    # removed. The context branch is unused and omitted from this source notebook.
-    prediction = prediction.replace("                from core.postprocess import fill_short_internal_silences\n", "")
-    predict_start = prediction.index('    if variant == "context":')
-    predict_end = prediction.index('    if variant != "source":', predict_start)
-    prediction = prediction[:predict_start] + prediction[predict_end:]
-    fit_start = prediction.index('    if variant == "context":')
-    fit_end = prediction.index('    if variant != "source":', fit_start)
-    prediction = prediction[:fit_start] + prediction[fit_end:]
-    prediction = prediction.replace(
-        "Dự đoán histogram nguồn thích nghi hoặc biến thể STE báo cáo.",
-        "Dự đoán histogram năng lượng nguồn thích nghi 25/10 ms.")
-    prediction = prediction.replace(
-        "Input: features có energy cho source hoặc ste_norm cho context;",
-        "Input: features có energy cho source;")
-    prediction = prediction.replace(
-        "    adaptation fixes W=5 and 100 bins as specified by the supplied report.\n", "")
-    prediction = prediction.replace("    available. Bin/smoothing choices are fixed and declared. The context\n",
-                                    "    available. Bin/smoothing choices are fixed and declared.\n")
-    prediction = prediction.replace("    variant chọn source hoặc context. Output: model gồm W/cấu hình và F1\n",
-                                    "    variant chọn source. Output: model gồm W/cấu hình và F1\n")
+    tree = ast.parse(prediction)
+    class SourceOnly(ast.NodeTransformer):
+        def visit_ImportFrom(self, node):
+            if node.module == "core.postprocess":
+                return None  # Identical helper already defined in the notebook.
+            return node
+
+        def visit_If(self, node):
+            if (isinstance(node.test, ast.Compare)
+                    and ast.unparse(node.test) == "variant == 'context'"):
+                return None
+            return self.generic_visit(node)
+
+    tree = SourceOnly().visit(tree)
+    # Avoid historical calibration prose without depending on docstring text.
+    for node in tree.body:
+        if isinstance(node, ast.FunctionDef) and node.name in ("fit", "predict"):
+            node.body[0] = ast.Expr(ast.Constant(
+                "TRAIN candidate-frame F1 proposal; FINAL W is calibrated on TRAIN separately."
+                if node.name == "fit" else "Predict the source energy histogram candidate mask."))
+    prediction = ast.unparse(ast.fix_missing_locations(tree))
     return helpers, prediction
 
 
 def standalone_pipeline(algorithm: str) -> str:
-    source = source_function("app/pipeline.py", "predict_and_score")
-    start = source.index('    features = record["features"]')
-    end = source.index("    # Algorithm masks are candidates.", start)
-    prediction = (
-        '    if algorithm != ALGORITHM:\n'
-        '        raise ValueError("This notebook contains only " + ALGORITHM)\n'
-        '    features = record["features"]\n'
-    )
-    if algorithm == "tt2":
-        prediction += '    mask, diagnostic = predict(features, params)\n\n'
-    else:
-        prediction += '    mask, diagnostic = predict(features, params), {"threshold": params["threshold"]}\n\n'
-    source = source[:start] + prediction + source[end:]
-    start = source.index("    noise=params.get('endpoint_noise')")
-    end = source.index("    final_regions=hysteresis_regions", start)
-    if algorithm == "tt2":
-        threshold = '''
-    noise = params['endpoint_noise']
-    peak = max(features['energy'], default=0.)
-    base_threshold = diagnostic['energy_threshold'] / peak if peak > 0 else 0.
-    # Raw energy confirms HIGH. Candidate padding cannot seed final endpoints.
-    seed = [int(e > diagnostic['energy_threshold']) for e in features['energy']]
-    low, high = endpoint_thresholds(base_threshold, noise, histogram=True)
-'''
-    else:
-        threshold = '''
-    noise = params['endpoint_noise']
-    base_threshold = params['threshold']
-    seed = mask
-    low, high = endpoint_thresholds(base_threshold, noise, histogram=False)
-'''
-    # Keep four spaces on these lines inside the copied function.
-    threshold = textwrap.dedent(threshold).strip("\n")
-    threshold = "\n".join("    " + line if line else "" for line in threshold.splitlines()) + "\n"
-    source = source[:start] + threshold + source[end:]
-    source = source.replace("    Input: algorithm là tt1/tt2/tt3/tt2-context, record có features/timing/\n",
-                            "    Input: algorithm phải bằng ALGORITHM, record có features/timing/\n")
-    return source
+    """Adapt public production functions by AST, retaining their numeric logic."""
+    tree = ast.parse(functions("app/pipeline.py", "detect_regions", "predict_and_score", "fit_training_model"))
+    class LocalAlgorithm(ast.NodeTransformer):
+        def visit_Compare(self, node):
+            # The public guard fixes algorithm, so omit other dispatch branches
+            # without rewriting any detector or calibration formula.
+            if (isinstance(node.left, ast.Name) and node.left.id == "algorithm"
+                    and len(node.ops) == 1):
+                right = ast.literal_eval(node.comparators[0])
+                operation = node.ops[0]
+                value = (algorithm == right if isinstance(operation, ast.Eq) else
+                         algorithm != right if isinstance(operation, ast.NotEq) else
+                         algorithm in right if isinstance(operation, ast.In) else None)
+                if value is not None:
+                    return ast.copy_location(ast.Constant(value), node)
+            return self.generic_visit(node)
+
+        def visit_If(self, node):
+            node = self.generic_visit(node)
+            if isinstance(node.test, ast.Constant) and isinstance(node.test.value, bool):
+                return node.body if node.test.value else node.orelse
+            return node
+
+        def visit_IfExp(self, node):
+            node = self.generic_visit(node)
+            if isinstance(node.test, ast.Constant) and isinstance(node.test.value, bool):
+                return node.body if node.test.value else node.orelse
+            return node
+
+        def visit_Attribute(self, node):
+            if (isinstance(node.value, ast.Name) and node.value.id in ("tt1", "tt2", "tt3")
+                    and node.attr in ("fit", "predict")):
+                return ast.copy_location(ast.Name(node.attr, ast.Load()), node)
+            return self.generic_visit(node)
+
+        def visit_Name(self, node):
+            if node.id == "TRAIN_DIR":
+                return ast.copy_location(ast.parse("(DATA_ROOT / 'train')", mode="eval").body, node)
+            return node
+
+    tree = LocalAlgorithm().visit(tree)
+    guard = ast.parse('if algorithm != ALGORITHM:\n    raise ValueError("This notebook contains only " + ALGORITHM)').body[0]
+    for node in tree.body:
+        if node.name == "detect_regions":
+            node.body[0] = ast.Expr(ast.Constant("Detect FINAL regions from features, duration and a fitted model."))
+        node.body.insert(1, guard)
+    return ast.unparse(ast.fix_missing_locations(tree))
 
 
 CONFIG = '''
 import math
 import wave
 import hashlib
+import json
 import html
 from pathlib import Path
 
@@ -240,6 +250,11 @@ def display_table(rows, columns, caption):
 LOAD_DATA = '''
 DATA_ROOT = find_data_root(DATA_DIR)
 TRAIN_RECORDS = prepare_records(load_dataset_folder(DATA_ROOT, "train"))
+'''
+
+
+LOAD_TEST = '''
+assert_model_locked()
 TEST_RECORDS = prepare_records(load_dataset_folder(DATA_ROOT, "test"))
 TEST_RECORDS.sort(key=lambda r: FILE_ORDER.index(r["name"]) if r["name"] in FILE_ORDER else len(FILE_ORDER))
 ALL_RECORDS = TRAIN_RECORDS + TEST_RECORDS
@@ -255,38 +270,43 @@ display_table(DATASET_MANIFEST,
 
 
 FIT_MODEL = '''
-MODEL = fit(TRAIN_RECORDS)
-MODEL.update(frame_ms=FRAME_MS, hop_ms=HOP_MS, sample_rounding=SAMPLE_ROUNDING,
-             minimum_internal_silence_ms=MIN_SILENCE_SECONDS * 1000,
-             minimum_speech_ms=MIN_SPEECH_SECONDS * 1000,
-             endpoint_noise=fit_noise_floor(TRAIN_RECORDS),
-             endpoint_policy="hysteresis final regions; no fixed final padding",
-             boundary_convention="union of active frame supports")
+MODEL, TT2W_SWEEP_ROWS = fit_training_model(ALGORITHM, TRAIN_RECORDS)
 '''
 
 
 CALIBRATE_W = '''
-# Core histogram settings and the noise floor have already been fitted on TRAIN.
-# The current project's final W uses the four TEST labels for calibration.
-training_weight = MODEL["W"]
-W_SELECTION, W_SWEEP_ROWS = sweep_final_weights(
-    TEST_RECORDS, dict(MODEL, W=HISTOGRAM_W_TIE_PREFERENCE), predict_and_score
-)
-MODEL.update(training_selected_W=training_weight,
-             W=W_SELECTION["selected_W"], W_selection_test=W_SELECTION,
-             W_tie_preference=HISTOGRAM_W_TIE_PREFERENCE,
-             parameter_rule=W_SELECTION["selection_rule"],
-             train_frame_f1=next((row["train_frame_f1"] for row in MODEL["selection_scores"]
-                                  if row["W"] == W_SELECTION["selected_W"]), None))
-display_table(MODEL["selection_scores"],
-              [("W", "Train W candidate"), ("train_frame_f1", "Pooled candidate F1"),
+# fit_training_model has selected FINAL W from supplied TRAIN records only.
+W_SELECTION = MODEL["W_selection_train"]
+display_table(MODEL["candidate_frame_selection_scores"],
+              [("W", "TRAIN candidate W"), ("candidate_frame_f1", "Candidate frame F1"),
                ("tp", "TP"), ("fp", "FP"), ("fn", "FN")],
-              f"Initial train-only proposal: W={training_weight:g}")
+              f"TRAIN candidate-frame proposal: W={MODEL['candidate_frame_selected_W']:g}")
 display_table(W_SELECTION["summaries"],
               [("W", "W"), ("invalid_files", "Invalid files"),
                ("mean_MAE_ms", "Mean final MAE (ms)"), ("max_MAE_ms", "Max MAE (ms)"),
                ("max_regret_ms", "Worst per-file regret (ms)")],
-              f"All 50 integer W values on TEST; selected W={MODEL['W']:g}; test_tuned_not_independent")
+              f"TRAIN FINAL calibration: all W=1…50; selected W={MODEL['W']:g}; tie preference W20")
+display_table(TT2W_SWEEP_ROWS,
+              [("filename", "TRAIN file"), ("W", "W"),
+               ("final_region_mae_ms", "FINAL region MAE (ms)"),
+               ("ground_truth_region_count", "GT regions"),
+               ("predicted_region_count", "FINAL regions"), ("status", "Status")],
+              "200 TRAIN FINAL calibration rows; PRIMARY MAE is separate from tolerance diagnostics")
+'''
+
+
+LOCK_MODEL = '''
+def model_digest(model):
+    return hashlib.sha256(json.dumps(model, sort_keys=True, ensure_ascii=False,
+                                     allow_nan=False, separators=(",", ":")).encode("utf-8")).hexdigest()
+
+MODEL_LOCK_DIGEST = model_digest(MODEL)
+
+def assert_model_locked():
+    if model_digest(MODEL) != MODEL_LOCK_DIGEST:
+        raise ValueError("Frozen TRAIN model digest changed after calibration")
+
+print("MODEL locked before TEST reads:", MODEL_LOCK_DIGEST)
 '''
 
 
@@ -302,11 +322,13 @@ display_table(parameter_rows, [("parameter", "Parameter"), ("value", "Freshly co
 
 EVALUATION = '''
 TEST_RESULTS = [predict_and_score(ALGORITHM, record, MODEL) for record in TEST_RECORDS]
+assert_model_locked()
 ALL_RESULTS = [predict_and_score(ALGORITHM, record, MODEL) for record in ALL_RECORDS]
+assert_model_locked()
 
 def metric_rows(records, results):
     return [dict(file=record["name"], split=record["split"], algorithm=ALGORITHM,
-                 boundary_MAE_ms=result["metrics"]["mae_ms"], **result["metrics"])
+                 **result["metrics"])
             for record, result in zip(records, results)]
 
 TEST_METRIC_ROWS = metric_rows(TEST_RECORDS, TEST_RESULTS)
@@ -316,6 +338,7 @@ METRIC_COLUMNS = [
     ("file", "File"), ("split", "Split"),
     ("ground_truth_region_count", "GT regions"), ("predicted_region_count", "Pred regions"),
     ("mae_ms", "Final MAE (ms)"), ("rmse_ms", "RMSE (ms)"), ("status", "Status"),
+    ("start_error_ms", "Signed START error (ms)"), ("end_error_ms", "Signed END error (ms)"),
     ("gt_start_s", "GT START (s)"), ("gt_end_s", "GT END (s)"),
     ("predicted_start_s", "Pred START (s)"), ("predicted_end_s", "Pred END (s)")
 ]
@@ -546,6 +569,7 @@ def demo_one_file(filename="phone_F2"):
     record = prepare_records([dict(name=path.stem, samples=samples, sample_rate=fs,
                                    duration=duration, intervals=intervals, split="demo")])[0]
     result = predict_and_score(ALGORITHM, record, MODEL)
+    assert_model_locked()
     rows = metric_rows([record], [result])
     display_table(rows, METRIC_COLUMNS, "Single-file demonstration with fixed MODEL")
     plot_record(record, result)
@@ -562,7 +586,7 @@ def build_notebook(algorithm: str) -> dict:
               "tt3": "TT3 — Gaussian energy distributions"}
     explanations = {
         "tt1": "Learn the normalized STE threshold from labeled TRAIN silence/speech by the source binary-search rule.",
-        "tt2": "Estimate each recording's energy threshold from the first two histogram peaks. The core W proposal is learned on TRAIN; the final W is calibrated on all four TEST labels and is explicitly **test_tuned_not_independent**.",
+        "tt2": "Estimate each recording's energy threshold from the first two histogram peaks. Show the TRAIN candidate-frame F1 proposal separately from global FINAL W calibration on the four TRAIN recordings.",
         "tt3": "Fit population mean and standard deviation to labeled TRAIN normalized STE, then solve the equal-Gaussian-density threshold.",
     }
     sections: list[tuple[str, str]] = []
@@ -606,21 +630,24 @@ Before submission, use **Restart Kernel and Run All** and save the executed note
     code(prepared + "\n\n\n" + standalone_pipeline(algorithm))
     code(source_function("app/pipeline.py", "summarize"))
     if algorithm == "tt2":
-        md("## Global W calibration rule\n\nEvaluate integer W=1…50 on the four TEST LABs using the actual final endpoint pipeline. Prefer valid region counts, minimize worst per-file regret, then mean MAE; tied values prefer W=20. This calibration makes the reported TEST errors **test_tuned_not_independent**.")
+        md("## Global W calibration rule\n\nEvaluate integer W=1…50 on the four TRAIN LABs using the actual FINAL endpoint pipeline. Prefer valid region counts, minimize worst per-file regret, then mean MAE; tied values prefer W=20. Historical TEST sweeps are prior development evidence only; they are not rerun for calibration.")
         code('W_CANDIDATES = tuple(float(w) for w in range(1, 51))\nERROR_EPS_MS = 1e-8\n\n' + functions("app/weight_selection.py", "select_final_weight", "sweep_final_weights"))
-    md("## Load the eight separate input pairs\n\nSHA-256 provenance is retained in `DATASET_MANIFEST`; the visible table contains filenames, splits, sample rates and durations.")
+    md("## Load four TRAIN input pairs\n\nTRAIN is read first. TEST WAV/LAB reads follow calibration and model locking.")
     code(LOAD_DATA)
     md("## Fit fresh TRAIN parameters\n\nAll core model parameters and noise statistics are computed using the four TRAIN recordings.")
     code(FIT_MODEL)
     if algorithm == "tt2":
-        md("### Calibrate W on TEST labels\n\nThe table lists every one of the 50 candidate values. TRAIN's original candidate-frame F1 proposal is also shown. The selected W is shared by all files.")
+        md("### TRAIN FINAL W calibration\n\nShow all 50 candidates and 200 TRAIN rows. The original candidate-frame F1 proposal remains a separate diagnostic. The selected FINAL W is shared by all files.")
         code(CALIBRATE_W)
     parameters = {
         "tt1": ["threshold", "silence_count", "speech_count", "overlap_low", "overlap_high", "iterations", "stop_reason", "area_residual", "overlap_silence_count", "overlap_speech_count"],
-        "tt2": ["training_selected_W", "W", "W_tie_preference", "bins", "smooth_radius", "padding_ms", "padding_frames", "full_pipeline_records", "train_frame_f1"],
+        "tt2": ["candidate_frame_selected_W", "candidate_frame_f1", "candidate_cleanup_records", "W", "finalW", "tie_preference_W", "bins", "smooth_radius", "padding_ms", "padding_frames"],
         "tt3": ["muSil", "stdSil", "muSp", "stdSp", "silence_count", "speech_count", "threshold", "threshold_rule", "speech_direction", "sigma_floor", "sigma_was_floored"],
     }
     code(MODEL_DISPLAY.format(parameter_names=parameters[algorithm]))
+    md("## Lock TRAIN model, then load TEST\n\nThe model digest is captured before TEST input reads and checked after scoring. Schema 2 uses `parameter_selection_set=train`, `evaluation_protocol=train_selected_reused_test`, and `historical_test_exposure=true`: these TEST recordings were seen during earlier development. The eight-file manifest retains WAV/LAB hashes and split provenance.")
+    code(LOCK_MODEL)
+    code(LOAD_TEST)
     md("## Computed algorithm illustration\n\nThe illustration uses the features and statistics calculated in this run.")
     code({"tt1": TT1_ILLUSTRATION, "tt2": TT2_ILLUSTRATION, "tt3": TT3_ILLUSTRATION}[algorithm])
     md("## Four TEST results\n\nThe main table scores the final confirmed regions. START/END columns are in seconds; MAE/RMSE are in milliseconds.")
