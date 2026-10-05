@@ -2,6 +2,14 @@
 
 Cập nhật theo code hiện tại ngày 05/10/2026. TT2 đã bỏ Spectral Centroid theo yêu cầu của thầy. Ba main hiện không tính FFT/Centroid trong đường chạy thực nghiệm.
 
+## Giao thức Stage1 và schema 2
+
+Mọi model, W và `endpoint_noise` được fit từ bốn TRAIN trước khi đọc TEST. Ba thuật toán dùng `schema_version=2`, `parameter_selection_set=train`, `evaluation_protocol=train_selected_reused_test`, `historical_test_exposure=true`. TEST đã được xem trong phát triển trước đây và được dùng lại để chấm; không gọi đây là holdout mới hoặc độc lập. Chạy một file (`--file`) vẫn fit TRAIN trước, không hiệu chỉnh bằng TEST.
+
+Hàm công khai [detect_regions()](../app/pipeline.py#L132) nhận `(algorithm, features, duration, params)`, không nhận LAB, nhãn hay filename; `endpoint_noise` phải được fit sẵn. [predict_and_score()](../app/pipeline.py#L174) gọi detector rồi chấm với LAB. CLI xuất metric vẫn yêu cầu WAV/LAB cùng tên.
+
+Schema 2 dùng `mae_ms`/`rmse_ms` làm metric chính. `final_region_mae_ms` là MAE của mỗi dòng calibration W trên TRAIN. Các sự kiện ghép trong dung sai dùng `tolerance_boundary_*`; `matched_boundary_mae_ms` là diagnostic ghép vùng theo thứ tự. Alias cũ `boundary_MAE_ms` đã bỏ để tránh hai cột chỉ khác hoa/thường.
+
 ## 1. Ý tưởng chính
 
 Histogram mô tả các mức năng lượng xuất hiện thường xuyên trong một WAV. Code tìm hai đỉnh đầu của histogram, sau đó đặt ngưỡng gần đỉnh năng lượng thấp bằng trọng số W.
@@ -57,7 +65,7 @@ z_i=\frac{E_i}{\max_j E_j}
 
 **Histogram chính dùng E chưa chia theo đỉnh; hysteresis dùng z trong [0,1].** Không được so trực tiếp ngưỡng Energy với z khi chưa chuyển đơn vị.
 
-MA vẫn được tính như đặc trưng chung nhưng không tham gia TT2. Các hàm FFT/Centroid cũ còn như tiện ích tùy chọn trong `core/features.py`; [prepare_records()](../app/pipeline.py#L110) không gọi chúng cho ba main.
+MA vẫn được tính như đặc trưng chung nhưng không tham gia TT2. Các hàm FFT/Centroid cũ còn như tiện ích tùy chọn trong `core/features.py`; [prepare_records()](../app/pipeline.py#L114) không gọi chúng cho ba main.
 
 ## 3. Histogram được tạo như thế nào?
 
@@ -181,9 +189,9 @@ TP: speech dự đoán đúng; FP: silence bị nhận thành speech; FN: speech
 
 Vì vậy **train đề xuất W1**, khác bản Energy+Centroid cũ đề xuất W20.
 
-### 5.2. Chọn W chung theo final MAE trên bốn test
+### 5.2. Chọn W chung theo FINAL MAE trên bốn TRAIN
 
-Theo yêu cầu trước đó của người dùng, pipeline tiếp tục thử mọi W nguyên từ **1 đến 50** trên `phone_F2`, `phone_M2`, `studio_F2`, `studio_M2`. Tổng cộng 200 trường hợp.
+Pipeline fit TRAIN trước TEST; thử mọi W nguyên **1–50** trên `phone_F1`, `phone_M1`, `studio_F1`, `studio_M1`. Tổng cộng 200 trường hợp TRAIN.
 
 [sweep_final_weights()](../app/weight_selection.py#L67) chạy pipeline thật cho mỗi W. [select_final_weight()](../app/weight_selection.py#L11) ưu tiên:
 
@@ -194,17 +202,9 @@ Theo yêu cầu trước đó của người dùng, pipeline tiếp tục thử 
 
 “Thiệt hại” ở đây là `MAE(file,W) - min_W MAE(file,W)`, không phải một công thức ngưỡng mới.
 
-Tất cả W1–50 hiện cho cùng final regions và MAE trên từng test. Cấu hình `HISTOGRAM_W_TIE_PREFERENCE=20` giữ W20. Model phân biệt rõ:
+TT2 đề xuất candidate **W1** bằng TRAIN frame F1 (0.898698, không phải F1 của FINAL W20). Sau đó [fit_training_model()](../app/pipeline.py#L229) khảo sát W nguyên **1–50** trên FINAL regions của `phone_F1`, `phone_M1`, `studio_F1`, `studio_M1`: 200 dòng TRAIN. Kết quả lưu hiện tại: cả 50 W đồng tối ưu; mean FINAL MAE TRAIN **13.747165532879801 ms**. Chọn **W20** bằng `tie_preference_W=20` cố định. Đây là kết quả của TRAIN hiện tại, không phải giả định mọi dataset đều hòa. Manifest `W_selection_train` ghi `selection_set=train`, `evaluation_protocol=train_final_calibration` và tên TRAIN đã chấm.
 
-```text
-training_selected_W = 1   # đề xuất train-F1
-W_tie_preference    = 20  # ưu tiên khi kết quả final hòa
-W                  = 20  # giá trị thực tế chạy
-```
-
-Không có W riêng cho từng filename. **W20 chưa phải tối ưu duy nhất, và chưa khảo sát mọi số thực ngoài miền 1–50.**
-
-W đã được chọn có sử dụng LAB test nên CSV ghi `test_tuned_not_independent`. Bốn test này không còn là đánh giá độc lập về khả năng tổng quát hóa của lựa chọn W. Chạy `--file` vẫn hiệu chỉnh một W chung trên đủ bốn test trước khi demo file được chọn.
+`candidate_frame_selected_W`, `candidate_frame_f1`, `candidate_frame_selection_scores`, `candidate_cleanup_records` chỉ mô tả bước candidate. `W`/`finalW` và manifest TRAIN mô tả lựa chọn FINAL; không gán candidate F1 cho W20. Không có W riêng theo filename. W20 không phải tối ưu duy nhất; chưa khảo sát số thực ngoài miền W nguyên 1–50.
 
 ## 6. Padding ứng viên và High/Low tạo biên cuối
 
@@ -212,7 +212,7 @@ W đã được chọn có sử dụng LAB test nên CSV ghi `test_tuned_not_ind
 
 [pad_speech()](../algorithms/tt2_histogram.py#L112) mở rộng mask ứng viên 25 hop ở mỗi phía, tức 250 ms. Nó đọc mask gốc để padding không tự lan tiếp.
 
-Mask này còn phục vụ đề xuất W bằng train-F1 và diagnostic. Nhưng [predict_and_score()](../app/pipeline.py#L128) **tạo lại seed bằng raw `E > TE`**, không dùng mask padding để quyết định START/END cuối.
+Mask này còn phục vụ đề xuất W bằng train-F1 và diagnostic. Nhưng [detect_regions()](../app/pipeline.py#L132) **tạo lại seed bằng raw `E > TE`**, không dùng mask padding để quyết định START/END cuối.
 
 Phone_F2 hiện có candidate padded region `[0.8,4.265]`, còn final region `[1.01,4.095]`. Nếu lấy candidate để chấm endpoint sẽ sai bản chất.
 
@@ -264,7 +264,7 @@ END là cuối khung hỗ trợ cuối đạt LOW. Không cộng 200 ms thời g
 | Hàm / file | Vai trò |
 |---|---|
 | [main_tt2.py](../main_tt2.py) | Điểm chạy riêng TT2 |
-| [run_experiment()](../app/pipeline.py#L336) | Đọc dữ liệu, fit train, khảo sát W, chạy và xuất |
+| [run_experiment()](../app/pipeline.py#L417) | Đọc dữ liệu, fit train, khảo sát W, chạy và xuất |
 | `histogram` | Tự đếm bin và làm trơn số đếm |
 | `local_maxima` | Tìm đỉnh/plateau theo thứ tự trục giá trị |
 | `threshold_from_histogram` | Công thức TE và fallback |
@@ -272,7 +272,7 @@ END là cuối khung hỗ trợ cuối đạt LOW. Không cộng 200 ms thời g
 | `predict` | Tính TE cho WAV, tạo raw và padded mask |
 | `fit` | Đề xuất W bằng train frame F1 |
 | `sweep_final_weights`, `select_final_weight` | Chọn một W chung bằng final-region metric |
-| `predict_and_score` | Seed raw → hysteresis → final → metric |
+| `predict_and_score` | Gọi detect_regions rồi chấm FINAL với LAB |
 
 Các phép đếm histogram, smoothing, tìm đỉnh, tính Energy và MAE tự viết. Không gọi `numpy.histogram`, FFT thư viện hoặc thuật toán VAD có sẵn.
 
@@ -303,7 +303,7 @@ Phone_F2 có GT `[1.02,4.04]`, final `[1.01,4.095]`: START −10 ms, END +55 ms,
 | studio_M2 | 7.49 ms |
 | Trung bình | **13.75 ms** |
 
-Metric chính trong CSV là `mae_ms` / `boundary_MAE_ms`. `boundary_mae_ms` là metric sự kiện phụ trong dung sai 100 ms; nó có thể loại biên sai xa và không thay thế MAE chính.
+Metric chính trong schema 2 là `mae_ms` / `rmse_ms`. Diagnostic sự kiện trong dung sai 100 ms dùng `tolerance_boundary_*`; `matched_boundary_mae_ms` chấm các vùng ghép theo thứ tự. Các diagnostic này không thay thế MAE chính khi thiếu/thừa vùng hoặc biên sai xa.
 
 ## 9. Chạy và xem kết quả
 
@@ -316,7 +316,7 @@ python main_tt2.py --no-show
 python main_tt2.py --evaluate-all
 ```
 
-Mặc định bốn test; `--file` chọn một WAV có LAB cùng tên; `--evaluate-all` chấm tám WAV và không mở cửa sổ. Do quy trình chọn W hiện tại, phải giữ đủ bốn test calibration kể cả khi demo một file.
+Mặc định bốn test; `--file` chọn một WAV có LAB cùng tên; `--evaluate-all` chấm tám WAV và không mở cửa sổ. Chế độ một file fit bốn TRAIN trước khi đọc file đã chọn; không nạp bốn TEST để calibration.
 
 - [Model TT2](../outputs/models/tt2.json): W train, W cuối, cấu hình histogram, noise.
 - [Bảng metric](../outputs/tables/tt2/test_metrics.csv).
@@ -328,4 +328,4 @@ Mặc định bốn test; `--file` chọn một WAV có LAB cùng tên; `--evalu
 
 “Em tính Energy từng khung 25 ms, tạo histogram 64 bin, làm trơn số đếm bằng tối đa 5 bin và lấy hai đỉnh đầu theo chiều năng lượng tăng. Ngưỡng là `(20*M1+M2)/21`. Bản này chỉ dùng Energy theo yêu cầu thầy. Sau khi tạo ứng viên, em dùng High/Low STE và điều kiện 200/100 ms để tạo final regions; chỉ các biên cuối mới được chấm MAE.”
 
-Energy-only nhẹ và dễ giải thích hơn, nhưng không có đặc trưng phổ để loại một số loại nhiễu. Histogram một đỉnh phải dùng fallback; hai đỉnh đầu có thể không đại diện đúng hai lớp. W20 không duy nhất trong khảo sát hiện tại. High/Low là phần cải tiến chung, còn 100 ms là tham số bổ sung; MAE test có dùng dữ liệu test để chọn W và cần trình bày rõ.
+Energy-only nhẹ và dễ giải thích hơn, nhưng không có đặc trưng phổ để loại một số loại nhiễu. Histogram một đỉnh phải dùng fallback; hai đỉnh đầu có thể không đại diện đúng hai lớp. W20 không duy nhất trong khảo sát hiện tại. High/Low là phần cải tiến chung, còn 100 ms là tham số bổ sung; TEST có historical exposure và được dùng lại để đánh giá, nên cần trình bày giới hạn này.

@@ -14,7 +14,7 @@ Mở notebook bằng JupyterLab, VS Code hoặc trình xem notebook. Số liệu
 
 Notebook có các cell lần lượt: cấu hình → đọc WAV/LAB → chia khung/tính năng lượng thủ công → thuật toán riêng → High/Low và vùng nói cuối → học trên train → đánh giá → bảng và đồ thị. Bảng 4 test và bảng 8 file train + test được ghi rõ riêng.
 
-TT2 chỉ dùng Energy. W vẫn chọn một giá trị chung bằng khảo sát 1–50 trên 4 test, giữ W20 khi hòa; notebook ghi rõ đây là `test_tuned_not_independent`. Không tính F0 hoặc Spectral Centroid.
+TT2 chỉ Energy, không F0/Centroid. Notebook fit mọi model/noise/W từ TRAIN trước TEST, chọn W1–50 trên TRAIN FINAL với `tie_preference_W=20`. TRAIN hiện tại hòa cả 50 W, chọn W20; candidate frame-F1 đề xuất W1 riêng (0.898698). Model schema 2 ghi `train_selected_reused_test`, `historical_test_exposure=true`; TEST được dùng lại sau lịch sử phát triển, không khẳng định độc lập. Model digest được khóa trước TEST và kiểm tra lại sau chấm. `--file` demo dùng model đã khóa. Metric chính `mae_ms`/`rmse_ms`, calibration `final_region_mae_ms`, diagnostic `tolerance_boundary_*` và `matched_boundary_mae_ms`.
 
 ## Chạy lại trên máy này
 

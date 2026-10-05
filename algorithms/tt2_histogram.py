@@ -218,9 +218,9 @@ def fit(records: list[dict], variant: str = "source") -> dict:
     padding and the shared 200 ms internal-silence cleanup when timing is
     available. Bin/smoothing choices are fixed and declared. The context
     adaptation fixes W=5 and 100 bins as specified by the supplied report.
-    No test labels enter this core fit. The current app pipeline subsequently
-    selects one global W with FINAL-region MAE on four test LABs, explicitly
-    requested by the user and tagged as test-tuned rather than independent.
+    No TEST labels enter this core fit. Its TRAIN candidate frame-F1 proposal
+    is separate from the downstream app TRAIN FINAL-region MAE calibration
+    of global W. TEST is historically exposed and reused only for scoring.
     Input: records là features/labels train, có timing để cleanup nếu có;
     variant chọn source hoặc context. Output: model gồm W/cấu hình và F1
     các ứng viên; synthetic không timing được đếm fallback rõ ràng.

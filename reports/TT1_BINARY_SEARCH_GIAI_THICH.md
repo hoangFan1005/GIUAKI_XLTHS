@@ -2,6 +2,14 @@
 
 Cập nhật theo code hiện tại ngày 05/10/2026. Tài liệu này giải thích riêng TT1 để thành viên phụ trách có thể đọc, chạy và thuyết trình độc lập.
 
+## Giao thức Stage1 và schema 2
+
+Mọi model, W và `endpoint_noise` được fit từ bốn TRAIN trước khi đọc TEST. Ba thuật toán dùng `schema_version=2`, `parameter_selection_set=train`, `evaluation_protocol=train_selected_reused_test`, `historical_test_exposure=true`. TEST đã được xem trong phát triển trước đây và được dùng lại để chấm; không gọi đây là holdout mới hoặc độc lập. Chạy một file (`--file`) vẫn fit TRAIN trước, không hiệu chỉnh bằng TEST.
+
+Hàm công khai [detect_regions()](../app/pipeline.py#L132) nhận `(algorithm, features, duration, params)`, không nhận LAB, nhãn hay filename; `endpoint_noise` phải được fit sẵn. [predict_and_score()](../app/pipeline.py#L174) gọi detector rồi chấm với LAB. CLI xuất metric vẫn yêu cầu WAV/LAB cùng tên.
+
+Schema 2 dùng `mae_ms`/`rmse_ms` làm metric chính. `final_region_mae_ms` là MAE của mỗi dòng calibration W trên TRAIN. Các sự kiện ghép trong dung sai dùng `tolerance_boundary_*`; `matched_boundary_mae_ms` là diagnostic ghép vùng theo thứ tự. Alias cũ `boundary_MAE_ms` đã bỏ để tránh hai cột chỉ khác hoa/thường.
+
 ## 1. TT1 giải quyết việc gì?
 
 TT1 học một ngưỡng năng lượng để phân biệt tiếng nói và khoảng lặng. Khung có năng lượng chuẩn hóa cao hơn ngưỡng được xem là ứng viên tiếng nói.
@@ -199,12 +207,12 @@ START là đầu khung bắt đầu vùng. END là cuối khung hỗ trợ cuố
 |---|---|
 | [main_tt1.py](../main_tt1.py) | Điểm chạy riêng, cố định TT1 |
 | [run_cli()](../app/cli.py#L67) | Đọc cờ, chọn backend vẽ và báo lỗi |
-| [run_experiment()](../app/pipeline.py#L336) | Đọc train/test, học mô hình, chạy và xuất kết quả |
-| [prepare_records()](../app/pipeline.py#L110) | Tính đặc trưng và nhãn tâm khung |
+| [run_experiment()](../app/pipeline.py#L417) | Đọc train/test, học mô hình, chạy và xuất kết quả |
+| [prepare_records()](../app/pipeline.py#L114) | Tính đặc trưng và nhãn tâm khung |
 | [fit()](../algorithms/tt1_hodgkinson.py#L105) | Gom STE hai lớp, gọi Binary Search |
 | `confusion_area`, `_counts`, `binary_threshold` | Lõi học ngưỡng TT1 |
 | `predict` | Tạo mask ứng viên từ ngưỡng train |
-| [predict_and_score()](../app/pipeline.py#L128) | Candidate → hysteresis → final regions → metric |
+| [predict_and_score()](../app/pipeline.py#L174) | Gọi detector LAB-free rồi chấm FINAL với LAB |
 | [regions_to_mask()](../core/endpoints.py#L78) | Đổi vùng cuối sang nhãn khung để chấm frame metric |
 
 Các phép tổng bình phương, diện tích và thống kê được viết bằng vòng lặp. Các hàm cơ bản như `len`, `min`, `max`, `range`, `round` và toán học căn bậc hai phục vụ triển khai; không gọi VAD hoặc Binary Search có sẵn từ thư viện.
@@ -236,7 +244,7 @@ Ví dụ `phone_F2`: GT `[1.02,4.04]`, prediction `[1.01,4.145]`. Lỗi START = 
 | studio_M2 | 2.49 ms |
 | Trung bình bốn file | **20.00 ms** |
 
-Trong CSV, metric chính là **`mae_ms` / `boundary_MAE_ms`**. Cột chữ thường `boundary_mae_ms` là metric phụ chỉ chấm các sự kiện ghép được trong dung sai 100 ms; không thay thế MAE chính vì có thể bỏ biên sai quá xa.
+Metric chính trong schema 2 là `mae_ms` / `rmse_ms`. Diagnostic sự kiện trong dung sai 100 ms dùng `tolerance_boundary_*`; `matched_boundary_mae_ms` chấm các vùng ghép theo thứ tự. Các diagnostic này không thay thế MAE chính khi thiếu/thừa vùng hoặc biên sai xa.
 
 ## 8. Chạy và xem file nào?
 

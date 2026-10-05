@@ -28,22 +28,32 @@ def dataset_hashes() -> dict[str, str]:
 
 def numeric_parameters(model: dict) -> dict:
     """Keep numerical facts for English notes, without copying model prose."""
+    if model.get("schema_version") != 2:
+        raise ValueError("Unsupported model schema: regenerate schema 2 models before export")
+    if (model.get("parameter_selection_set") != "train" or
+            model.get("evaluation_protocol") != "train_selected_reused_test" or
+            model.get("historical_test_exposure") is not True or "W_selection_test" in model):
+        raise ValueError("Unsupported schema 2 selection provenance")
     fields = ("threshold", "frame_ms", "hop_ms", "iterations", "muSil",
               "stdSil", "muSp", "stdSp", "silence_count", "speech_count",
               "bins", "smooth_radius", "padding_ms", "W",
-              "training_selected_W", "W_tie_preference",
+              "schema_version", "metrics_schema_version", "parameter_selection_set",
+              "evaluation_protocol", "historical_test_exposure", "training_files",
+              "finalW", "tie_preference_W", "candidate_frame_selected_W",
+              "candidate_frame_f1", "candidate_frame_selection_scores",
+              "candidate_cleanup_records", "candidate_frame_selection_applicable",
               "minimum_internal_silence_ms", "minimum_speech_ms")
     out = {key: model[key] for key in fields if key in model}
     out["endpoint_noise"] = {key: value for key, value in model["endpoint_noise"].items()
                              if isinstance(value, (int, float))}
-    selection = model.get("W_selection_test")
+    selection = model.get("W_selection_train")
+    if "W" in model and selection is None:
+        raise ValueError("Unsupported schema 2 histogram model: missing TRAIN selection")
     if selection:
-        out["selection"] = {
-            "selected_W": selection["selected_W"],
-            "shared_optimal_W": selection["shared_optimal_W"],
-            "candidate_W": selection["candidate_W"],
-            "evaluated_files": selection["evaluated_files"],
-        }
+        if (selection.get("selection_set") != "train" or
+                selection.get("evaluation_protocol") != "train_final_calibration"):
+            raise ValueError("Unsupported schema 2 TRAIN calibration provenance")
+        out["selection"] = dict(selection)
     return out
 
 
@@ -63,11 +73,14 @@ def check_saved_metrics(key: str, files: list[dict]) -> None:
 
 def export_data(destination: Path) -> None:
     before = dataset_hashes()
+    models = {f"tt{n}": json.loads((ROOT / "outputs" / "models" / f"tt{n}.json").read_text(encoding="utf-8"))
+              for n in range(1, 4)}
+    parameters = {key: numeric_parameters(model) for key, model in models.items()}
     audio = load_audio_folder(TEST_DIR)
     data = {}
     for number in range(1, 4):
         key = f"tt{number}"
-        model = json.loads((ROOT / "outputs" / "models" / f"{key}.json").read_text(encoding="utf-8"))
+        model = models[key]
         if model["frame_ms"] != 25 or model["hop_ms"] != 10:
             raise ValueError(f"{key}: the slide framing requires 25/10 ms")
         files = []
@@ -96,7 +109,7 @@ def export_data(destination: Path) -> None:
         check_saved_metrics(key, files)
         data[key] = {"files": files, "threshold": model.get("threshold", 0),
                      "mean": sum(entry["mae"] for entry in files) / len(files),
-                     "parameters": numeric_parameters(model)}
+                     "parameters": parameters[key]}
         print(f"{key}: four current test files, mean FINAL MAE {data[key]['mean']:.2f} ms")
     if before != dataset_hashes():
         raise RuntimeError("Original dataset changed during evidence export")

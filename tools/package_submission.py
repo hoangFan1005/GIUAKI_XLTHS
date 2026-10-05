@@ -1,14 +1,40 @@
 """Create three independent, compact submission ZIPs without expanded copies."""
 from pathlib import Path
 import re
+import json
 import zipfile
 
 ROOT = Path(__file__).resolve().parents[1]
 GUIDES = ('TT1_BINARY_SEARCH_GIAI_THICH.md', 'TT2_HISTOGRAM_GIAI_THICH.md',
           'TT3_GAUSSIAN_GIAI_THICH.md')
 
+def model_readme(number, model):
+    """Describe saved schema 2 provenance without assuming a particular optimum."""
+    if (model.get('schema_version') != 2 or model.get('parameter_selection_set') != 'train'
+            or model.get('evaluation_protocol') != 'train_selected_reused_test'
+            or model.get('historical_test_exposure') is not True or 'W_selection_test' in model):
+        raise ValueError('Unsupported model schema/provenance; regenerate schema 2 evidence')
+    text = ('Mọi model, W và endpoint_noise học từ TRAIN trước khi đọc TEST. '
+            'Protocol train_selected_reused_test; historical_test_exposure=true: TEST đã được xem '
+            'trong phát triển trước đây, không khẳng định holdout độc lập. --file chỉ fit TRAIN. '
+            'Metric chính mae_ms/rmse_ms trên FINAL regions; tolerance_boundary_* là diagnostic.\n')
+    if number == 2:
+        selection = model.get('W_selection_train', {})
+        if (selection.get('selection_set') != 'train' or
+                selection.get('evaluation_protocol') != 'train_final_calibration'):
+            raise ValueError('Unsupported TRAIN calibration provenance')
+        text += (f"TT2 chỉ Energy. W = {model['W']}; chọn trên TRAIN FINAL với final_region_mae_ms. "
+                 f"TRAIN: {', '.join(selection['evaluated_files'])}. "
+                 f"Shared optimal W: {selection['shared_optimal_W']}; tie_preference_W = {selection['tie_preference_W']}. "
+                 f"candidate_frame_selected_W = {model['candidate_frame_selected_W']}; "
+                 f"candidate_frame_f1 = {model['candidate_frame_f1']} chỉ chấm đề xuất candidate.\n")
+    return text + ('PPTX/PDF đóng kèm là previous version (trước Stage1), trừ khi đã được '
+                   'tạo lại và kiểm tra riêng. Gói CODE chính: JUPYTER_NOTEBOOKS_CODE_ONLY.zip.\n')
+
 def build_package(number):
     key = f'tt{number}'
+    model = json.loads((ROOT / 'outputs/models' / f'{key}.json').read_text(encoding='utf-8'))
+    special = model_readme(number, model)
     target = ROOT / 'submission' / f'THUAT_TOAN_{number}.zip'
     prefix = f'THUAT_TOAN_{number}/'
     with zipfile.ZipFile(target, 'w', zipfile.ZIP_DEFLATED) as archive:
@@ -77,10 +103,7 @@ def build_package(number):
             return re.sub(r'\[([^\]]+)\]\(([^\)]+)\)', replace_link, content)
         archive.writestr(prefix + 'GIAI_THICH_THUAT_TOAN.md', portable_document(GUIDES[number - 1]))
         archive.writestr(prefix + 'KET_QUA_HIEN_TAI.md', portable_document('KET_QUA_HIEN_TAI.md'))
-        special = ('TT2 chỉ Histogram Energy; không dùng Spectral Centroid. W = 20 chung; W nguyên 1–50 '
-                   'đồng tối ưu trên 4 test. LAB test tham gia chọn W, nên kết quả là test-tuned.\n'
-                   if number == 2 else 'Tham số thuật toán và noise statistics học từ TRAIN.\n')
-        archive.writestr(prefix + 'README.md', f'''# Thuật toán {number} — gói nộp
+        archive.writestr(prefix + 'README.md', f'''# Thuật toán {number} — gói Python bổ sung
 
 `main.py` cố định TT{number}. Giải nén ZIP, bổ sung dữ liệu gốc vào `data/train/` và `data/test/`, rồi chạy:
 
@@ -110,12 +133,7 @@ def main():
     (ROOT / 'submission').mkdir(exist_ok=True)
     for number in range(1, 4):
         build_package(number)
-    (ROOT / 'submission/README.md').write_text('''# Ba gói nộp độc lập
-
-Chỉ giữ ba ZIP hiện hành: `THUAT_TOAN_1.zip`, `THUAT_TOAN_2.zip`, `THUAT_TOAN_3.zip`.
-
-Mỗi ZIP có main cố định, module chung, hướng dẫn riêng thuật toán, kết quả và slide tiếng Anh. Không có WAV. Giải nén ZIP rồi thêm dữ liệu gốc để chạy trên máy cá nhân. Họ tên/MSSV bổ sung sau; đổi thư mục thành `MaTheSV-HoTen` trước nộp.
-''', encoding='utf-8')
+    # Preserve submission/README.md and its primary notebook package documentation.
 
 if __name__ == '__main__':
     main()

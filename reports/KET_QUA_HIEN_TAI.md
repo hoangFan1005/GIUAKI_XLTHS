@@ -62,9 +62,11 @@ Noise floor học từ 497 khung silence TRAIN: mean ≈ 0.0003871108, populatio
 
 TT1 có T ≈ 0.0010293375. TT3 có T ≈ 0.0028777337. TT2 tính ngưỡng Energy riêng từng WAV bằng `(W*M1 + M2)/(W+1)`.
 
-Train-F1 proposal của TT2 là **W = 1**. Bước chọn W cuối khảo sát mọi W nguyên **1–50** trên 4 test bằng FINAL-region MAE; cả 50 giá trị đồng tối ưu, giữ **W = 20** đã chọn trước đó khi đồng hạng. W20 chưa phải nghiệm tối ưu duy nhất.
+TT2 đề xuất candidate **W1** bằng TRAIN frame F1 (0.898698, không phải F1 của FINAL W20). Sau đó [fit_training_model()](../app/pipeline.py#L229) khảo sát W nguyên **1–50** trên FINAL regions của `phone_F1`, `phone_M1`, `studio_F1`, `studio_M1`: 200 dòng TRAIN. Kết quả lưu hiện tại: cả 50 W đồng tối ưu; mean FINAL MAE TRAIN **13.747165532879801 ms**. Chọn **W20** bằng `tie_preference_W=20` cố định. Đây là kết quả của TRAIN hiện tại, không phải giả định mọi dataset đều hòa. Manifest `W_selection_train` ghi `selection_set=train`, `evaluation_protocol=train_final_calibration` và tên TRAIN đã chấm.
 
-LAB test tham gia chọn W theo yêu cầu của người dùng. Do đó, kết quả TT2 được ghi `test_tuned_not_independent`, không phải đánh giá độc lập. TT1/TT3 và noise statistics chỉ học TRAIN. Dự đoán với model cố định không dùng GT để sửa biên và không có rule riêng theo filename.
+`candidate_frame_selected_W`, `candidate_frame_f1`, `candidate_frame_selection_scores`, `candidate_cleanup_records` chỉ mô tả bước candidate. `W`/`finalW` và manifest TRAIN mô tả lựa chọn FINAL; không gán candidate F1 cho W20.
+
+Mọi model, W và `endpoint_noise` được fit từ bốn TRAIN trước khi đọc TEST. Ba thuật toán dùng `schema_version=2`, `parameter_selection_set=train`, `evaluation_protocol=train_selected_reused_test`, `historical_test_exposure=true`. TEST đã được xem trong phát triển trước đây và được dùng lại để chấm; không gọi đây là holdout mới hoặc độc lập. Chạy một file (`--file`) vẫn fit TRAIN trước, không hiệu chỉnh bằng TEST.
 
 ## 6. Cách đọc metric
 
@@ -74,7 +76,7 @@ Với một vùng nói, lỗi có dấu là `1000*(predicted - ground_truth)`; �
 
 `RMSE = sqrt((start_error² + end_error²)/2)`.
 
-Nhiều vùng được ghép theo thời gian. Thiếu/thừa vùng làm MAE chính không xác định; matched-only MAE được ghi riêng. Trong CSV, `mae_ms` và `boundary_MAE_ms` là metric chính. Cột phụ `boundary_mae_ms` chỉ ghép trong dung sai 100 ms và có thể bỏ biên sai quá xa; không dùng thay MAE chính.
+Nhiều vùng được ghép theo thời gian. Thiếu/thừa vùng làm MAE chính không xác định. Metric chính trong schema 2 là `mae_ms` / `rmse_ms`. Diagnostic sự kiện trong dung sai 100 ms dùng `tolerance_boundary_*`; `matched_boundary_mae_ms` chấm các vùng ghép theo thứ tự. Các diagnostic này không thay thế MAE chính khi thiếu/thừa vùng hoặc biên sai xa.
 
 ## 7. Bằng chứng và tài liệu
 
@@ -88,3 +90,11 @@ Nhiều vùng được ghép theo thời gian. Thiếu/thừa vùng làm MAE ch�
 - [Giải thích TT3](TT3_GAUSSIAN_GIAI_THICH.md)
 
 Các bảng là kết quả pipeline hiện hành đã tính sau chuyển TT2 Energy-only. Việc dọn thư mục, tách tài liệu và đổi ngôn ngữ slide không thay đổi code thuật toán.
+
+## 8. Stage1: thay đổi và bằng chứng hồi quy
+
+Stage1 tách detector khỏi chấm LAB, fit toàn bộ TRAIN trước TEST, hiệu chỉnh W trên TRAIN FINAL, khóa mô hình khi đánh giá và chuyển sang schema 2. Các main Python hiện hành đã đồng bộ.
+
+[Bảng before/after](../outputs/tables/all_all_dataset/regression_before_after.csv) lưu đối chiếu 24 file/thuật toán. Lượt tái tạo Python do tác vụ tích hợp chạy xác nhận FINAL regions, LOW/HIGH, MAE/RMSE, frame F1, số vùng và status không đổi so với baseline. Mean TEST vẫn 20.00 / 13.75 / 12.50 ms; năm trường hợp END muộn trong mục 4 vẫn còn. Thay đổi giao thức không tạo tuyên bố cải thiện độ chính xác.
+
+Notebook và ZIP CODE đang được tác vụ tích hợp tái tạo/kiểm tra kernel mới; phần tài liệu này không tự xác nhận kết quả kernel. PPTX/PDF và THUAT_TOAN_1/2/3.zip là previous version trước Stage1.

@@ -2,6 +2,14 @@
 
 Cập nhật theo code hiện tại ngày 05/10/2026. Tài liệu này mô tả TT3 đang chạy: thống kê trên normalized STE tuyến tính, tìm giao điểm hai mật độ Gaussian, sau đó lấy biên bằng xử lý chung.
 
+## Giao thức Stage1 và schema 2
+
+Mọi model, W và `endpoint_noise` được fit từ bốn TRAIN trước khi đọc TEST. Ba thuật toán dùng `schema_version=2`, `parameter_selection_set=train`, `evaluation_protocol=train_selected_reused_test`, `historical_test_exposure=true`. TEST đã được xem trong phát triển trước đây và được dùng lại để chấm; không gọi đây là holdout mới hoặc độc lập. Chạy một file (`--file`) vẫn fit TRAIN trước, không hiệu chỉnh bằng TEST.
+
+Hàm công khai [detect_regions()](../app/pipeline.py#L132) nhận `(algorithm, features, duration, params)`, không nhận LAB, nhãn hay filename; `endpoint_noise` phải được fit sẵn. [predict_and_score()](../app/pipeline.py#L174) gọi detector rồi chấm với LAB. CLI xuất metric vẫn yêu cầu WAV/LAB cùng tên.
+
+Schema 2 dùng `mae_ms`/`rmse_ms` làm metric chính. `final_region_mae_ms` là MAE của mỗi dòng calibration W trên TRAIN. Các sự kiện ghép trong dung sai dùng `tolerance_boundary_*`; `matched_boundary_mae_ms` là diagnostic ghép vùng theo thứ tự. Alias cũ `boundary_MAE_ms` đã bỏ để tránh hai cột chỉ khác hoa/thường.
+
 ## 1. Ý tưởng dễ hiểu
 
 Silence thường có năng lượng nhỏ; speech thường lớn hơn và phân tán hơn. TT3 dùng dữ liệu train có nhãn để ước lượng hai cặp mean/std, xem mỗi lớp như một phân phối chuẩn.
@@ -256,13 +264,13 @@ START/END lấy theo support mẫu thật: START ở đầu khung bắt đầu, 
 | Hàm / file | Vai trò |
 |---|---|
 | [main_tt3.py](../main_tt3.py) | Điểm chạy riêng TT3 |
-| [run_experiment()](../app/pipeline.py#L336) | Đọc train/test, fit, xuất model/ảnh/bảng |
-| [prepare_records()](../app/pipeline.py#L110) | STE và nhãn tâm khung |
+| [run_experiment()](../app/pipeline.py#L417) | Đọc train/test, fit, xuất model/ảnh/bảng |
+| [prepare_records()](../app/pipeline.py#L114) | STE và nhãn tâm khung |
 | `population_statistics` | Tự tính mean/std chia N |
 | `equal_density_threshold` | Floor sigma, lập hệ số, giải và chọn nghiệm |
 | `fit` | Gom sil/speech train và lưu provenance/hướng |
 | `predict` | Áp dụng ngưỡng để tạo candidate mask |
-| [predict_and_score()](../app/pipeline.py#L128) | Candidate → High/Low → final → metric |
+| [predict_and_score()](../app/pipeline.py#L174) | Gọi detector LAB-free rồi chấm FINAL với LAB |
 | [regions_to_mask()](../core/endpoints.py#L78) | Đổi final regions thành nhãn khung để chấm frame metric |
 
 Tổng, phương sai, mean, nghiệm và metric được triển khai trực tiếp. `math.sqrt` và `math.log` là phép toán cơ bản; code không gọi `numpy.mean`, `numpy.std`, Gaussian fitting hoặc VAD có sẵn.
@@ -299,7 +307,7 @@ END vẫn muộn và status có `boundary inside silence`. Gaussian + hysteresis
 | studio_M2 | 7.49 ms |
 | Trung bình | **12.50 ms** |
 
-Trong CSV, **`mae_ms` / `boundary_MAE_ms` là metric chính**. Cột chữ thường `boundary_mae_ms` là metric sự kiện phụ chỉ ghép biên trong dung sai 100 ms; không dùng nó để che lỗi endpoint lớn.
+Metric chính trong schema 2 là `mae_ms` / `rmse_ms`. Diagnostic sự kiện trong dung sai 100 ms dùng `tolerance_boundary_*`; `matched_boundary_mae_ms` chấm các vùng ghép theo thứ tự. Các diagnostic này không thay thế MAE chính khi thiếu/thừa vùng hoặc biên sai xa.
 
 ## 10. Chạy và xem output
 

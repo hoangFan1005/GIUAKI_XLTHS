@@ -12,7 +12,7 @@ Mỗi sinh viên có một notebook riêng, chứa toàn bộ code và kết qu�
 
 [Hướng dẫn mở/chạy notebook](notebooks/README.md) · [ZIP chỉ chứa 3 notebook](submission/JUPYTER_NOTEBOOKS_CODE_ONLY.zip).
 
-Kết quả số và đồ thị nằm trong `.ipynb`; xem không cần âm thanh. Gói mã nguồn notebook không chứa WAV/LAB. Mở trên máy này bằng `.\.venv\Scripts\python.exe -m jupyterlab notebooks` từ thư mục dự án. Các lệnh và ZIP Python ở các mục dưới là phiên bản trước khi bổ sung yêu cầu notebook.
+Kết quả số và đồ thị nằm trong `.ipynb`; xem không cần âm thanh. Gói mã nguồn notebook không chứa WAV/LAB. Mở trên máy này bằng `.\.venv\Scripts\python.exe -m jupyterlab notebooks` từ thư mục dự án. Các lệnh main Python dưới đây đã đồng bộ Stage1/schema 2. PPTX/PDF và ba ZIP Python là **previous version (trước Stage1)**; gói CODE chính hiện dùng notebook ZIP ở trên.
 
 ## 1. Chạy chương trình
 
@@ -51,7 +51,7 @@ Mỗi tài liệu gồm ý tưởng, ví dụ tính tay, công thức, các hàm
 
 [Kết quả hiện tại và giới hạn](reports/KET_QUA_HIEN_TAI.md) tổng hợp 4 test và toàn bộ 8 WAV.
 
-TT2 hiện chỉ dùng **Energy** theo yêu cầu mới của thầy; pipeline không tính hoặc sử dụng Spectral Centroid. W = 20 dùng chung cho mọi file. Chương trình khảo sát W nguyên 1–50 trên 4 test có LAB, giữ 20 khi đồng hạng. LAB test tham gia chọn W nên kết quả TT2 ghi `test_tuned_not_independent`. TT1/TT3 và noise statistics học từ TRAIN.
+TT2 chỉ dùng **Energy**, không Centroid/F0. W20 chọn trên bốn TRAIN FINAL, khảo sát W1–50 với tie preference cố định 20; tất cả 50 W hòa trong TRAIN hiện tại (mean 13.747165532879801 ms). Candidate frame-F1 đề xuất W1 riêng. Mọi model/noise/W fit TRAIN trước TEST. Schema 2 ghi `train_selected_reused_test` và `historical_test_exposure=true`: TEST có lịch sử được xem, không khẳng định độc lập.
 
 ## 3. Bố trí thư mục
 
@@ -67,7 +67,7 @@ GIUAKI_XLTHS/
   reports/          Ba hướng dẫn riêng và kết quả hiện tại
   outputs/          Model, bảng batch, hình và prediction
   slides/           Ba bộ slide tiếng Anh, PPTX/PDF
-  submission/       Ba ZIP nộp bài độc lập
+  submission/       ZIP notebook CODE chính và ZIP Python cũ
   tests/            Bộ kiểm tra hiện có
   tools/            Công cụ tái tạo slide và ZIP
   notebooks/        Ba notebook độc lập, kèm outputs đã chạy
@@ -91,7 +91,7 @@ GIUAKI_XLTHS/
 
 MAE chính chỉ dùng START/END của FINAL speech regions. Candidate/debug không tham gia metric chính. HIGH/LOW thực sự tham gia detection. GT đỏ, prediction xanh, STE chuẩn hóa cam. Không smoothing STE theo thời gian; histogram TT2 được làm trơn theo bins.
 
-## 5. Slide tiếng Anh và gói nộp
+## 5. Slide tiếng Anh và ZIP Python — previous version
 
 | Thuật toán | PowerPoint | PDF | ZIP |
 |---|---|---|---|
@@ -99,8 +99,10 @@ MAE chính chỉ dùng START/END của FINAL speech regions. Candidate/debug kh�
 | TT2 | [PPTX](slides/THUAT_TOAN_2/THUAT_TOAN_2.pptx) | [PDF](slides/THUAT_TOAN_2/THUAT_TOAN_2.pdf) | [ZIP](submission/THUAT_TOAN_2.zip) |
 | TT3 | [PPTX](slides/THUAT_TOAN_3/THUAT_TOAN_3.pptx) | [PDF](slides/THUAT_TOAN_3/THUAT_TOAN_3.pdf) | [ZIP](submission/THUAT_TOAN_3.zip) |
 
-Mỗi bộ 7 slide; PPTX giữ biểu đồ/bảng chỉnh sửa được. Nội dung slide và speaker notes bằng tiếng Anh. Tài liệu giải thích code bằng tiếng Việt.
+Các PPTX/PDF và THUAT_TOAN_1/2/3.zip dưới đây là **previous version, trước Stage1**, chưa được tái tạo với giao thức mới. Gói CODE chính là `JUPYTER_NOTEBOOKS_CODE_ONLY.zip`. Mỗi bộ 7 slide; PPTX giữ biểu đồ/bảng chỉnh sửa được. Nội dung slide và speaker notes bằng tiếng Anh. Tài liệu giải thích code bằng tiếng Việt.
 
 ZIP có `main.py` cố định thuật toán, module chung, hướng dẫn tương ứng, kết quả và slide; không có WAV. Giải nén rồi thêm 4 cặp WAV/LAB vào mỗi thư mục `data/train/`, `data/test/` để demo. Họ tên/MSSV bổ sung sau; trước nộp đổi tên thư mục thành `MaTheSV-HoTen`.
 
 Các công cụ trong `tools/` dùng khi cần tái tạo slide/ZIP; xem [tools/README.md](tools/README.md). Chạy main không cần Node hoặc thư viện tạo PowerPoint.
+
+Detector công khai `detect_regions` không nhận LAB/nhãn/filename và yêu cầu `endpoint_noise` fit sẵn; CLI chấm vẫn cần WAV/LAB. `--file` fit TRAIN trước, không hiệu chỉnh TEST. Metric chính schema 2: `mae_ms`/`rmse_ms`; calibration: `final_region_mae_ms`; diagnostic: `tolerance_boundary_*` và `matched_boundary_mae_ms`.

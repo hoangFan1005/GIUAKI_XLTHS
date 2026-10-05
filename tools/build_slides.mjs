@@ -38,8 +38,8 @@ const flows = [
   [commonFirst, 'Compute and normalize STE', 'Learn threshold by binary search',
     'Create candidate speech using the learned threshold', endpointFlow],
   [commonFirst, 'Compute Energy as mean squared amplitude',
-    'Build Energy histogram and compare W=1..50', endpointFlow,
-    'Select one W using four test LABs'],
+    'Build Energy histogram for candidate speech', endpointFlow,
+    'Select global W on TRAIN FINAL regions'],
   [commonFirst, 'Compute and normalize STE', 'Estimate training mean and standard deviation',
     'Create candidate speech using the Gaussian threshold', endpointFlow],
 ];
@@ -74,7 +74,9 @@ function setNotes(slide, value) {
 }
 function endpointNotes(d) {
   const n = d.parameters.endpoint_noise;
-  return 'Common endpoint refinement uses raw normalized STE. LOW continues speech, ' +
+  return `Saved schema ${d.parameters.schema_version}; protocol ${d.parameters.evaluation_protocol}; ` +
+    `historical TEST exposure=${d.parameters.historical_test_exposure}. Models and noise were fitted on TRAIN before TEST. ` +
+    'Common endpoint refinement uses raw normalized STE. LOW continues speech, ' +
     'and a HIGH frame with the algorithm seed confirms speech. Noise calibration uses training silence only: ' +
     `mean ${n.noise_mean}, population standard deviation ${n.noise_std}, ` +
     `Q95 ${n.noise_q95}, and mean plus three standard deviations ${n.noise_upper}. ` +
@@ -99,12 +101,13 @@ function algorithmNotes(index, d) {
       `The histogram uses ${q.bins} bins ` +
       `and smoothing radius ${q.smooth_radius}. The weighted threshold follows the histogram adaptation ` +
       'of Giannakopoulos, while framing follows the assignment at 25 ms / 10 ms. ' +
-      `The training proposal is W=${q.training_selected_W}. One global W=${q.W} is then selected ` +
-      'using the four test LABs and FINAL region endpoint error. The rule first rejects invalid region counts, ' +
-      'then minimizes the worst per-file regret and mean MAE, and retains the previous W on ties. ' +
-      `All ${tied.length} values W=${Math.min(...tied)}..${Math.max(...tied)} tie on these files. ` +
-      `The previous W=${q.W_tie_preference} therefore remains selected. ` +
-      'These are test-tuned errors and are not independent generalization estimates. ' +
+      `Candidate frame-F1 proposal W=${q.candidate_frame_selected_W}, F1=${q.candidate_frame_f1}. ` +
+      `One global W=${q.W} is selected using TRAIN FINAL region error on ${selection.evaluated_files.join(', ')}. ` +
+      'The rule rejects invalid region counts, minimizes worst per-file regret, then mean MAE. ' +
+      `Shared optimal W values: ${tied.length ? tied.join(', ') : 'none'}. ` +
+      `Declared tie preference W=${selection.tie_preference_W}. ` +
+      `Selection set ${selection.selection_set}; protocol ${selection.evaluation_protocol}. ` +
+      'TEST was viewed historically; these reused scores are not independent holdout estimates. ' +
       `Candidate padding is ${q.padding_ms} ms. Candidate padding does not set FINAL endpoints. ` +
       'Sources: core/features.py, algorithms/tt2_histogram.py, app/weight_selection.py, outputs/models/tt2.json, ' +
       'outputs/tables/tt2_w_selection/selection.json and summary.csv; ' +
@@ -152,7 +155,7 @@ for (let index=0; index<3; index++) {
       line:{fill:'#1766BD',width:2},tail:{type:'triangle',width:'sm',length:'sm'}});
     previous=box;
   });
-  text(slide, index===1 ? `Train W=${d.parameters.training_selected_W}. Global W=${d.parameters.W}. All W=1..50 tie.` :
+  text(slide, index===1 ? `Candidate W=${d.parameters.candidate_frame_selected_W}. TRAIN FINAL W=${d.parameters.W}.` :
     `Learned threshold: ${d.threshold.toPrecision(7)}`,85,575,1100,48,28,'#1766BD');
   setNotes(slide, algorithmNotes(index,d));
 
@@ -185,7 +188,7 @@ for (let index=0; index<3; index++) {
     [['Waveform','#777777'],['STE','#DD8B12'],['HIGH','#8E44AD'],['LOW','#148F77'],
       ['Ground truth','#D62728'],['FINAL','#1766BD']].forEach(([value,color],k)=>
       text(slide,value,65+k*190,570,185,40,24,color));
-    const explanation=index===1 ? 'Test LABs tune W. MAE is not independent.' :
+    const explanation=index===1 ? 'TRAIN selects W. TEST was viewed historically.' :
       f.name.startsWith('phone_') ? 'Noise tails can extend speech.' : 'Framing and thresholds affect boundary error.';
     text(slide,`Time (s)\n${explanation}`,65,613,1120,65,24);
     setNotes(slide, `Sources: outputs/tables/${key}/test_metrics.csv and data/test/${f.name}.wav, ` +
@@ -208,7 +211,7 @@ for (let index=0; index<3; index++) {
   }
   text(slide,`Mean MAE: ${d.mean.toFixed(2)} ms`,65,555,510,45,28,'#1766BD',true);
   text(slide,comments[index],600,555,610,45,28);
-  if (index===1) text(slide,'Test LABs tune W. MAE is not independent.',65,615,1150,38,24);
+  if (index===1) text(slide,'TRAIN selects W. TEST was viewed historically.',65,615,1150,38,24);
   setNotes(slide,`Source: outputs/tables/${key}/test_metrics.csv. The summary is the arithmetic mean ` +
     'of the four per-file FINAL endpoint MAEs. Each file has one speech region and two endpoints. ' +
     'MAE averages absolute START/END errors, while RMSE takes the square root of the mean squared errors. ' +
