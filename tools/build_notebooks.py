@@ -743,7 +743,7 @@ Project maintainers refresh this repository's audited CODE ZIP by rebuilding wit
     code(source_function("app/pipeline.py", "summarize"))
     if algorithm == "tt2":
         md("## Global W calibration rule\n\nEvaluate integer W=1…50 on the four TRAIN LABs using the actual FINAL endpoint pipeline. Prefer valid region counts, minimize worst per-file regret, then mean MAE; tied values prefer W=20. Historical TEST sweeps are prior development evidence only; they are not rerun for calibration.")
-        code('W_CANDIDATES = tuple(float(w) for w in range(1, 51))\nERROR_EPS_MS = 1e-8\n\n' + functions("app/weight_selection.py", "select_final_weight", "sweep_final_weights"))
+        code('W_CANDIDATES = tuple(float(w) for w in range(1, 51))\nERROR_EPS_MS = 1e-8\nPOLICY_FIELDS = ("endpoint_mode", "boundary_convention", "minimum_speech_ms", "minimum_silence_ms", "padding_stage")\n\n' + functions("app/weight_selection.py", "select_final_weight", "sweep_final_weights"))
     md("## Load four TRAIN input pairs\n\nTRAIN is read first. TEST WAV/LAB reads follow calibration and model locking.")
     code(LOAD_DATA)
     md("## Fit fresh TRAIN parameters\n\nAll core model parameters and noise statistics are computed using the four TRAIN recordings.")

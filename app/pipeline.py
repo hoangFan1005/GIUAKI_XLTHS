@@ -1,5 +1,6 @@
 """Học tham số bằng train, dự đoán test, lưu kết quả và điều phối demo."""
 import csv
+import hashlib
 import json
 import math
 import random
@@ -270,15 +271,18 @@ def predict_and_score(algorithm, record, params):
                 ground_truth_boundaries=expected_boundaries, diagnostic=diagnostic)
 
 
-def fit_training_model(algorithm, train_records):
+def fit_training_model(algorithm, train_records, *, endpoint_mode='enhanced'):
     """Fit and lock parameters and FINAL W from supplied prepared TRAIN only.
 
     Input: prepared records with explicit split=train; array records need no
     path and support future folds. Known TEST/external paths are rejected.
-    Output: (schema-v2 model, FINAL W sweep rows), empty rows for other methods.
+    Output: (schema-v3 model, FINAL W sweep rows), empty rows for other methods.
     No files are loaded here, including during the histogram calibration.
-    TT3 must fit speech-high for the current FINAL energy hysteresis.
+    Enhanced TT3 must fit speech-high for FINAL energy hysteresis; core
+    retains either native Gaussian decision direction.
     """
+    if endpoint_mode not in ('core', 'enhanced'):
+        raise ValueError(f'Unknown endpoint_mode: {endpoint_mode}')
     if not train_records:
         raise ValueError('fit_training_model requires TRAIN records')
     for record in train_records:
@@ -291,21 +295,25 @@ def fit_training_model(algorithm, train_records):
     elif algorithm == 'tt3':
         model = tt3.fit(train_records)
         # Do not lock a raw Gaussian model whose inequality contradicts HIGH.
-        if model.get('speech_direction', 'high') != 'high':
+        if endpoint_mode == 'enhanced' and model.get('speech_direction', 'high') != 'high':
             raise ValueError("FINAL endpoint detection requires TT3 speech_direction='high'; "
                              "TRAIN speech mean is below silence mean")
     elif algorithm in ('tt2', 'tt2-context'):
         model = tt2.fit(train_records, variant='context' if algorithm == 'tt2-context' else 'source')
     else:
         raise ValueError(f'Unknown algorithm: {algorithm}')
-    model.update(schema_version=2, metrics_schema_version=2,
+    model.update(schema_version=3, metrics_schema_version=2, endpoint_mode=endpoint_mode,
                  parameter_selection_set='train', evaluation_protocol='train_selected_reused_test',
                  historical_test_exposure=True, training_files=[record['name'] for record in train_records],
                  frame_ms=FRAME_MS, hop_ms=HOP_MS, sample_rounding=SAMPLE_ROUNDING,
                  minimum_internal_silence_ms=MIN_SILENCE_SECONDS*1000,
-                 minimum_speech_ms=MIN_SPEECH_SECONDS*1000,
-                 endpoint_noise=fit_noise_floor(train_records),
-                 endpoint_policy='hysteresis final regions; no fixed final padding',
+                 minimum_speech_ms=0. if endpoint_mode == 'core' else MIN_SPEECH_SECONDS*1000,
+                 minimum_silence_ms=MIN_SILENCE_SECONDS*1000,
+                 endpoint_noise=fit_noise_floor(train_records) if endpoint_mode == 'enhanced' else None,
+                 endpoint_policy='native decisions; merge internal support gaps below 200 ms; no duration filter or final padding' if endpoint_mode == 'core' else 'hysteresis final regions; no fixed final padding',
+                 feature_rule='Energy (sum of squared samples)' if algorithm == 'tt2' else 'normalized STE',
+                 decision_rule='Energy > threshold' if algorithm == 'tt2' else 'STE <= threshold' if model.get('speech_direction') == 'low' else 'STE >= threshold',
+                 padding_stage='excluded from core FINAL' if endpoint_mode == 'core' else 'candidate diagnostics only' if algorithm == 'tt2' else 'none',
                  boundary_convention='union of active frame supports')
     sweep_rows = []
     if algorithm == 'tt2':
@@ -330,6 +338,13 @@ def fit_training_model(algorithm, train_records):
         model.update(candidate_frame_selected_W=None, candidate_frame_f1=None,
                      candidate_frame_selection_scores=[], candidate_cleanup_records=None,
                      candidate_frame_selection_applicable=False, finalW=model['W'], tie_preference_W=None)
+    # Hash the complete locked model before attaching the digest to itself or
+    # its manifest. This includes numeric calibration and TRAIN provenance.
+    digest = hashlib.sha256(json.dumps(model, sort_keys=True, ensure_ascii=False,
+                                       allow_nan=False).encode('utf-8')).hexdigest()
+    model['calibration_digest'] = digest
+    if algorithm == 'tt2':
+        model['W_selection_train']['calibration_digest'] = digest
     return model, sweep_rows
 
 

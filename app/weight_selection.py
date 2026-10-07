@@ -8,6 +8,8 @@ from app.config import HISTOGRAM_W_TIE_PREFERENCE
 
 W_CANDIDATES=tuple(float(w) for w in range(1,51))
 ERROR_EPS_MS=1e-8
+POLICY_FIELDS=('endpoint_mode','boundary_convention','minimum_speech_ms',
+               'minimum_silence_ms','padding_stage')
 
 def select_final_weight(rows,tie_preference_W=HISTOGRAM_W_TIE_PREFERENCE):
     """Input: one MAE/count row per (W,file). Output: shared W and audit tables.
@@ -17,6 +19,9 @@ def select_final_weight(rows,tie_preference_W=HISTOGRAM_W_TIE_PREFERENCE):
     if unavailable, choose the smallest W. No candidate/debug boundary is scored.
     """
     if not rows:raise ValueError('W selection needs evaluation rows')
+    policy={key:rows[0][key] for key in POLICY_FIELDS if key in rows[0]}
+    if any({key:row[key] for key in POLICY_FIELDS if key in row} != policy for row in rows):
+        raise ValueError('Each candidate W must use the same endpoint policy')
     grouped={}
     for row in rows:
         w=row['W'];name=row['filename'];mae=row['final_region_mae_ms']
@@ -60,7 +65,7 @@ def select_final_weight(rows,tie_preference_W=HISTOGRAM_W_TIE_PREFERENCE):
             better=(candidate['W']!=tie_preference_W,candidate['W'])<(chosen['W']!=tie_preference_W,chosen['W'])
         if better:chosen=candidate;best_objectives=objectives
     shared=set.intersection(*(set(v['optimal_W']) for v in best_by_file.values()))
-    return dict(selected_W=chosen['W'],tie_preference_W=tie_preference_W,selected_summary=chosen,
+    return dict(**policy,selected_W=chosen['W'],tie_preference_W=tie_preference_W,selected_summary=chosen,
         summaries=summaries,best_by_file=best_by_file,shared_optimal_W=sorted(shared),
         candidate_W=sorted(grouped),selection_set='train',evaluation_protocol='train_final_calibration',
         selection_rule='valid regions; minimum worst per-file regret; mean MAE; declared W preference on ties; smallest W otherwise')
@@ -75,12 +80,24 @@ def sweep_final_weights(records,model,predictor,candidates=W_CANDIDATES,
     if not records:raise ValueError('W sweep needs annotated TRAIN recordings')
     if any(record.get('split')!='train' for record in records):
         raise ValueError('W sweep requires explicit TRAIN provenance (split=train)')
+    mode=model.get('endpoint_mode','enhanced')
+    if mode not in ('core','enhanced'):raise ValueError('Unknown endpoint_mode')
+    policy=dict(endpoint_mode=mode,
+        boundary_convention=model.get('boundary_convention','union of active frame supports'),
+        minimum_speech_ms=model.get('minimum_speech_ms',0. if mode=='core' else 100.),
+        minimum_silence_ms=model.get('minimum_silence_ms',model.get('minimum_internal_silence_ms',200.)),
+        padding_stage=model.get('padding_stage','excluded from core FINAL' if mode=='core' else 'candidate diagnostics only'))
     rows=[]
     for w in candidates:
         params=dict(model,W=float(w))
         for record in records:
             result=predictor('tt2',record,params);metrics=result['metrics'];diag=result['diagnostic']
-            rows.append(dict(filename=record['name'],W=float(w),
+            if diag.get('endpoint_mode','enhanced') != mode:
+                raise ValueError('Predictor endpoint_mode disagrees with calibration model')
+            for key in ('minimum_speech_ms','minimum_silence_ms','padding_stage'):
+                if key in diag and diag[key] != policy[key]:
+                    raise ValueError(f'Predictor {key} disagrees with calibration model')
+            rows.append(dict(**policy,filename=record['name'],W=float(w),
                 ground_truth_region_count=metrics['ground_truth_region_count'],predicted_region_count=metrics['predicted_region_count'],
                 final_region_mae_ms=metrics['mae_ms'],status=metrics['status'],
                 start_error_ms=metrics['start_error_ms'],end_error_ms=metrics['end_error_ms'],
@@ -90,6 +107,6 @@ def sweep_final_weights(records,model,predictor,candidates=W_CANDIDATES,
                 final_regions=str(result['final_regions'])))
     result=select_final_weight(rows,tie_preference_W)
     result.update(evaluated_files=[record['name'] for record in records],
-                  endpoint_policy='fixed raw STE hysteresis; final START/END only; no padding endpoints',
+                  endpoint_policy=model.get('endpoint_policy','fixed raw STE hysteresis; final START/END only; no padding endpoints'),
                   note='W was calibrated using these TRAIN LABs; TEST has historical exposure and is reused for scoring, so no holdout independence is claimed.')
     return result,rows

@@ -150,6 +150,43 @@ class DetectionContractTests(unittest.TestCase):
 
 
 class TrainingProtocolTests(unittest.TestCase):
+    def test_core_fit_skips_noise_calibration(self):
+        for algorithm in ('tt1', 'tt3'):
+            with self.subTest(algorithm=algorithm), patch.object(
+                    pipeline, 'fit_noise_floor', side_effect=AssertionError('core noise fit')):
+                model, rows = pipeline.fit_training_model(algorithm, [synthetic_record()], endpoint_mode='core')
+            self.assertIsNone(model['endpoint_noise'])
+            self.assertEqual(model['minimum_speech_ms'], 0)
+            self.assertEqual(model['endpoint_mode'], 'core')
+            self.assertEqual(rows, [])
+
+    def test_core_accepts_speech_low_gaussian_but_enhanced_rejects_it(self):
+        record = synthetic_record()
+        record['features']['ste_norm'] = [1. - value for value in record['features']['ste_norm']]
+        model, _ = pipeline.fit_training_model('tt3', [record], endpoint_mode='core')
+        self.assertEqual(model['speech_direction'], 'low')
+        result = pipeline.predict_and_score('tt3', record, model)
+        self.assertEqual(result['final_regions'], [(.1, .515)])
+        with self.assertRaisesRegex(ValueError, 'speech_direction'):
+            pipeline.fit_training_model('tt3', [record], endpoint_mode='enhanced')
+
+    def test_both_policies_sweep_final_train_regions_and_export_null_thresholds(self):
+        for mode in ('core', 'enhanced'):
+            with self.subTest(mode=mode):
+                model, rows = pipeline.fit_training_model('tt2', self.training, endpoint_mode=mode)
+                selection = model['W_selection_train']
+                self.assertEqual(len(rows), 200)
+                self.assertEqual(selection['endpoint_mode'], mode)
+                self.assertEqual(model['W'], selection['selected_W'])
+                self.assertEqual(len(model['calibration_digest']), 64)
+                self.assertTrue(all(row['endpoint_mode'] == mode for row in rows))
+                if mode == 'core':
+                    self.assertTrue(all(row['low_ste_threshold'] is None and
+                                        row['high_ste_threshold'] is None for row in rows))
+                    with tempfile.TemporaryDirectory() as folder:
+                        pipeline.write_csv(Path(folder) / 'sweep.csv', rows)
+                        pipeline.write_json(Path(folder) / 'selection.json', selection)
+
     @classmethod
     def setUpClass(cls):
         cls.training = pipeline.prepare_records(pipeline.load_audio_folder(TRAIN_DIR))
@@ -187,7 +224,7 @@ class TrainingProtocolTests(unittest.TestCase):
         self.assertNotIn('train_frame_f1', model)
         self.assertNotIn('selection_scores', model)
         self.assertNotIn('W_selection_test', model)
-        self.assertEqual(model['schema_version'], 2)
+        self.assertEqual(model['schema_version'], 3)
         self.assertEqual(model['metrics_schema_version'], 2)
         self.assertEqual(model['parameter_selection_set'], 'train')
         self.assertEqual(model['evaluation_protocol'], 'train_selected_reused_test')
@@ -209,15 +246,20 @@ class TrainingProtocolTests(unittest.TestCase):
 
     def test_changed_test_lab_does_not_affect_model_noise_or_weight(self):
         self.require_fit()
-        model, _ = pipeline.fit_training_model('tt2', self.training)
         record = pipeline.prepare_records(pipeline.load_audio_folder(TEST_DIR))[0]
-        before = json.dumps(model, sort_keys=True)
-        first = pipeline.predict_and_score('tt2', record, model)
         modified = dict(record, intervals=[(0., record['duration'], 'sil')], labels=[0] * len(record['labels']))
-        second = pipeline.predict_and_score('tt2', modified, model)
-        self.assertEqual(first['final_regions'], second['final_regions'])
-        self.assertNotEqual(first['metrics']['mae_ms'], second['metrics']['mae_ms'])
-        self.assertEqual(before, json.dumps(model, sort_keys=True))
+        for mode in ('core', 'enhanced'):
+            with self.subTest(mode=mode):
+                model, _ = pipeline.fit_training_model('tt2', self.training, endpoint_mode=mode)
+                before = json.dumps(model, sort_keys=True)
+                first = pipeline.predict_and_score('tt2', record, model)
+                second = pipeline.predict_and_score('tt2', modified, model)
+                self.assertEqual(first['final_regions'], second['final_regions'])
+                self.assertEqual(first['mask'], second['mask'])
+                self.assertEqual(first['diagnostic'], second['diagnostic'])
+                self.assertNotEqual(first['metrics']['ground_truth_region_count'],
+                                    second['metrics']['ground_truth_region_count'])
+                self.assertEqual(before, json.dumps(model, sort_keys=True))
 
     def test_single_file_fits_before_target_read_and_never_reloads_all_test(self):
         # Keep the real fits/scorers; suppress only artifacts and graphics.

@@ -177,7 +177,7 @@ def second(value):
                             exec(compile(source, "<generated-notebook>", "exec"), namespace)
                     self.assertEqual(checked, ["test"])
                     model = namespace["MODEL"]
-                    self.assertEqual(model["schema_version"], 2)
+                    self.assertEqual(model["schema_version"], 3)
                     self.assertEqual(model["parameter_selection_set"], "train")
                     self.assertEqual(model["evaluation_protocol"], "train_selected_reused_test")
                     self.assertIs(model["historical_test_exposure"], True)
@@ -252,6 +252,25 @@ def executed_plot_notebook():
 
 
 class NotebookAuditTests(unittest.TestCase):
+    def test_schema_three_audit_validates_mode_and_keeps_schema_two_compatible(self):
+        model = dict(schema_version=3, metrics_schema_version=2, parameter_selection_set='train',
+                     evaluation_protocol='train_selected_reused_test', historical_test_exposure=True,
+                     training_files=list(runner.TRAIN_NAMES), endpoint_mode='core',
+                     minimum_speech_ms=0., minimum_silence_ms=200., endpoint_noise=None,
+                     boundary_convention='union of active frame supports', padding_stage='excluded from core FINAL')
+        runner.audit_model_protocol(model, runner.model_digest(model))
+        selected = dict(model, W=20., finalW=20., W_selection_train=dict(
+            endpoint_mode='enhanced', minimum_speech_ms=100., minimum_silence_ms=200.,
+            boundary_convention='union of active frame supports', padding_stage='candidate diagnostics only',
+            selected_W=20.))
+        with self.assertRaisesRegex(ValueError,'policy'):
+            runner.audit_model_protocol(selected, runner.model_digest(selected))
+        for changes in ({'endpoint_mode':'unknown'}, {'minimum_speech_ms':100.},
+                        {'endpoint_noise':{'noise_q95':.1}}, {'padding_stage':'candidate diagnostics only'}):
+            damaged = dict(model, **changes)
+            with self.subTest(changes=changes), self.assertRaisesRegex(ValueError,'policy|mode'):
+                runner.audit_model_protocol(damaged, runner.model_digest(damaged))
+
     def test_source_bound_audit_rejects_changed_code_even_when_only_a_comment_changes(self):
         notebook = executed_plot_notebook()
         notebook.cells[0].source += '\n# Added after execution.'

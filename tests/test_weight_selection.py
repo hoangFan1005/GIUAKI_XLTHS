@@ -8,6 +8,18 @@ def row(weight,name,error,gt=1,pred=1):
                 ground_truth_region_count=gt,predicted_region_count=pred)
 
 class FinalWeightSelectionTests(unittest.TestCase):
+    def test_mixed_endpoint_policies_cannot_select_one_shared_weight(self):
+        rows=[dict(row(1,'a',1),endpoint_mode='core'),
+              dict(row(20,'a',0),endpoint_mode='enhanced')]
+        with self.assertRaisesRegex(ValueError,'policy'):
+            self.select(rows)
+
+    def test_primary_mean_is_undefined_with_one_invalid_count(self):
+        result=self.select([row(1,'a',None,pred=2),row(1,'b',10)])
+        self.assertIsNone(result['selected_summary']['mean_MAE_ms'])
+        self.assertEqual(result['selected_summary']['invalid_files'],1)
+        self.assertEqual(result['selected_summary']['valid_files_mean_MAE_ms'],10)
+
     def select(self,rows,tie_preference=20):
         return pipeline.select_final_weight(rows,tie_preference)
 

@@ -90,7 +90,33 @@ def audit_metric_keys(scores, label, require_primary=True):
 def audit_model_protocol(model, locked_digest):
     if 'W_selection_test' in model:
         raise ValueError('New models cannot contain legacy TEST W selection')
-    expected = dict(schema_version=2, metrics_schema_version=2,
+    if model.get('schema_version') not in (2, 3):
+        raise ValueError('Model schema_version: expected schema2/3 TRAIN protocol')
+    if model['schema_version'] == 3:
+        mode = model.get('endpoint_mode')
+        if mode not in ('core', 'enhanced'):
+            raise ValueError('Model endpoint_mode: unknown endpoint mode')
+        expected_policy = dict(minimum_speech_ms=0. if mode == 'core' else 100.,
+                               minimum_silence_ms=200., boundary_convention='union of active frame supports')
+        if any(model.get(key) != value for key, value in expected_policy.items()):
+            raise ValueError('Model endpoint policy fields disagree with mode')
+        if mode == 'core' and (model.get('endpoint_noise') is not None or
+                                model.get('padding_stage') != 'excluded from core FINAL'):
+            raise ValueError('Core endpoint policy cannot apply noise or padding')
+        if mode == 'enhanced' and (model.get('endpoint_noise') is None or
+                                    model.get('padding_stage') not in ('none', 'candidate diagnostics only')):
+            raise ValueError('Enhanced endpoint policy requires TRAIN noise and candidate-only padding')
+        if 'W_selection_train' in model:
+            selection = model['W_selection_train']
+            policy_keys = ('endpoint_mode', 'boundary_convention', 'minimum_speech_ms',
+                           'minimum_silence_ms', 'padding_stage')
+            if any(selection.get(key) != model.get(key) for key in policy_keys):
+                raise ValueError('TRAIN W selection policy differs from model policy')
+            if any(model.get(key) != selection.get('selected_W') for key in ('W', 'finalW')):
+                raise ValueError('TRAIN selected W differs from locked model')
+            if selection.get('calibration_digest') != model.get('calibration_digest'):
+                raise ValueError('TRAIN selection calibration digest differs from model')
+    expected = dict(metrics_schema_version=2,
                     parameter_selection_set='train', evaluation_protocol='train_selected_reused_test',
                     historical_test_exposure=True)
     for key, value in expected.items():
