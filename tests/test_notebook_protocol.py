@@ -37,6 +37,29 @@ def tiny_dataset(root):
 
 
 class NotebookGenerationTests(unittest.TestCase):
+    def test_extracted_decision_helper_and_core_policy_execute_without_project_imports(self):
+        # Missing extraction or algorithm namespace mapping breaks real calls.
+        for algorithm in ('tt1', 'tt2', 'tt3'):
+            with self.subTest(algorithm=algorithm):
+                namespace = {}
+                exec(builder.CONFIG.format(algorithm=algorithm), namespace)
+                # Function defaults reference this constant in the TT2 setup cell.
+                namespace['W_CANDIDATES'] = (1., 3., 5., 10., 20.)
+                for cell in self.generated(algorithm)['cells']:
+                    if cell['cell_type'] != 'code':
+                        continue
+                    tree = ast.parse(''.join(cell['source']))
+                    tree.body = [n for n in tree.body if isinstance(n, (ast.FunctionDef, ast.Import, ast.ImportFrom))]
+                    exec(compile(tree, '<extracted-definitions>', 'exec'), namespace)
+                f = dict(ste_norm=[0.,.5,1.], energy=[0.,2.,4.],
+                         starts=[0.,.01,.02], ends=[.025,.035,.045])
+                p = dict(threshold=.5,speech_direction='high',endpoint_mode='core',
+                         bins=1,smooth_radius=0,W=5.,padding_frames=25)
+                raw, _ = namespace['algorithm_decision'](algorithm,f,p)
+                self.assertEqual(raw, [0,0,1] if algorithm=='tt2' else [0,1,1])
+                r = namespace['detect_regions'](algorithm,f,.045,p)
+                self.assertEqual(r['final_regions'], [(.02,.045)] if algorithm=='tt2' else [(.01,.045)])
+
     def generated(self, algorithm):
         try:
             return builder.build_notebook(algorithm)

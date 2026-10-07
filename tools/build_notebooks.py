@@ -115,8 +115,8 @@ def pipeline_stage_comments(algorithm: str) -> dict:
             ('base_threshold', 'Use the TRAIN normalized STE threshold and raw classifier seed.'
              if algorithm != 'tt2' else 'Normalize TT2 raw energy threshold and seed from unpadded raw energy decisions.'),
             ('low', 'Derive LOW/HIGH from the threshold and TRAIN silence noise statistics.'),
-            ('final_regions', 'Confirm with HIGH and continue above LOW; merge estimated support gaps below 200 ms.'),
-            ('@return', 'The 100 ms support-span filter is a heuristic; support bounds do not guarantee physical silence.')],
+            ('high', 'Confirm with HIGH and continue above LOW; merge estimated support gaps below 200 ms.'),
+            ('mode', 'The enhanced 100 ms support-span filter is a heuristic; core keeps native speech supports.')],
         'predict_and_score': [
             ('detected', 'Detect without LAB first; consult reference regions only after FINAL detection returns.'),
             ('region_scores', 'Score complete FINAL regions in time order; missing/extra regions leave primary MAE undefined.'),
@@ -206,7 +206,7 @@ def algorithm_code(algorithm: str) -> tuple[str, str]:
 
 def standalone_pipeline(algorithm: str) -> str:
     """Adapt public production functions by AST, retaining their numeric logic."""
-    tree = ast.parse(functions("app/pipeline.py", "detect_regions", "predict_and_score", "fit_training_model"))
+    tree = ast.parse(functions("app/pipeline.py", "algorithm_decision", "detect_regions", "predict_and_score", "fit_training_model"))
     class LocalAlgorithm(ast.NodeTransformer):
         def visit_Compare(self, node):
             # The public guard fixes algorithm, so omit other dispatch branches
@@ -236,7 +236,7 @@ def standalone_pipeline(algorithm: str) -> str:
 
         def visit_Attribute(self, node):
             if (isinstance(node.value, ast.Name) and node.value.id in ("tt1", "tt2", "tt3")
-                    and node.attr in ("fit", "predict")):
+                    and node.attr in ("fit", "predict", "pad_speech")):
                 return ast.copy_location(ast.Name(node.attr, ast.Load()), node)
             return self.generic_visit(node)
 

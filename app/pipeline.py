@@ -129,48 +129,85 @@ def prepare_records(audio_records, source_histogram=False):
     return records
 
 
+def algorithm_decision(algorithm: str, features: dict, params: dict) -> tuple[list[int], dict]:
+    """Return native unpadded decisions and thresholds without LAB or endpoint policy.
+
+    TT1/high TT3 include equality; low TT3 includes equality in the opposite
+    direction. TT2 uses strict raw Energy > threshold (context uses STE).
+    Existing TT2 padding diagnostics describe its candidate stage only.
+    """
+    if algorithm == 'tt1':
+        mask, diagnostic = tt1.predict(features, params), dict(threshold=params['threshold'])
+    elif algorithm == 'tt3':
+        if params.get('speech_direction', 'high') not in ('high', 'low'):
+            raise ValueError('Unknown TT3 speech_direction')
+        mask, diagnostic = tt3.predict(features, params), dict(threshold=params['threshold'])
+    elif algorithm in ('tt2', 'tt2-context'):
+        mask, diagnostic = tt2.predict(features, params)
+        if diagnostic['variant'] == 'source':
+            mask = [int(e > diagnostic['energy_threshold']) for e in features['energy']]
+    else:
+        raise ValueError(f'Unknown algorithm: {algorithm}')
+    source_histogram = algorithm in ('tt2', 'tt2-context') and diagnostic.get('variant') == 'source'
+    diagnostic.update(native_threshold=diagnostic['energy_threshold'] if algorithm in ('tt2', 'tt2-context') else params['threshold'],
+                      native_threshold_units='sum of squared samples' if source_histogram else 'normalized STE')
+    return mask, diagnostic
+
+
 def detect_regions(algorithm, features, duration, params):
     """Detect FINAL speech from features and a fitted model, without LAB or I/O.
 
     Input: algorithm, frame features/supports, duration and frozen TRAIN model.
     Output: mask/final_regions/diagnostic and derived predicted_boundaries.
-    Missing endpoint_noise requires explicit training before inference.
-    FINAL hysteresis supports speech-high energy only; inverted TT3 models
-    raise a clear error instead of silently losing every candidate region.
+    Core merges native support gaps below 200 ms without a duration filter.
+    Enhanced requires TRAIN noise and speech-high Gaussian direction.
     """
-    noise = params.get('endpoint_noise')
-    if noise is None:
+    mode = params.get('endpoint_mode', 'enhanced')
+    if mode not in ('core', 'enhanced'):
+        raise ValueError(f'Unknown endpoint_mode: {mode}')
+    noise = params.get('endpoint_noise') if mode == 'enhanced' else None
+    if mode == 'enhanced' and noise is None:
         raise ValueError('Fitted model requires endpoint_noise; call fit_training_model on TRAIN before inference')
     # The raw Gaussian classifier supports both directions. FINAL HIGH/LOW
     # requires speech-high, so reject an incompatible imported model early.
-    if algorithm == 'tt3' and params.get('speech_direction', 'high') != 'high':
+    if mode == 'enhanced' and algorithm == 'tt3' and params.get('speech_direction', 'high') != 'high':
         raise ValueError("FINAL endpoint detection requires TT3 speech_direction='high'; "
                          "inverted/unknown directions are not supported by energy hysteresis")
-    if algorithm == "tt1":
-        mask, diagnostic = tt1.predict(features, params), {"threshold": params["threshold"]}
-    elif algorithm == "tt3":
-        mask, diagnostic = tt3.predict(features, params), {"threshold": params["threshold"]}
-    elif algorithm in ('tt2', 'tt2-context'):
-        mask, diagnostic = tt2.predict(features, params)
-    else:
-        raise ValueError(f'Unknown algorithm: {algorithm}')
+    seed, diagnostic = algorithm_decision(algorithm, features, params)
+    source_histogram=algorithm=='tt2' and params.get('variant','source')=='source'
+    mask = tt2.pad_speech(seed, diagnostic['padding_frames']) if mode == 'enhanced' and source_histogram else seed
 
     # Algorithm masks are candidates. Final endpoints require HIGH confirmation,
     # LOW continuation, short-gap merging and duration filtering.
     candidate_regions=[(s,e) for s,e,state in mask_segments(mask,features['starts'],duration,features['ends']) if state]
-    source_histogram=algorithm=='tt2' and params.get('variant','source')=='source'
+    if mode == 'core':
+        final_regions = []
+        for start, end in candidate_regions:
+            if final_regions and start - final_regions[-1][1] < MIN_SILENCE_SECONDS - 1e-12:
+                final_regions[-1] = (final_regions[-1][0], end)
+            else:
+                final_regions.append((start, end))
+        mask = regions_to_mask(final_regions, features['starts'], features['ends'])
+        diagnostic.update(candidate_regions=candidate_regions, final_regions=final_regions,
+            low_ste_threshold=None, high_ste_threshold=None, endpoint_noise=None,
+            minimum_speech_ms=0., minimum_silence_ms=MIN_SILENCE_SECONDS*1000,
+            endpoint_mode=mode, geometry='union of active frame supports',
+            final_padding_ms=0., padding_stage='excluded from core FINAL',
+            endpoint_policy='native decisions; merge internal support gaps below 200 ms; no duration filter or final padding')
+        return dict(mask=mask, final_regions=final_regions, diagnostic=diagnostic,
+                    predicted_boundaries=[b for region in final_regions for b in region])
     if algorithm in ('tt1','tt3'):
-        base_threshold=params['threshold'];seed=mask
+        base_threshold=params['threshold']
     else:
         peak=max(features['energy'],default=0.)
         base_threshold=diagnostic['energy_threshold']/peak if source_histogram and peak>0 else diagnostic['energy_threshold'] if not source_histogram else 0.
-        seed=[int(e>diagnostic['energy_threshold'])
-              for e in features['energy']] if source_histogram else mask
     low,high=endpoint_thresholds(base_threshold,noise,histogram=algorithm in ('tt2','tt2-context'))
     final_regions=hysteresis_regions(features['ste_norm'],features['starts'],features['ends'],duration,
         low,high,MIN_SILENCE_SECONDS,MIN_SPEECH_SECONDS,seed_mask=seed)
     mask=regions_to_mask(final_regions,features['starts'],features['ends'])
     diagnostic.update(candidate_regions=candidate_regions,final_regions=final_regions,
+        endpoint_mode=mode,geometry='union of active frame supports',final_padding_ms=0.,
+        padding_stage='candidate diagnostics only' if source_histogram else 'none',
         low_ste_threshold=low,high_ste_threshold=high,endpoint_noise=noise,
         minimum_speech_ms=MIN_SPEECH_SECONDS*1000,minimum_silence_ms=MIN_SILENCE_SECONDS*1000,
         endpoint_policy='raw STE hysteresis; candidates/debug excluded; no fixed final padding')
