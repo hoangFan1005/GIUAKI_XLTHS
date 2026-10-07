@@ -10,7 +10,9 @@
 
 **Spec:** [Đề cập nhật nhóm 3–4](<H:/GIUAKI_XLTHS/Source/assignment/Hướng dẫn BT thi GK nhóm 3-4 SV_Phân đoạn tín hiệu thành tiếng nói và khoảng lặng_XLTHS_GK 2026.docx>), [phản biện mới](<C:/Users/Admin/Downloads/XAC_THUC_SO_SANH_VA_DE_XUAT_SUA_CODE (1).md>), [kế hoạch trước](H:/GIUAKI_XLTHS/reports/KE_HOACH_CAI_TIEN_ENDPOINT.md), các ràng buộc người dùng và phần thiết kế dưới đây. Phản biện là nguồn cần kiểm chứng; các khẳng định của tác giả không tự trở thành yêu cầu của thầy.
 
-**Trạng thái:** CHỜ NGƯỜI DÙNG DUYỆT. Ngày 07/10/2026. Lượt này chỉ đọc code, DOCX, artifacts và chạy probes đọc/số học nhỏ; chưa sửa code, chạy lại suite/kernel hay tái tạo artifacts. HEAD hiện là `d035dcb4d12e5f01abe7b33b6bd812a806193f1e`, nhưng working tree có các sửa Gaussian/notebook đã hoàn tất trước đó, chưa commit; đây mới là trạng thái phải giữ khi triển khai tiếp. Bằng chứng nghiệm thu trước là 133 tests, 24 trường hợp, không phải tests mới của lượt lập kế hoạch này.
+**Trạng thái thực thi 07/10/2026:** Người dùng đã duyệt và implementation Tasks1–5 đã thực hiện trên local `codex/endpoint-modes`; backup remote `codex/backup-before-endpoint-modes-20261007` tại `5ceb289c51079d53b977f5316bcc70971d119c47`. Task6 gate sau tích hợp/sửa writer+units:173testsPASS,24enhancednumeric exact,48core/enhanced cases,124protected hashes và3freshnotebooks/CODEZIP. Review độc lập cuối/visual và archive do root hoàn tất trước bàn giao; không push/merge implementation. Chi tiết: [báo cáo nghiệm thu](../../../reports/KET_QUA_NGHIEM_THU_2026_10_07.md).
+
+**Ghi chép lập kế hoạch lịch sử (trước duyệt, không phải trạng thái hiện tại):** CHỜ NGƯỜI DÙNG DUYỆT. Ngày 07/10/2026. Lượt này chỉ đọc code, DOCX, artifacts và chạy probes đọc/số học nhỏ; chưa sửa code, chạy lại suite/kernel hay tái tạo artifacts. HEAD hiện là `d035dcb4d12e5f01abe7b33b6bd812a806193f1e`, nhưng working tree có các sửa Gaussian/notebook đã hoàn tất trước đó, chưa commit; đây mới là trạng thái phải giữ khi triển khai tiếp. Bằng chứng nghiệm thu trước là 133 tests, 24 trường hợp, không phải tests mới của lượt lập kế hoạch này.
 
 ## A. Kết quả kiểm chứng tài liệu
 

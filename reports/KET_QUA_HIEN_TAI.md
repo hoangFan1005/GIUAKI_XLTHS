@@ -1,5 +1,11 @@
 # Kết quả hiện tại — cập nhật 07/10/2026
 
+## Nghiệm thu core/enhanced ngày 07/10/2026
+
+[Báo cáo nghiệm thu tích hợp](KET_QUA_NGHIEM_THU_2026_10_07.md): fresh **173 tests PASS trong15.200s**, enhanced24/24numeric exact so baseline,48core/enhanced cases;6TRAIN models khóa trước TEST,3notebooks fresh/15PNG và CODE ZIP đúng3executednotebook bytes. **124protected hashes** trong148baseline unchanged; core TT1/TT2 mean TEST undefined do counts sai, không thay bằng valid-only mean. [Final verification](../outputs/tables/endpoint_modes_oct07/final_verification.json), [before/after](../outputs/tables/endpoint_modes_oct07/final_regression.csv), [mode comparison](../outputs/tables/endpoint_modes_oct07/final_core_enhanced.csv).
+
+Energy thực là STE/N (mean squared sample amplitude); production labels/models/notebooks đã sửa đúng. Timing research giữ study metadata lịch sử47cc00b/provenance; physical silence200/210ms còn có thể bị nối, LOW=T1 cófold+205ms nên chưa đổi default. Python3.10 chưa kiểm. Root đang hoàn tất review độc lập/visual và archive [verification_logs.zip](../outputs/tables/endpoint_modes_oct07/verification_logs.zip). Các nghiệm thu133/137 và số liệu bên dưới là lịch sử, không phải gate mới.
+
 ## Cập nhật sửa lỗi ngày 06/10, nghiệm thu ngày 07/10/2026
 
 [Báo cáo sửa lỗi chi tiết](KET_QUA_SUA_LOI_2026_10_06.md) ghi root cause, hàm đã sửa, TRAIN ablation, synthetic timing và nghiệm thu notebook. Solver TT3 đã dịch tâm/chia scale, kiểm tra log-density và sửa ca gần biên phụ thuộc thứ tự lớp; FINAL từ chối rõ hướng Gaussian `low`/không hợp lệ, chưa hỗ trợ hướng đó ở HIGH/LOW. Nghiệm thu lại ngày 07/10 đạt **133/133 tests trong 13.862 s**; ba notebook đã chạy bằng kernel mới, khớp 24/24 WAV, lưu 15 hình và ZIP CODE đã kiểm tra nguồn/bytes. Review độc lập cuối đã hoàn tất, không còn finding trọng yếu trong phạm vi sửa; bằng chứng tại [verification.json](../outputs/tables/hotfix_oct06/verification.json).

@@ -1,0 +1,68 @@
+{
+  "baseline": "47cc00b",
+  "scope": "protected detector source only; no TEST/audio/canonical artifact reads",
+  "checks": [
+    {
+      "file": "core/features.py",
+      "baseline_sha256": "69a18cddb11bee3bd76386065fed15171e4470759644e997c29ce534a320a5bd",
+      "current_sha256": "69a18cddb11bee3bd76386065fed15171e4470759644e997c29ce534a320a5bd",
+      "unchanged": true
+    },
+    {
+      "file": "core/endpoints.py",
+      "baseline_sha256": "14b7b481b4595152fcf00c829f651d6690d0aab083c0b028b2978f149b59d0ff",
+      "current_sha256": "14b7b481b4595152fcf00c829f651d6690d0aab083c0b028b2978f149b59d0ff",
+      "unchanged": true
+    },
+    {
+      "file": "core/postprocess.py",
+      "baseline_sha256": "784c6310755e096a77cf224030539a78793d049c1e08caeb9f13465c6f7a3967",
+      "current_sha256": "784c6310755e096a77cf224030539a78793d049c1e08caeb9f13465c6f7a3967",
+      "unchanged": true
+    },
+    {
+      "file": "core/metrics.py",
+      "baseline_sha256": "727ed67a19fc5e2b7aeda757058f8bd49e2e14b2f6fc7f7b181907b5ef720be1",
+      "current_sha256": "727ed67a19fc5e2b7aeda757058f8bd49e2e14b2f6fc7f7b181907b5ef720be1",
+      "unchanged": true
+    },
+    {
+      "file": "algorithms/tt1_hodgkinson.py",
+      "baseline_sha256": "5c3638a6b7cc1a6dcd8beb3a4d02b33632c16f875433e3600f2222763139fd97",
+      "current_sha256": "5c3638a6b7cc1a6dcd8beb3a4d02b33632c16f875433e3600f2222763139fd97",
+      "unchanged": true
+    },
+    {
+      "file": "algorithms/tt2_histogram.py",
+      "baseline_sha256": "e8c86bd28eea3e0058569c6cc5890b78ca86b6ec57233f6e85cdd41f0e78ed7c",
+      "current_sha256": "e8c86bd28eea3e0058569c6cc5890b78ca86b6ec57233f6e85cdd41f0e78ed7c",
+      "unchanged": true
+    },
+    {
+      "file": "algorithms/tt3_gaussian.py",
+      "baseline_sha256": "9c1681a588b75ea4174d5282b1c49a1732ddcb6670d76ded484a8c581abfb2da",
+      "current_sha256": "9c1681a588b75ea4174d5282b1c49a1732ddcb6670d76ded484a8c581abfb2da",
+      "unchanged": true
+    },
+    {
+      "file": "app/pipeline.py::algorithm_decision",
+      "baseline_ast_sha256": "05c9ca2188b255fe5ee866f5ae358f72f27ae2ec21265e4978d6f5284136ca5b",
+      "current_ast_sha256": "05c9ca2188b255fe5ee866f5ae358f72f27ae2ec21265e4978d6f5284136ca5b",
+      "unchanged": true
+    },
+    {
+      "file": "app/pipeline.py::detect_regions",
+      "baseline_ast_sha256": "96a93a433216e8b3a5b18f2844233d7d8114cbb1a4102b1d88f395383e874e2f",
+      "current_ast_sha256": "96a93a433216e8b3a5b18f2844233d7d8114cbb1a4102b1d88f395383e874e2f",
+      "unchanged": true
+    },
+    {
+      "file": "app/pipeline.py::fit_training_model",
+      "baseline_ast_sha256": "95defaaae845038c14baf3ef33db9c257b726a70e6e3a170f8b9870a68a884cf",
+      "current_ast_sha256": "95defaaae845038c14baf3ef33db9c257b726a70e6e3a170f8b9870a68a884cf",
+      "unchanged": true
+    }
+  ],
+  "all_unchanged": true,
+  "enhanced24_and_global_hash_gate": "deferred to root coordinated acceptance"
+}
