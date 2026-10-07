@@ -7,6 +7,8 @@ into inference. Existing Python benchmark artifacts are read only for comparison
 from __future__ import annotations
 
 import argparse
+import copy
+import os
 import ast
 import base64
 import csv
@@ -27,6 +29,7 @@ ROOT = Path(__file__).resolve().parents[1]
 # launch otherwise places only tools/ on sys.path, unlike module launch.
 if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
+from app.config import endpoint_mode_root
 NOTEBOOK_DIR = ROOT / 'notebooks'
 TEST_NAMES = ('phone_F2', 'phone_M2', 'studio_F2', 'studio_M2')
 TRAIN_NAMES = ('phone_F1', 'phone_M1', 'studio_F1', 'studio_M1')
@@ -41,6 +44,13 @@ def _compact_result(result):
         'predicted_boundaries', 'ground_truth_boundaries', 'diagnostic')}
 _audit = {
     'algorithm': ALGORITHM,
+    'selected_mode': MODE,
+    'models': MODELS,
+    'model_lock_digests': MODEL_LOCK_DIGESTS,
+    'tt2_w_sweeps': TT2W_SWEEPS,
+    'test_results_by_mode': {mode: [_compact_result(result) for result in results] for mode, results in TEST_RESULTS_BY_MODE.items()},
+    'all_results_by_mode': {mode: [_compact_result(result) for result in results] for mode, results in ALL_RESULTS_BY_MODE.items()},
+    'test_summaries_by_mode': TEST_SUMMARIES_BY_MODE,
     'model': MODEL,
     'model_lock_digest': MODEL_LOCK_DIGEST,
     'tt2_w_sweep_rows': TT2W_SWEEP_ROWS,
@@ -83,7 +93,7 @@ def audit_metric_keys(scores, label, require_primary=True):
         raise ValueError(f'{label}: duplicate casefold metric keys')
     if (require_primary and 'mae_ms' not in scores) or 'boundary_MAE_ms' in scores:
         raise ValueError(f'{label}: PRIMARY MAE must use mae_ms without a boundary alias')
-    if any(key.startswith('boundary_') and not key.startswith('boundary_inside_') for key in scores):
+    if any(key.startswith('boundary_') and key != 'boundary_convention' and not key.startswith('boundary_inside_') for key in scores):
         raise ValueError(f'{label}: tolerance metrics must use tolerance_boundary_ prefix')
 
 
@@ -116,6 +126,17 @@ def audit_model_protocol(model, locked_digest):
                 raise ValueError('TRAIN selected W differs from locked model')
             if selection.get('calibration_digest') != model.get('calibration_digest'):
                 raise ValueError('TRAIN selection calibration digest differs from model')
+        declared = model.get('calibration_digest')
+        if not isinstance(declared, str) or not re.fullmatch('[0-9a-f]{64}', declared):
+            raise ValueError('Model calibration digest must be a nonempty SHA256')
+        payload = copy.deepcopy(model)
+        payload.pop('calibration_digest', None)
+        if 'W_selection_train' in payload:
+            payload['W_selection_train'].pop('calibration_digest', None)
+        computed = hashlib.sha256(json.dumps(payload, sort_keys=True, ensure_ascii=False,
+                                             allow_nan=False).encode('utf-8')).hexdigest()
+        if computed != declared:
+            raise ValueError('Model calibration digest differs from self-excluded calibration')
     expected = dict(metrics_schema_version=2,
                     parameter_selection_set='train', evaluation_protocol='train_selected_reused_test',
                     historical_test_exposure=True)
@@ -164,7 +185,8 @@ def audit_train_sweep(audit):
     keys = {(row['filename'], row['W']) for row in rows}
     if keys != {(name, float(w)) for name in TRAIN_NAMES for w in range(1, 51)} or len(keys) != 200:
         raise ValueError('TT2 TRAIN sweep rows must be unique and cover all 200 file/W pairs')
-    target = ROOT / 'outputs/tables/tt2_w_selection'
+    target = ((endpoint_mode_root(model['endpoint_mode'], ROOT / 'outputs') / 'tables/tt2_w_selection')
+              if model.get('schema_version') == 3 else ROOT / 'outputs/tables/tt2_w_selection')
     reference = read_csv(target / 'sweep.csv')
     if len(reference) != 200:
         raise ValueError('Python TRAIN sweep benchmark needs 200 rows; regenerate schema2 artifacts')
@@ -215,6 +237,12 @@ def audit_test_summary(algorithm, results, summary_rows):
         raise ValueError(f'{algorithm}: TEST summary must disclose schema2 reused TEST protocol')
     if summary.get('algorithm') != algorithm:
         raise ValueError(f'{algorithm}: wrong algorithm in TEST summary')
+    if 'endpoint_mode' in summary:
+        from app.pipeline import summarize
+        mode = summary['endpoint_mode']
+        expected = summarize([dict(file=result['file'],algorithm=algorithm,**result['metrics']) for result in results])
+        compare_structure(summary, expected[0], 'TEST summary')
+        return
     scores = [result['metrics'] for result in results]
     valid = [score for score in scores if score['mae_ms'] is not None]
     ordered = sorted(score['mae_ms'] for score in valid)
@@ -257,11 +285,36 @@ def audit_test_summary(algorithm, results, summary_rows):
 
 
 def audit_results(audit):
+    if 'models' in audit:
+        required = {'core', 'enhanced'}
+        for key in ('models', 'model_lock_digests', 'tt2_w_sweeps', 'test_results_by_mode', 'all_results_by_mode', 'test_summaries_by_mode'):
+            if set(audit.get(key, {})) != required:
+                raise ValueError('Both endpoint modes must have independent model/result evidence')
+        selected = audit.get('selected_mode')
+        if selected not in required:
+            raise ValueError('Invalid selected endpoint mode')
+        means = {}
+        for mode in ('core', 'enhanced'):
+            if audit['models'][mode].get('endpoint_mode') != mode:
+                raise ValueError('Model mode index disagrees with model')
+            item = dict(audit)
+            item.pop('models')
+            item.update(model=audit['models'][mode],model_lock_digest=audit['model_lock_digests'][mode],
+                        tt2_w_sweep_rows=audit['tt2_w_sweeps'][mode],test_results=audit['test_results_by_mode'][mode],
+                        all_results=audit['all_results_by_mode'][mode],test_summary=audit['test_summaries_by_mode'][mode])
+            means[mode] = audit_results(item)
+        for key, expected in (('model',audit['models'][selected]),('model_lock_digest',audit['model_lock_digests'][selected]),
+                              ('test_results',audit['test_results_by_mode'][selected]),('all_results',audit['all_results_by_mode'][selected]),
+                              ('test_summary',audit['test_summaries_by_mode'][selected]),('tt2_w_sweep_rows',audit['tt2_w_sweeps'][selected])):
+            compare_structure(audit.get(key),expected,'Selected mode alias/'+key)
+        return means[selected]
     algorithm = audit['algorithm']
     if algorithm not in ('tt1', 'tt2', 'tt3'):
         raise ValueError('Only three primary algorithms are submitted')
     model = audit['model']
     audit_model_protocol(model, audit.get('model_lock_digest'))
+    mode = model.get('endpoint_mode', 'enhanced')
+    output_root = endpoint_mode_root(mode, ROOT / 'outputs') if model.get('schema_version') == 3 else ROOT / 'outputs'
     test = audit['test_results']
     all_results = audit['all_results']
     if tuple(result['file'] for result in test) != TEST_NAMES:
@@ -271,7 +324,7 @@ def audit_results(audit):
     if len(all_results) != 8 or {result['file'] for result in all_results} != expected_names:
         raise ValueError('All-dataset evaluation must include eight unique WAVs')
     reference = {row['file']: row for row in read_csv(
-        ROOT / 'outputs/tables/all_all_dataset/test_metrics.csv') if row['algorithm'] == algorithm}
+        output_root / 'tables/all_all_dataset/test_metrics.csv') if row['algorithm'] == algorithm}
     for result in all_results + test:
         name = result['file']
         row = reference[name]
@@ -291,15 +344,19 @@ def audit_results(audit):
                 close_number(value, row[key], f'{algorithm}/{name}/{key}')
             elif str(value) != row[key]:
                 raise ValueError(f'{algorithm}/{name}/{key} differs')
-        diagnostic = json.loads((ROOT / f'outputs/diagnostics/{algorithm}/{name}.json').read_text(encoding='utf-8'))
+        if model.get('schema_version') == 3 and result['diagnostic'].get('endpoint_mode') != mode:
+            raise ValueError('Result endpoint mode disagrees with model')
+        diagnostic = json.loads((output_root / f'diagnostics/{algorithm}/{name}.json').read_text(encoding='utf-8'))
         compare_structure(result['final_regions'], diagnostic['final_regions'],
                           f'{algorithm}/{name}/final regions')
         compare_structure(result['predicted_boundaries'],
                           [edge for region in diagnostic['final_regions'] for edge in region],
                           f'{algorithm}/{name}/predicted boundaries')
+        if model.get('schema_version') == 3:
+            compare_structure(result['diagnostic'], diagnostic, f'{algorithm}/{name}/mode diagnostic')
         for key in ('low_ste_threshold', 'high_ste_threshold'):
             close_number(result['diagnostic'][key], diagnostic[key], f'{algorithm}/{name}/{key}', 1e-12)
-    original = json.loads((ROOT / f'outputs/models/{algorithm}.json').read_text(encoding='utf-8'))
+    original = json.loads((output_root / f'models/{algorithm}.json').read_text(encoding='utf-8'))
     audit_model_protocol(original, model_digest(original))
     compare_structure(model, original, f'{algorithm}/model/source/framing/noise')
     if algorithm == 'tt2':
@@ -318,7 +375,7 @@ def audit_results(audit):
             if hashlib.sha256(path.read_bytes()).hexdigest() != entry[key]:
                 raise ValueError(f'Input fingerprint differs: {path.name}')
     audit_test_summary(algorithm, test, audit.get('test_summary'))
-    saved_summary = [row for row in read_csv(ROOT / 'outputs/tables/all/summary.csv')
+    saved_summary = [row for row in read_csv(output_root / 'tables/all/summary.csv')
                      if row['algorithm'] == algorithm]
     if len(saved_summary) != 1:
         raise ValueError('Python TEST benchmark needs one summary per algorithm')
@@ -408,6 +465,7 @@ def execute_notebook(path):
             cell.outputs = []
             cell.execution_count = None
     notebook.cells.append(nbformat.v4.new_code_cell(AUDIT_CELL))
+    os.environ.pop('MPLBACKEND', None)  # fresh notebook kernels must render inline PNGs
     manager = KernelManager(kernel_name='python3')
     manager.kernel_spec.argv = [sys.executable, '-m', 'ipykernel_launcher', '-f', '{connection_file}']
     client = NotebookClient(notebook, km=manager, timeout=600,
@@ -433,7 +491,7 @@ def execute_notebook(path):
     notebook.metadata['endpoint_execution'] = evidence
     images, mean = audit_notebook(notebook, path.name)
     nbformat.write(notebook, path)
-    print(f'{path.name}: 8/8 benchmark matches; {images} embedded plots; test mean MAE {mean:.2f} ms.', flush=True)
+    print(f'{path.name}: 16/16 mode/file benchmark matches; {images} embedded plots; test mean MAE {mean if mean is not None else 'N/A'} ms.', flush=True)
 
 
 def package_notebooks(group_number=None):
@@ -470,7 +528,7 @@ def main():
         path = NOTEBOOK_DIR / f'THUAT_TOAN_{number}.ipynb'
         if arguments.validate_only:
             images, mean = audit_notebook(nbformat.read(path, as_version=4), path.name)
-            print(f'{path.name}: saved outputs valid, {images} figures, test mean MAE {mean:.2f} ms.')
+            print(f'{path.name}: saved outputs valid, {images} figures, test mean MAE {mean if mean is not None else 'N/A'} ms.')
         else:
             execute_notebook(path)
     package_notebooks(arguments.group_number)

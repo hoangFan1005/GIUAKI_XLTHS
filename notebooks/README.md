@@ -1,5 +1,21 @@
 # Mã nguồn nộp bài — Jupyter Notebook
 
+## Hai chế độ endpoint (07/10/2026)
+
+Mặc định `enhanced`: ngưỡng native tạo seed; noise TRAIN và HIGH/LOW xác nhận, giữ speech; nối gap support dưới 200 ms và lọc span dưới 100 ms. `core` giữ quyết định native và chỉ nối gap support dưới 200 ms, không lọc duration hoặc padding FINAL; LOW/HIGH là null. Gap ước lượng đúng 200 ms được giữ riêng. TT1 dùng STE ≥ T, TT2 dùng Energy > T, TT3 giữ hướng high/low của Gaussian native. Đây là hai chế độ endpoint của cùng ba thuật toán; enhanced là phần bổ sung của dự án.
+
+```powershell
+python main_tt1.py --endpoint-mode core
+python main.py --evaluate-all --compare-endpoint-modes
+```
+
+Mỗi mode fit và khóa model độc lập trên bốn TRAIN trước đọc TEST. Kết quả mới ở `outputs/endpoint_modes/core/` và `outputs/endpoint_modes/enhanced/`; bảng so sánh ở `outputs/endpoint_modes/comparison/tables/`. Model schema 3 giữ policy/digest, metric schema 2 tiếp tục `mae_ms`/`rmse_ms`. Thiếu/thừa vùng làm primary mean toàn bộ file undefined; `valid_files_*` là thống kê subset riêng. TEST có `historical_test_exposure=true`, không phải holdout độc lập. Không chọn mode tốt hơn riêng cho từng WAV.
+
+Notebook dùng `MODE="enhanced"` mặc định cho bốn TEST figure và một illustration; luôn fit/khóa `MODELS` cả hai mode trước TEST, xuất 16 dòng tám WAV/mode và bảng bốn TEST/mode. TT2 có 200 TRAIN sweep rows mỗi mode. Core plot native T; Energy TT2 được chuẩn hóa chỉ ở bước hiển thị. Source digest và model lock digests độc lập kiểm tra nguồn/outputs và model; Restart Kernel → Run All → Save vẫn chạy độc lập.
+
+PPTX/PDF và ZIP Python cũ giữ nguyên previous version. Các bảng, noise và ví dụ HIGH/LOW bên dưới mô tả enhanced; không phải công thức quyết định FINAL của core. Xem [báo cáo hai mode](../reports/KET_QUA_ENDPOINT_MODES_2026_10_07.md).
+
+
 Theo yêu cầu bổ sung của thầy, mỗi sinh viên có một `.ipynb` riêng. Ba notebook chứa toàn bộ hàm tính toán cần thiết, chạy độc lập với các module `.py` của dự án:
 
 | Thành viên phụ trách | Notebook |
@@ -14,9 +30,9 @@ Mở notebook bằng JupyterLab, VS Code hoặc trình xem notebook. Số liệu
 
 Notebook có các cell lần lượt: cấu hình → đọc WAV/LAB → chia khung/tính năng lượng thủ công → thuật toán riêng → High/Low và vùng nói cuối → học trên train → đánh giá → bảng và đồ thị. Bảng 4 test và bảng 8 file train + test được ghi rõ riêng.
 
-TT2 chỉ Energy, không F0/Centroid. Notebook fit mọi model/noise/W từ TRAIN trước TEST, chọn W1–50 trên TRAIN FINAL với `tie_preference_W=20`. TRAIN hiện tại hòa cả 50 W, chọn W20; candidate frame-F1 đề xuất W1 riêng (0.898698). Model schema 2 ghi `train_selected_reused_test`, `historical_test_exposure=true`; TEST được dùng lại sau lịch sử phát triển, không khẳng định độc lập. Model digest được khóa trước TEST và kiểm tra lại sau chấm. `--file` demo dùng model đã khóa. Metric chính `mae_ms`/`rmse_ms`, calibration `final_region_mae_ms`, diagnostic `tolerance_boundary_*` và `matched_boundary_mae_ms`.
+TT2 chỉ Energy, không F0/Centroid. Notebook fit mọi model/noise/W từ TRAIN trước TEST, chọn W1–50 trên TRAIN FINAL với `tie_preference_W=20`. Enhanced TRAIN hiện tại hòa cả 50 W với primary mean hợp lệ, chọn W20; core có count errors nên primary mean TRAIN undefined, valid-only được ghi riêng; candidate frame-F1 đề xuất W1 riêng (0.898698). Model schema 3 với metric schema 2 ghi `train_selected_reused_test`, `historical_test_exposure=true`; TEST được dùng lại sau lịch sử phát triển, không khẳng định độc lập. Model digest được khóa trước TEST và kiểm tra lại sau chấm. `--file` demo dùng model đã khóa. Metric chính `mae_ms`/`rmse_ms`, calibration `final_region_mae_ms`, diagnostic `tolerance_boundary_*` và `matched_boundary_mae_ms`.
 
-TT3 giải equal-density trong tọa độ dịch tâm/chia scale, với sigma floor `1e-9` và kiểm tra log-density. Gaussian thô `fit`/`predict` hỗ trợ hướng `low`; FINAL energy HIGH/LOW chỉ hỗ trợ `speech_direction='high'`, từ chối rõ ràng `low` hoặc hướng không hợp lệ lúc fit model FINAL và detect. Quy tắc 200 ms đo khoảng trống ước lượng giữa support khung hoạt động; 100 ms là heuristic lọc span support, không bảo đảm khoảng lặng vật lý hay độ dài voiced audio vì frame chồng lấn.
+TT3 giải equal-density trong tọa độ dịch tâm/chia scale, với sigma floor `1e-9` và kiểm tra log-density. Gaussian thô `fit`/`predict` hỗ trợ hướng `low`; Enhanced FINAL energy HIGH/LOW chỉ hỗ trợ `speech_direction='high'`, từ chối rõ ràng `low` hoặc hướng không hợp lệ lúc fit model FINAL và detect. Quy tắc 200 ms đo khoảng trống ước lượng giữa support khung hoạt động; 100 ms là heuristic lọc span support, không bảo đảm khoảng lặng vật lý hay độ dài voiced audio vì frame chồng lấn.
 
 ## Chạy lại trên máy này
 

@@ -1,5 +1,21 @@
 # TT1 — Tìm ngưỡng bằng Binary Search: giải thích thuật toán và code
 
+## Hai chế độ endpoint (07/10/2026)
+
+Mặc định `enhanced`: ngưỡng native tạo seed; noise TRAIN và HIGH/LOW xác nhận, giữ speech; nối gap support dưới 200 ms và lọc span dưới 100 ms. `core` giữ quyết định native và chỉ nối gap support dưới 200 ms, không lọc duration hoặc padding FINAL; LOW/HIGH là null. Gap ước lượng đúng 200 ms được giữ riêng. TT1 dùng STE ≥ T, TT2 dùng Energy > T, TT3 giữ hướng high/low của Gaussian native. Đây là hai chế độ endpoint của cùng ba thuật toán; enhanced là phần bổ sung của dự án.
+
+```powershell
+python main_tt1.py --endpoint-mode core
+python main.py --evaluate-all --compare-endpoint-modes
+```
+
+Mỗi mode fit và khóa model độc lập trên bốn TRAIN trước đọc TEST. Kết quả mới ở `outputs/endpoint_modes/core/` và `outputs/endpoint_modes/enhanced/`; bảng so sánh ở `outputs/endpoint_modes/comparison/tables/`. Model schema 3 giữ policy/digest, metric schema 2 tiếp tục `mae_ms`/`rmse_ms`. Thiếu/thừa vùng làm primary mean toàn bộ file undefined; `valid_files_*` là thống kê subset riêng. TEST có `historical_test_exposure=true`, không phải holdout độc lập. Không chọn mode tốt hơn riêng cho từng WAV.
+
+Notebook dùng `MODE="enhanced"` mặc định cho bốn TEST figure và một illustration; luôn fit/khóa `MODELS` cả hai mode trước TEST, xuất 16 dòng tám WAV/mode và bảng bốn TEST/mode. TT2 có 200 TRAIN sweep rows mỗi mode. Core plot native T; Energy TT2 được chuẩn hóa chỉ ở bước hiển thị. Source digest và model lock digests độc lập kiểm tra nguồn/outputs và model; Restart Kernel → Run All → Save vẫn chạy độc lập.
+
+PPTX/PDF và ZIP Python cũ giữ nguyên previous version. Các bảng, noise và ví dụ HIGH/LOW bên dưới mô tả enhanced; không phải công thức quyết định FINAL của core. Xem [báo cáo hai mode](KET_QUA_ENDPOINT_MODES_2026_10_07.md).
+
+
 Cập nhật theo code hiện tại ngày 05/10/2026. Tài liệu này giải thích riêng TT1 để thành viên phụ trách có thể đọc, chạy và thuyết trình độc lập.
 
 ## Giao thức Stage1 và schema 2
@@ -147,7 +163,7 @@ Dừng khi **cả hai số đếm không thay đổi sau một lần cập nhậ
 | T1 | **0.0010293375196** |
 | A(T1) còn dư | khoảng 0.0000002448924 |
 
-Các giá trị lấy từ [model TT1](../outputs/models/tt1.json), không phải hằng ngưỡng gán sẵn trong code. Chạy lại trên cùng dữ liệu sẽ học lại mô hình.
+Các giá trị lấy từ [model TT1](../outputs/endpoint_modes/enhanced/models/tt1.json), không phải hằng ngưỡng gán sẵn trong code. Chạy lại trên cùng dữ liệu sẽ học lại mô hình.
 
 [predict()](../algorithms/tt1_hodgkinson.py#L131) tạo nhãn ứng viên `1 if z >= T1 else 0`. Nó không đọc LAB.
 
@@ -259,10 +275,10 @@ python main_tt1.py --evaluate-all
 
 Mặc định chạy bốn test. `--file` chọn một WAV có LAB cùng tên. `--no-show` chỉ xuất file; `--evaluate-all` chấm cả tám WAV train/test và tự tắt cửa sổ.
 
-- [Model học được](../outputs/models/tt1.json): ngưỡng, overlap, số vòng, noise.
-- [Bảng bốn test](../outputs/tables/tt1/test_metrics.csv): MAE, RMSE, số vùng và status.
-- [Ảnh phone_F2](../outputs/figures/tt1/phone_F2.png): waveform, STE, High/Low, GT và final prediction.
-- [Diagnostic phone_F2](../outputs/diagnostics/tt1/phone_F2.json): candidate và final được lưu riêng.
+- [Model học được](../outputs/endpoint_modes/enhanced/models/tt1.json): ngưỡng, overlap, số vòng, noise.
+- [Bảng bốn test](../outputs/endpoint_modes/enhanced/tables/tt1/test_metrics.csv): MAE, RMSE, số vùng và status.
+- [Ảnh phone_F2](../outputs/endpoint_modes/enhanced/figures/tt1/phone_F2.png): waveform, STE, High/Low, GT và final prediction.
+- [Diagnostic phone_F2](../outputs/endpoint_modes/enhanced/diagnostics/tt1/phone_F2.json): candidate và final được lưu riêng.
 
 ## 9. Cách giải thích ngắn khi thuyết trình
 

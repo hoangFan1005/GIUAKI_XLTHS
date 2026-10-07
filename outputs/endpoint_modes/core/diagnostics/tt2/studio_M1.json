@@ -1,0 +1,88 @@
+{
+  "variant": "source",
+  "energy_threshold": 0.00027139670637816725,
+  "energy": {
+    "threshold": 0.00027139670637816725,
+    "peak_indices": [
+      0,
+      6,
+      15,
+      19,
+      22,
+      25,
+      40,
+      48,
+      55,
+      63
+    ],
+    "peak_values": [
+      0.00017270716030418765,
+      0.002245187627857759,
+      0.005353908329188116,
+      0.00673556197422383,
+      0.007771802208000616,
+      0.008808042441777401,
+      0.01398924361066133,
+      0.01675255090073276,
+      0.01917044477954526,
+      0.02193375206961669
+    ],
+    "first_peak": 0.00017270716030418765,
+    "second_peak": 0.002245187627857759,
+    "fallback": null,
+    "bins": 64,
+    "smooth_radius": 2,
+    "histogram_range": [
+      4.546747233603697e-10,
+      0.022106458775246154
+    ],
+    "W": 20.0
+  },
+  "padding_frames": 25,
+  "padding_ms": 250.0,
+  "effective_padding_ms": 250.0,
+  "raw_speech_frames": 93,
+  "padded_speech_frames": 162,
+  "feature": "energy",
+  "source_status": "Teacher-requested energy-only histogram; 25/10 ms; 250 ms candidate padding retained as 25 hops",
+  "native_threshold": 0.00027139670637816725,
+  "native_threshold_units": "sum of squared samples",
+  "candidate_regions": [
+    [
+      0.91,
+      1.1849886621315193
+    ],
+    [
+      1.19,
+      1.2749886621315192
+    ],
+    [
+      1.31,
+      1.5949886621315192
+    ],
+    [
+      1.61,
+      1.7249886621315194
+    ],
+    [
+      1.8,
+      2.0449886621315194
+    ]
+  ],
+  "final_regions": [
+    [
+      0.91,
+      2.0449886621315194
+    ]
+  ],
+  "low_ste_threshold": null,
+  "high_ste_threshold": null,
+  "endpoint_noise": null,
+  "minimum_speech_ms": 0.0,
+  "minimum_silence_ms": 200.0,
+  "endpoint_mode": "core",
+  "geometry": "union of active frame supports",
+  "final_padding_ms": 0.0,
+  "padding_stage": "excluded from core FINAL",
+  "endpoint_policy": "native decisions; merge internal support gaps below 200 ms; no duration filter or final padding"
+}

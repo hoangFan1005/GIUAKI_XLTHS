@@ -1,0 +1,76 @@
+{
+  "variant": "source",
+  "energy_threshold": 0.00010582343327162865,
+  "energy": {
+    "threshold": 0.00010582343327162865,
+    "peak_indices": [
+      0,
+      5,
+      9,
+      17,
+      21,
+      24,
+      38,
+      63
+    ],
+    "peak_values": [
+      7.188562743976946e-05,
+      0.0007845795499088127,
+      0.0013547346878840473,
+      0.0024950449638345166,
+      0.0030652001018097513,
+      0.003492816455291177,
+      0.005488359438204498,
+      0.009051829050549715
+    ],
+    "first_peak": 7.188562743976946e-05,
+    "second_peak": 0.0007845795499088127,
+    "fallback": null,
+    "bins": 64,
+    "smooth_radius": 2,
+    "histogram_range": [
+      6.162351928651333e-07,
+      0.009123098442796618
+    ],
+    "W": 20.0
+  },
+  "padding_frames": 25,
+  "padding_ms": 250.0,
+  "effective_padding_ms": 250.0,
+  "raw_speech_frames": 224,
+  "padded_speech_frames": 345,
+  "feature": "energy",
+  "source_status": "Teacher-requested energy-only histogram; 25/10 ms; 250 ms candidate padding retained as 25 hops",
+  "native_threshold": 0.00010582343327162865,
+  "native_threshold_units": "sum of squared samples",
+  "candidate_regions": [
+    [
+      0.8,
+      4.265
+    ]
+  ],
+  "final_regions": [
+    [
+      1.01,
+      4.095
+    ]
+  ],
+  "endpoint_mode": "enhanced",
+  "geometry": "union of active frame supports",
+  "final_padding_ms": 0.0,
+  "padding_stage": "candidate diagnostics only",
+  "low_ste_threshold": 0.0025149672448754727,
+  "high_ste_threshold": 0.011599505796759687,
+  "endpoint_noise": {
+    "noise_mean": 0.00038711079659476316,
+    "noise_std": 0.0007092854827602364,
+    "noise_q95": 0.0012140144555334857,
+    "noise_upper": 0.0025149672448754727,
+    "noise_count": 497,
+    "calibration": "training silence only; population std; Q95 nearest rank",
+    "high_multiplier": 1.5
+  },
+  "minimum_speech_ms": 100.0,
+  "minimum_silence_ms": 200.0,
+  "endpoint_policy": "raw STE hysteresis; candidates/debug excluded; no fixed final padding"
+}

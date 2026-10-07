@@ -1,0 +1,78 @@
+{
+  "variant": "source",
+  "energy_threshold": 0.00025823544010657173,
+  "energy": {
+    "threshold": 0.00025823544010657173,
+    "peak_indices": [
+      0,
+      7,
+      18,
+      20,
+      32,
+      35,
+      45,
+      49,
+      63
+    ],
+    "peak_values": [
+      0.00015494203616585244,
+      0.0023241035189209575,
+      0.005732785848964694,
+      0.00635254627260901,
+      0.010071108814474905,
+      0.011000749449941378,
+      0.014099551568162956,
+      0.015339072415451589,
+      0.019677395380961797
+    ],
+    "first_peak": 0.00015494203616585244,
+    "second_peak": 0.0023241035189209575,
+    "fallback": null,
+    "bins": 64,
+    "smooth_radius": 2,
+    "histogram_range": [
+      1.9302547735224618e-09,
+      0.019832335486872875
+    ],
+    "W": 20.0
+  },
+  "padding_frames": 25,
+  "padding_ms": 250.0,
+  "effective_padding_ms": 250.0,
+  "raw_speech_frames": 125,
+  "padded_speech_frames": 195,
+  "feature": "energy",
+  "source_status": "Teacher-requested energy-only histogram; 25/10 ms; 250 ms candidate padding retained as 25 hops",
+  "native_threshold": 0.00025823544010657173,
+  "native_threshold_units": "sum of squared samples",
+  "candidate_regions": [
+    [
+      0.46,
+      0.8849886621315193
+    ],
+    [
+      0.9,
+      1.4349886621315193
+    ],
+    [
+      1.57,
+      1.9249886621315193
+    ]
+  ],
+  "final_regions": [
+    [
+      0.46,
+      1.9249886621315193
+    ]
+  ],
+  "low_ste_threshold": null,
+  "high_ste_threshold": null,
+  "endpoint_noise": null,
+  "minimum_speech_ms": 0.0,
+  "minimum_silence_ms": 200.0,
+  "endpoint_mode": "core",
+  "geometry": "union of active frame supports",
+  "final_padding_ms": 0.0,
+  "padding_stage": "excluded from core FINAL",
+  "endpoint_policy": "native decisions; merge internal support gaps below 200 ms; no duration filter or final padding"
+}

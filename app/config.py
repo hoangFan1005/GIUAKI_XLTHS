@@ -25,3 +25,10 @@ ALGORITHM_TITLES = {
     "tt2-context": "Histogram STE - context report variant",
 }
 FILE_ORDER = ("phone_F2", "phone_M2", "studio_F2", "studio_M2")
+
+
+def endpoint_mode_root(endpoint_mode, output_dir=None):
+    """Return the isolated production root for a declared endpoint mode."""
+    if endpoint_mode not in ('core', 'enhanced', 'comparison'):
+        raise ValueError('Unknown endpoint_mode')
+    return (OUTPUT_DIR if output_dir is None else Path(output_dir)) / 'endpoint_modes' / endpoint_mode

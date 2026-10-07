@@ -22,6 +22,8 @@ def parse_args(argv=None, fixed_algorithm=None):
                             help="all so sánh ba thuật toán; mỗi tt chạy thuật toán tương ứng.")
     else:
         parser.set_defaults(algorithm=fixed_algorithm)
+    parser.add_argument("--endpoint-mode", choices=("enhanced", "core"), default="enhanced", help="enhanced (default): TRAIN noise HIGH/LOW; core: native decisions and support gaps.")
+    parser.add_argument("--compare-endpoint-modes", action="store_true", help="Fit both modes on TRAIN before TEST; export headless comparison.")
     parser.add_argument("--file", metavar="WAV", default=None,
                         help="Tên WAV trong data/test hoặc data/train, hoặc đường dẫn WAV có LAB cùng tên.")
     parser.add_argument("--no-show", action="store_true", help="Chỉ xuất ảnh/CSV; không mở cửa sổ.")
@@ -38,7 +40,7 @@ def parse_args(argv=None, fixed_algorithm=None):
     args = parser.parse_args(argv)
     if args.evaluate_all and (args.file or args.compare_context):
         parser.error('--evaluate-all không kết hợp --file hoặc --compare-context.')
-    if args.evaluate_all:args.no_show=True
+    if args.evaluate_all or args.compare_endpoint_modes:args.no_show=True
     if args.file and args.compare_context:
         parser.error("--compare-context cần đủ 4 WAV test; hãy bỏ --file.")
     if args.show_seconds is not None and args.show_seconds <= 0:

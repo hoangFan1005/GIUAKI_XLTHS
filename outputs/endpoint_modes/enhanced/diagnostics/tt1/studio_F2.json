@@ -1,0 +1,43 @@
+{
+  "threshold": 0.0010293375196035162,
+  "native_threshold": 0.0010293375196035162,
+  "native_threshold_units": "normalized STE",
+  "candidate_regions": [
+    [
+      0.76,
+      1.3549886621315193
+    ],
+    [
+      1.37,
+      1.9749886621315194
+    ],
+    [
+      2.04,
+      2.3649886621315193
+    ]
+  ],
+  "final_regions": [
+    [
+      0.76,
+      2.3649886621315193
+    ]
+  ],
+  "endpoint_mode": "enhanced",
+  "geometry": "union of active frame supports",
+  "final_padding_ms": 0.0,
+  "padding_stage": "none",
+  "low_ste_threshold": 0.0012140144555334857,
+  "high_ste_threshold": 0.0025149672448754727,
+  "endpoint_noise": {
+    "noise_mean": 0.00038711079659476316,
+    "noise_std": 0.0007092854827602364,
+    "noise_q95": 0.0012140144555334857,
+    "noise_upper": 0.0025149672448754727,
+    "noise_count": 497,
+    "calibration": "training silence only; population std; Q95 nearest rank",
+    "high_multiplier": 1.5
+  },
+  "minimum_speech_ms": 100.0,
+  "minimum_silence_ms": 200.0,
+  "endpoint_policy": "raw STE hysteresis; candidates/debug excluded; no fixed final padding"
+}

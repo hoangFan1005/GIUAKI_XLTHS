@@ -1,0 +1,6 @@
+﻿start_s,end_s,label
+0.0,0.54,sil
+0.54,1.635,speech
+1.635,1.9,sil
+1.9,2.745,speech
+2.745,3.24,sil

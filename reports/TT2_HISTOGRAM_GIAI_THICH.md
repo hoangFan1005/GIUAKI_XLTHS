@@ -1,5 +1,21 @@
 # TT2 — Histogram chỉ dùng Energy: giải thích thuật toán và code
 
+## Hai chế độ endpoint (07/10/2026)
+
+Mặc định `enhanced`: ngưỡng native tạo seed; noise TRAIN và HIGH/LOW xác nhận, giữ speech; nối gap support dưới 200 ms và lọc span dưới 100 ms. `core` giữ quyết định native và chỉ nối gap support dưới 200 ms, không lọc duration hoặc padding FINAL; LOW/HIGH là null. Gap ước lượng đúng 200 ms được giữ riêng. TT1 dùng STE ≥ T, TT2 dùng Energy > T, TT3 giữ hướng high/low của Gaussian native. Đây là hai chế độ endpoint của cùng ba thuật toán; enhanced là phần bổ sung của dự án.
+
+```powershell
+python main_tt1.py --endpoint-mode core
+python main.py --evaluate-all --compare-endpoint-modes
+```
+
+Mỗi mode fit và khóa model độc lập trên bốn TRAIN trước đọc TEST. Kết quả mới ở `outputs/endpoint_modes/core/` và `outputs/endpoint_modes/enhanced/`; bảng so sánh ở `outputs/endpoint_modes/comparison/tables/`. Model schema 3 giữ policy/digest, metric schema 2 tiếp tục `mae_ms`/`rmse_ms`. Thiếu/thừa vùng làm primary mean toàn bộ file undefined; `valid_files_*` là thống kê subset riêng. TEST có `historical_test_exposure=true`, không phải holdout độc lập. Không chọn mode tốt hơn riêng cho từng WAV.
+
+Notebook dùng `MODE="enhanced"` mặc định cho bốn TEST figure và một illustration; luôn fit/khóa `MODELS` cả hai mode trước TEST, xuất 16 dòng tám WAV/mode và bảng bốn TEST/mode. TT2 có 200 TRAIN sweep rows mỗi mode. Core plot native T; Energy TT2 được chuẩn hóa chỉ ở bước hiển thị. Source digest và model lock digests độc lập kiểm tra nguồn/outputs và model; Restart Kernel → Run All → Save vẫn chạy độc lập.
+
+PPTX/PDF và ZIP Python cũ giữ nguyên previous version. Các bảng, noise và ví dụ HIGH/LOW bên dưới mô tả enhanced; không phải công thức quyết định FINAL của core. Xem [báo cáo hai mode](KET_QUA_ENDPOINT_MODES_2026_10_07.md).
+
+
 Cập nhật theo code hiện tại ngày 05/10/2026. TT2 đã bỏ Spectral Centroid theo yêu cầu của thầy. Ba main hiện không tính FFT/Centroid trong đường chạy thực nghiệm.
 
 ## Giao thức Stage1 và schema 2
@@ -202,7 +218,7 @@ Pipeline fit TRAIN trước TEST; thử mọi W nguyên **1–50** trên `phone_
 
 “Thiệt hại” ở đây là `MAE(file,W) - min_W MAE(file,W)`, không phải một công thức ngưỡng mới.
 
-TT2 đề xuất candidate **W1** bằng TRAIN frame F1 (0.898698, không phải F1 của FINAL W20). Sau đó [fit_training_model()](../app/pipeline.py#L229) khảo sát W nguyên **1–50** trên FINAL regions của `phone_F1`, `phone_M1`, `studio_F1`, `studio_M1`: 200 dòng TRAIN. Kết quả lưu hiện tại: cả 50 W đồng tối ưu; mean FINAL MAE TRAIN **13.747165532879801 ms**. Chọn **W20** bằng `tie_preference_W=20` cố định. Đây là kết quả của TRAIN hiện tại, không phải giả định mọi dataset đều hòa. Manifest `W_selection_train` ghi `selection_set=train`, `evaluation_protocol=train_final_calibration` và tên TRAIN đã chấm.
+Trong enhanced, TT2 đề xuất candidate **W1** bằng TRAIN frame F1 (0.898698, không phải F1 của FINAL W20). Sau đó [fit_training_model()](../app/pipeline.py#L229) khảo sát W nguyên **1–50** trên FINAL regions của `phone_F1`, `phone_M1`, `studio_F1`, `studio_M1`: 200 dòng TRAIN. Kết quả enhanced lưu hiện tại: cả 50 W đồng tối ưu; mean FINAL MAE TRAIN **13.747165532879801 ms**. Chọn **W20** bằng `tie_preference_W=20` cố định. Đây là kết quả của TRAIN hiện tại, không phải giả định mọi dataset đều hòa. Manifest `W_selection_train` ghi `selection_set=train`, `evaluation_protocol=train_final_calibration` và tên TRAIN đã chấm.
 
 `candidate_frame_selected_W`, `candidate_frame_f1`, `candidate_frame_selection_scores`, `candidate_cleanup_records` chỉ mô tả bước candidate. `W`/`finalW` và manifest TRAIN mô tả lựa chọn FINAL; không gán candidate F1 cho W20. Không có W riêng theo filename. W20 không phải tối ưu duy nhất; chưa khảo sát số thực ngoài miền W nguyên 1–50.
 
@@ -320,11 +336,11 @@ python main_tt2.py --evaluate-all
 
 Mặc định bốn test; `--file` chọn một WAV có LAB cùng tên; `--evaluate-all` chấm tám WAV và không mở cửa sổ. Chế độ một file fit bốn TRAIN trước khi đọc file đã chọn; không nạp bốn TEST để calibration.
 
-- [Model TT2](../outputs/models/tt2.json): W train, W cuối, cấu hình histogram, noise.
-- [Bảng metric](../outputs/tables/tt2/test_metrics.csv).
-- [Khảo sát W](../outputs/tables/tt2_w_selection/sweep.csv): 200 lần chấm final regions.
-- [Diagnostic phone_F2](../outputs/diagnostics/tt2/phone_F2.json): M1/M2, TE, High/Low, candidate/final.
-- [Ảnh phone_F2](../outputs/figures/tt2/phone_F2.png).
+- [Model TT2](../outputs/endpoint_modes/enhanced/models/tt2.json): W train, W cuối, cấu hình histogram, noise.
+- [Bảng metric](../outputs/endpoint_modes/enhanced/tables/tt2/test_metrics.csv).
+- [Khảo sát W](../outputs/endpoint_modes/enhanced/tables/tt2_w_selection/sweep.csv): 200 lần chấm final regions.
+- [Diagnostic phone_F2](../outputs/endpoint_modes/enhanced/diagnostics/tt2/phone_F2.json): M1/M2, TE, High/Low, candidate/final.
+- [Ảnh phone_F2](../outputs/endpoint_modes/enhanced/figures/tt2/phone_F2.png).
 
 ## 10. Cách giải thích ngắn và giới hạn
 

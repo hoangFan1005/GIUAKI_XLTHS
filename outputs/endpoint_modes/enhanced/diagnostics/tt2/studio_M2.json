@@ -1,0 +1,78 @@
+{
+  "variant": "source",
+  "energy_threshold": 0.00025823544010657173,
+  "energy": {
+    "threshold": 0.00025823544010657173,
+    "peak_indices": [
+      0,
+      7,
+      18,
+      20,
+      32,
+      35,
+      45,
+      49,
+      63
+    ],
+    "peak_values": [
+      0.00015494203616585244,
+      0.0023241035189209575,
+      0.005732785848964694,
+      0.00635254627260901,
+      0.010071108814474905,
+      0.011000749449941378,
+      0.014099551568162956,
+      0.015339072415451589,
+      0.019677395380961797
+    ],
+    "first_peak": 0.00015494203616585244,
+    "second_peak": 0.0023241035189209575,
+    "fallback": null,
+    "bins": 64,
+    "smooth_radius": 2,
+    "histogram_range": [
+      1.9302547735224618e-09,
+      0.019832335486872875
+    ],
+    "W": 20.0
+  },
+  "padding_frames": 25,
+  "padding_ms": 250.0,
+  "effective_padding_ms": 250.0,
+  "raw_speech_frames": 125,
+  "padded_speech_frames": 195,
+  "feature": "energy",
+  "source_status": "Teacher-requested energy-only histogram; 25/10 ms; 250 ms candidate padding retained as 25 hops",
+  "native_threshold": 0.00025823544010657173,
+  "native_threshold_units": "sum of squared samples",
+  "candidate_regions": [
+    [
+      0.21,
+      2.1749886621315193
+    ]
+  ],
+  "final_regions": [
+    [
+      0.46,
+      1.9349886621315193
+    ]
+  ],
+  "endpoint_mode": "enhanced",
+  "geometry": "union of active frame supports",
+  "final_padding_ms": 0.0,
+  "padding_stage": "candidate diagnostics only",
+  "low_ste_threshold": 0.0025149672448754727,
+  "high_ste_threshold": 0.013020929394699838,
+  "endpoint_noise": {
+    "noise_mean": 0.00038711079659476316,
+    "noise_std": 0.0007092854827602364,
+    "noise_q95": 0.0012140144555334857,
+    "noise_upper": 0.0025149672448754727,
+    "noise_count": 497,
+    "calibration": "training silence only; population std; Q95 nearest rank",
+    "high_multiplier": 1.5
+  },
+  "minimum_speech_ms": 100.0,
+  "minimum_silence_ms": 200.0,
+  "endpoint_policy": "raw STE hysteresis; candidates/debug excluded; no fixed final padding"
+}

@@ -1,0 +1,106 @@
+{
+  "variant": "source",
+  "energy_threshold": 0.00017828773279688904,
+  "energy": {
+    "threshold": 0.00017828773279688904,
+    "peak_indices": [
+      0,
+      6,
+      19,
+      23,
+      27,
+      29,
+      32,
+      36,
+      47,
+      53,
+      56,
+      61,
+      63
+    ],
+    "peak_values": [
+      0.00011532689257364836,
+      0.0014375045372617024,
+      0.004302222767419153,
+      0.0051836745305445225,
+      0.006065126293669892,
+      0.006505852175232576,
+      0.007166940997576603,
+      0.008048392760701973,
+      0.010472385109296739,
+      0.011794562753984793,
+      0.01245565157632882,
+      0.013557466280235532,
+      0.013998192161798215
+    ],
+    "first_peak": 0.00011532689257364836,
+    "second_peak": 0.0014375045372617024,
+    "fallback": null,
+    "bins": 64,
+    "smooth_radius": 2,
+    "histogram_range": [
+      5.145422182977199e-06,
+      0.014108373632188887
+    ],
+    "W": 20.0
+  },
+  "padding_frames": 25,
+  "padding_ms": 250.0,
+  "effective_padding_ms": 250.0,
+  "raw_speech_frames": 244,
+  "padded_speech_frames": 355,
+  "feature": "energy",
+  "source_status": "Teacher-requested energy-only histogram; 25/10 ms; 250 ms candidate padding retained as 25 hops",
+  "native_threshold": 0.00017828773279688904,
+  "native_threshold_units": "sum of squared samples",
+  "candidate_regions": [
+    [
+      0.46,
+      1.365
+    ],
+    [
+      1.48,
+      1.695
+    ],
+    [
+      1.77,
+      2.085
+    ],
+    [
+      2.14,
+      2.415
+    ],
+    [
+      2.42,
+      2.755
+    ],
+    [
+      2.82,
+      2.945
+    ],
+    [
+      3.11,
+      3.305
+    ],
+    [
+      3.33,
+      3.525
+    ]
+  ],
+  "final_regions": [
+    [
+      0.46,
+      3.525
+    ]
+  ],
+  "low_ste_threshold": null,
+  "high_ste_threshold": null,
+  "endpoint_noise": null,
+  "minimum_speech_ms": 0.0,
+  "minimum_silence_ms": 200.0,
+  "endpoint_mode": "core",
+  "geometry": "union of active frame supports",
+  "final_padding_ms": 0.0,
+  "padding_stage": "excluded from core FINAL",
+  "endpoint_policy": "native decisions; merge internal support gaps below 200 ms; no duration filter or final padding"
+}

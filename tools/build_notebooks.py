@@ -106,11 +106,11 @@ def pipeline_stage_comments(algorithm: str) -> dict:
     decisions = {
         'tt1': 'TT1 compares normalized STE with the TRAIN binary-search threshold.',
         'tt2': 'TT2 estimates raw energy threshold per file; padded masks remain candidate diagnostics.',
-        'tt3': 'TT3 raw classification supports both directions; FINAL rejects explicit low/unknown models.'}
+        'tt3': 'TT3 raw classification supports both directions; enhanced FINAL rejects low/unknown models; core retains native high/low direction.'}
     comments = {
         'detect_regions': [
             ('@input', 'Input: frame features/supports, duration and fitted model; Output: FINAL regions, mask and diagnostics.'),
-            ('noise', decisions[algorithm] + ' Require TRAIN noise before inference.'),
+            ('noise', decisions[algorithm] + ' Enhanced requires TRAIN noise; core uses native decisions.'),
             ('candidate_regions', 'Retain candidate supports for inspection; only FINAL regions produce endpoint scores.'),
             ('base_threshold', 'Use the TRAIN normalized STE threshold and raw classifier seed.'
              if algorithm != 'tt2' else 'Normalize TT2 raw energy threshold and seed from unpadded raw energy decisions.'),
@@ -129,16 +129,16 @@ def pipeline_stage_comments(algorithm: str) -> dict:
             ('@input', 'Validate supplied TRAIN provenance before fitting; TEST reads occur after model locking.'),
             ('model', {'tt1': 'Fit the normalized STE binary-search threshold from labeled TRAIN frames.',
                        'tt2': 'Fit the candidate-frame histogram W proposal from TRAIN only.',
-                       'tt3': 'Fit robust centered/scaled Gaussian crossings; reject a non-high model before FINAL reuse.'}[algorithm])],
+                       'tt3': 'Fit robust centered/scaled Gaussian crossings; enhanced rejects non-high models; core preserves native direction.'}[algorithm])],
     }
     if algorithm == 'tt2':
         comments['fit_training_model'].extend([
-            ('candidate_frame_selected_W', 'Preserve candidate F1 diagnostics beside schema-v2 TRAIN noise and provenance.'),
+            ('candidate_frame_selected_W', 'Preserve candidate F1 diagnostics beside schema-v3 mode policy, enhanced TRAIN noise and provenance.'),
             ('selection', 'Calibrate shared W on TRAIN FINAL regions; candidate F1 remains a separate diagnostic.'),
             ('@return', 'Return the TRAIN-selected reusable model and all 200 W/file calibration rows.')])
     else:
         comments['fit_training_model'].append(
-            ('sweep_rows', 'Output: schema-v2 model with TRAIN silence noise and provenance; no W sweep for this method.'))
+            ('sweep_rows', 'Output: schema-v3 model with mode policy and TRAIN provenance; no W sweep for this method.'))
     return comments
 
 
@@ -267,6 +267,7 @@ import matplotlib.pyplot as plt
 from IPython.display import HTML, display
 
 ALGORITHM = {algorithm!r}
+MODE = "enhanced"  # selected mode for the four plots and illustration
 FRAME_MS = 25.0
 HOP_MS = 10.0
 SAMPLE_ROUNDING = "nearest_integer_samples_python_round_ties_to_even"
@@ -380,7 +381,11 @@ display_table(DATASET_MANIFEST,
 
 
 FIT_MODEL = '''
-MODEL, TT2W_SWEEP_ROWS = fit_training_model(ALGORITHM, TRAIN_RECORDS)
+MODELS, TT2W_SWEEPS = {}, {}
+for endpoint_mode in ("core", "enhanced"):
+    MODELS[endpoint_mode], TT2W_SWEEPS[endpoint_mode] = fit_training_model(
+        ALGORITHM, TRAIN_RECORDS, endpoint_mode=endpoint_mode)
+MODEL, TT2W_SWEEP_ROWS = MODELS[MODE], TT2W_SWEEPS[MODE]
 '''
 
 
@@ -410,11 +415,15 @@ def model_digest(model):
     return hashlib.sha256(json.dumps(model, sort_keys=True, ensure_ascii=False,
                                      allow_nan=False, separators=(",", ":")).encode("utf-8")).hexdigest()
 
-MODEL_LOCK_DIGEST = model_digest(MODEL)
+MODEL_LOCK_DIGESTS = {mode: model_digest(model) for mode, model in MODELS.items()}
+MODEL_LOCK_DIGEST = MODEL_LOCK_DIGESTS[MODE]
 
 def assert_model_locked():
-    if model_digest(MODEL) != MODEL_LOCK_DIGEST:
-        raise ValueError("Frozen TRAIN model digest changed after calibration")
+    for mode, model in MODELS.items():
+        if model.get("endpoint_mode") != mode or model_digest(model) != MODEL_LOCK_DIGESTS[mode]:
+            raise ValueError("Frozen TRAIN model digest or mode changed after calibration")
+    if MODEL is not MODELS[MODE] or model_digest(MODEL) != MODEL_LOCK_DIGEST:
+        raise ValueError("Selected model alias changed after calibration")
 
 print("MODEL locked before TEST reads:", MODEL_LOCK_DIGEST)
 '''
@@ -424,41 +433,53 @@ MODEL_DISPLAY = '''
 parameter_names = {parameter_names!r}
 parameter_rows = [dict(parameter=key, value=MODEL.get(key)) for key in parameter_names]
 parameter_rows.extend(dict(parameter=key, value=value)
-                      for key, value in MODEL["endpoint_noise"].items())
+                      for key, value in (MODEL["endpoint_noise"] or {{}}).items())
 display_table(parameter_rows, [("parameter", "Parameter"), ("value", "Freshly computed value")],
               "Training parameters and train-only noise calibration")
 '''
 
 
 EVALUATION = '''
-TEST_RESULTS = [predict_and_score(ALGORITHM, record, MODEL) for record in TEST_RECORDS]
+TEST_RESULTS_BY_MODE = {mode: [predict_and_score(ALGORITHM, record, model) for record in TEST_RECORDS]
+                        for mode, model in MODELS.items()}
 assert_model_locked()
-ALL_RESULTS = [predict_and_score(ALGORITHM, record, MODEL) for record in ALL_RECORDS]
+ALL_RESULTS_BY_MODE = {mode: [predict_and_score(ALGORITHM, record, model) for record in ALL_RECORDS]
+                       for mode, model in MODELS.items()}
 assert_model_locked()
+TEST_RESULTS, ALL_RESULTS = TEST_RESULTS_BY_MODE[MODE], ALL_RESULTS_BY_MODE[MODE]
 
 def metric_rows(records, results):
     return [dict(file=record["name"], split=record["split"], algorithm=ALGORITHM,
                  **result["metrics"])
             for record, result in zip(records, results)]
 
-TEST_METRIC_ROWS = metric_rows(TEST_RECORDS, TEST_RESULTS)
-ALL_METRIC_ROWS = metric_rows(ALL_RECORDS, ALL_RESULTS)
-TEST_SUMMARY = summarize(TEST_METRIC_ROWS)
+TEST_METRICS_BY_MODE = {mode: metric_rows(TEST_RECORDS, results) for mode, results in TEST_RESULTS_BY_MODE.items()}
+ALL_METRICS_BY_MODE = {mode: metric_rows(ALL_RECORDS, results) for mode, results in ALL_RESULTS_BY_MODE.items()}
+TEST_SUMMARIES_BY_MODE = {mode: summarize(rows) for mode, rows in TEST_METRICS_BY_MODE.items()}
+TEST_METRIC_ROWS = [row for rows in TEST_METRICS_BY_MODE.values() for row in rows]
+ALL_METRIC_ROWS = [row for rows in ALL_METRICS_BY_MODE.values() for row in rows]
+TEST_SUMMARY = TEST_SUMMARIES_BY_MODE[MODE]
 METRIC_COLUMNS = [
-    ("file", "File"), ("split", "Split"),
+    ("file", "File"), ("split", "Split"), ("endpoint_mode", "Mode"),
     ("ground_truth_region_count", "GT regions"), ("predicted_region_count", "Pred regions"),
     ("mae_ms", "Final MAE (ms)"), ("rmse_ms", "RMSE (ms)"), ("status", "Status"),
     ("start_error_ms", "Signed START error (ms)"), ("end_error_ms", "Signed END error (ms)"),
     ("gt_start_s", "GT START (s)"), ("gt_end_s", "GT END (s)"),
     ("predicted_start_s", "Pred START (s)"), ("predicted_end_s", "Pred END (s)")
 ]
-display_table(TEST_METRIC_ROWS, METRIC_COLUMNS, "Four TEST recordings: final confirmed boundaries")
+display_table(TEST_METRIC_ROWS, METRIC_COLUMNS, "Four TEST recordings in each mode: FINAL-region endpoints")
+THRESHOLD_ROWS = [dict(file=result["file"], endpoint_mode=mode,
+                      **{key:result["diagnostic"].get(key) for key in
+                         ("native_threshold", "native_threshold_units", "low_ste_threshold", "high_ste_threshold",
+                          "geometry", "minimum_speech_ms", "padding_stage")})
+                  for mode, results in ALL_RESULTS_BY_MODE.items() for result in results]
+display_table(THRESHOLD_ROWS, [(key,key) for key in THRESHOLD_ROWS[0]], "Both-mode threshold and geometry diagnostics")
 '''
 
 
 SUMMARY_DISPLAY = '''
-display_table(TEST_SUMMARY,
-              [("algorithm", "Algorithm"), ("files", "Files"),
+display_table([row for rows in TEST_SUMMARIES_BY_MODE.values() for row in rows],
+              [("algorithm", "Algorithm"), ("endpoint_mode", "Mode"), ("files", "Files"),
                ("evaluated_files", "Defined MAE files"), ("mean_file_mae_ms", "Mean MAE (ms)"),
                ("median_file_mae_ms", "Median (ms)"), ("min_file_mae_ms", "Min (ms)"),
                ("max_file_mae_ms", "Max (ms)"), ("mean_file_rmse_ms", "Mean file RMSE (ms)"),
@@ -485,10 +506,15 @@ def plot_record(record, result):
     axes[0].set_ylabel("PCM amplitude")
     axes[1].plot(features["centers"], features["ste_norm"], color="#263238",
                  linewidth=1, label="Normalized STE")
-    axes[1].axhline(diagnostic["low_ste_threshold"], color="#008060",
-                   linestyle="--", linewidth=1.2, label="LOW")
-    axes[1].axhline(diagnostic["high_ste_threshold"], color="#9b6700",
-                   linestyle=":", linewidth=1.4, label="HIGH")
+    if diagnostic["endpoint_mode"] == "core":
+        native = diagnostic["native_threshold"]
+        if diagnostic["native_threshold_units"] == "sum of squared samples":
+            peak = max(features["energy"], default=0.)
+            native = native / peak if peak else 0.
+        axes[1].axhline(native, color="#9b6700", linestyle=":", label="Native T (display normalized)")
+    else:
+        axes[1].axhline(diagnostic["low_ste_threshold"], color="#008060", linestyle="--", label="LOW")
+        axes[1].axhline(diagnostic["high_ste_threshold"], color="#9b6700", linestyle=":", label="HIGH")
     for axis in axes:
         for index, (start, end) in enumerate(result["ground_truth_regions"]):
             axis.axvspan(start, end, color="red", alpha=0.05)
@@ -505,7 +531,7 @@ def plot_record(record, result):
     axes[1].set_ylabel("Normalized STE")
     axes[1].set_xlabel("Time (s)")
     axes[1].legend(loc="upper right", fontsize=8, ncol=3)
-    figure.suptitle(f"{record['name']}.wav | Outer boundary MAE: {mae_text} | "
+    figure.suptitle(f"{record['name']}.wav | {MODE} | FINAL-region endpoint MAE: {mae_text} | "
                    f"{len(result['final_regions'])} speech regions")
     figure.tight_layout()
     plt.show()
@@ -697,7 +723,7 @@ def build_notebook(algorithm: str) -> dict:
     explanations = {
         "tt1": "Learn the normalized STE threshold from labeled TRAIN silence/speech by the source binary-search rule.",
         "tt2": "Estimate each recording's energy threshold from the first two histogram peaks. Show the TRAIN candidate-frame F1 proposal separately from global FINAL W calibration on the four TRAIN recordings.",
-        "tt3": "Fit population mean and standard deviation to labeled TRAIN normalized STE. Solve equal Gaussian densities in centered/scaled coordinates with an explicit 1e-9 sigma floor, stable quadratic roots and a log-density check; use the declared midpoint fallback if no valid crossing lies between the means. Raw fit/predict supports speech_direction='low', while the current FINAL HIGH/LOW energy hysteresis requires speech_direction='high' and explicitly rejects low or unknown directions during fitting and inference.",
+        "tt3": "Fit population mean and standard deviation to labeled TRAIN normalized STE. Solve equal Gaussian densities in centered/scaled coordinates with an explicit 1e-9 sigma floor, stable quadratic roots and a log-density check; use the declared midpoint fallback if no valid crossing lies between the means. Raw fit/predict supports speech_direction='low', core FINAL preserves that native direction; enhanced FINAL HIGH/LOW energy hysteresis requires speech_direction='high' and explicitly rejects low or unknown directions during fitting and inference.",
     }
     sections: list[tuple[str, str]] = []
     def md(source: str) -> None:
@@ -711,7 +737,7 @@ def build_notebook(algorithm: str) -> dict:
 
 This notebook contains all computation for one student's algorithm. Run the cells in order with Python 3, matplotlib and IPython. WAV/LAB input is supplied separately in `data/train/` and `data/test/`; edit `DATA_DIR` if needed. The notebook discovers these folders from its working directory and ancestors.
 
-The signal is framed with full 25 ms windows and 10 ms hops, using Python's nearest-sample rounding with ties to even. Energy is STE divided by frame size. Final regions require HIGH confirmation and continue above LOW. The 200 ms rule measures estimated gaps between active frame supports, and the 100 ms minimum is a support-span heuristic. Overlapping frames can bridge physical silence or retain brief impulses; these settings do not guarantee 200 ms of physical silence or 100 ms of voiced audio. Training and test results are labeled separately. Every number and plot below is recomputed from input WAV/LAB; no saved model or result is loaded.
+The signal is framed with full 25 ms windows and 10 ms hops, using Python's nearest-sample rounding with ties to even. Energy is STE divided by frame size. Default MODE=enhanced requires HIGH confirmation and continuation above LOW. Core uses native decisions without HIGH/LOW, final padding or duration filtering. The 200 ms rule measures estimated gaps between active frame supports; exact 200 ms is preserved. Enhanced alone uses the 100 ms support-span heuristic. Overlapping frames can bridge physical silence or retain brief impulses; these settings do not guarantee 200 ms of physical silence or 100 ms of voiced audio. Training and test results are labeled separately. Every number and plot below is recomputed from input WAV/LAB; no saved model or result is loaded.
 
 For standalone use, choose **Restart Kernel and Run All** and save the executed notebook so tables and plots stay visible; this notebook needs no project modules or generator/runner scripts to execute. Submit this `.ipynb` without bundling WAV or other signal files.
 
@@ -726,7 +752,7 @@ Project maintainers refresh this repository's audited CODE ZIP by rebuilding wit
     code(manual_features())
     md("## LAB alignment and scoring\n\nLAB labels use the frame center and half-open intervals. Region MAE/RMSE score START and END of complete matched final regions. A missing or extra region leaves the primary MAE undefined; frame and tolerance-based boundary scores are additional diagnostics.\n\nFor multiple speech regions, \"outer\" refers to each final region's START/END; the metric does not collapse regions into a single global envelope.")
     code(functions("core/metrics.py", "frame_labels", "frame_metrics", "ground_truth_regions", "region_endpoint_metrics", "boundary_metrics"))
-    md("## Final endpoint confirmation\n\nThe noise floor is estimated from TRAIN silence only. HIGH confirms speech; LOW retains weak speech. The 200 ms estimated support-gap rule and 100 ms support-span filter are heuristics, without a guarantee about physical silence or voiced duration. Silence waiting time and TT2 candidate padding do not extend final boundaries.")
+    md("## Final endpoint confirmation\n\nIn enhanced mode the noise floor is estimated from TRAIN silence only. Core uses native decisions and merges internal support gaps below 200 ms. Enhanced HIGH confirms speech; LOW retains weak speech. The 200 ms estimated support-gap rule and 100 ms support-span filter are heuristics, without a guarantee about physical silence or voiced duration. Silence waiting time and TT2 candidate padding do not extend final boundaries.")
     code(functions("core/endpoints.py", "fit_noise_floor", "endpoint_thresholds", "hysteresis_regions", "regions_to_mask"))
     post_names = ("_validate", "mask_segments", "fill_short_internal_silences") if algorithm == "tt2" else ("_validate", "mask_segments")
     code(functions("core/postprocess.py", *post_names))
@@ -746,18 +772,18 @@ Project maintainers refresh this repository's audited CODE ZIP by rebuilding wit
         code('W_CANDIDATES = tuple(float(w) for w in range(1, 51))\nERROR_EPS_MS = 1e-8\nPOLICY_FIELDS = ("endpoint_mode", "boundary_convention", "minimum_speech_ms", "minimum_silence_ms", "padding_stage")\n\n' + functions("app/weight_selection.py", "select_final_weight", "sweep_final_weights"))
     md("## Load four TRAIN input pairs\n\nTRAIN is read first. TEST WAV/LAB reads follow calibration and model locking.")
     code(LOAD_DATA)
-    md("## Fit fresh TRAIN parameters\n\nAll core model parameters and noise statistics are computed using the four TRAIN recordings.")
+    md("## Fit fresh TRAIN parameters\n\nBoth mode models are fit independently on the four TRAIN recordings; noise is calibrated only for enhanced.")
     code(FIT_MODEL)
     if algorithm == "tt2":
         md("### TRAIN FINAL W calibration\n\nShow all 50 candidates and 200 TRAIN rows. The original candidate-frame F1 proposal remains a separate diagnostic. The selected FINAL W is shared by all files.")
-        code(CALIBRATE_W)
+        code("for mode in ('core', 'enhanced'):\n    MODEL, TT2W_SWEEP_ROWS = MODELS[mode], TT2W_SWEEPS[mode]\n" + textwrap.indent(clean_code(CALIBRATE_W), "    ") + "\nMODEL, TT2W_SWEEP_ROWS = MODELS[MODE], TT2W_SWEEPS[MODE]")
     parameters = {
         "tt1": ["threshold", "silence_count", "speech_count", "overlap_low", "overlap_high", "iterations", "stop_reason", "area_residual", "overlap_silence_count", "overlap_speech_count"],
         "tt2": ["candidate_frame_selected_W", "candidate_frame_f1", "candidate_cleanup_records", "W", "finalW", "tie_preference_W", "bins", "smooth_radius", "padding_ms", "padding_frames"],
         "tt3": ["muSil", "stdSil", "muSp", "stdSp", "silence_count", "speech_count", "threshold", "threshold_rule", "speech_direction", "sigma_floor", "sigma_was_floored"],
     }
     code(MODEL_DISPLAY.format(parameter_names=parameters[algorithm]))
-    md("## Lock TRAIN model, then load TEST\n\nThe model digest is captured before TEST input reads and checked after scoring. Schema 2 uses `parameter_selection_set=train`, `evaluation_protocol=train_selected_reused_test`, and `historical_test_exposure=true`: these TEST recordings were seen during earlier development. The eight-file manifest retains WAV/LAB hashes and split provenance.")
+    md("## Lock TRAIN model, then load TEST\n\nBoth mode model digests are captured before TEST input reads and checked after scoring. Schema 3 model policy with schema 2 metrics uses `parameter_selection_set=train`, `evaluation_protocol=train_selected_reused_test`, and `historical_test_exposure=true`: these TEST recordings were seen during earlier development. The eight-file manifest retains WAV/LAB hashes and split provenance.")
     code(LOCK_MODEL)
     code(LOAD_TEST)
     md("## Computed algorithm illustration\n\nThe illustration uses the features and statistics calculated in this run.")
@@ -768,7 +794,7 @@ Project maintainers refresh this repository's audited CODE ZIP by rebuilding wit
     code(SUMMARY_DISPLAY)
     md("## All eight input files\n\nThis separate table includes TRAIN and TEST with explicit split labels. TRAIN results reuse the model fitted from TRAIN and therefore describe its training fit.")
     code('display_table(ALL_METRIC_ROWS, METRIC_COLUMNS, "All eight files: TRAIN and TEST shown explicitly")')
-    md("## Four inline TEST figures\n\nRed indicates LAB ground truth, blue indicates final predicted regions. Waveform and normalized STE share the same time axis. LOW/HIGH are the actual final confirmation thresholds. Each recording has its own figure cell.")
+    md("## Four inline TEST figures\n\nRed indicates LAB ground truth, blue indicates final predicted regions. Waveform and normalized STE share the same time axis. Enhanced LOW/HIGH are actual confirmation thresholds; core plots native T and exports LOW/HIGH as null. Each recording has its own figure cell.")
     code(PLOTTING)
     for filename in ("phone_F2", "phone_M2", "studio_F2", "studio_M2"):
         md(f"### {filename}.wav")

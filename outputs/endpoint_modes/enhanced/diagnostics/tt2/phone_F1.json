@@ -1,0 +1,86 @@
+{
+  "variant": "source",
+  "energy_threshold": 0.0017156231046586373,
+  "energy": {
+    "threshold": 0.0017156231046586373,
+    "peak_indices": [
+      0,
+      7,
+      10,
+      14,
+      17,
+      21,
+      31,
+      39,
+      42,
+      45,
+      51,
+      53,
+      63
+    ],
+    "peak_values": [
+      0.001044343315079459,
+      0.015141218896242209,
+      0.021182737002454814,
+      0.02923809447740496,
+      0.035279612583617566,
+      0.04333497005856771,
+      0.06347336374594306,
+      0.07958407869584334,
+      0.08562559680205595,
+      0.09166711490826855,
+      0.10375015112069377,
+      0.10777782985816885,
+      0.1279162235455442
+    ],
+    "first_peak": 0.001044343315079459,
+    "second_peak": 0.015141218896242209,
+    "fallback": null,
+    "bins": 64,
+    "smooth_radius": 2,
+    "histogram_range": [
+      3.742363071069121e-05,
+      0.12892314322991297
+    ],
+    "W": 20.0
+  },
+  "padding_frames": 25,
+  "padding_ms": 250.0,
+  "effective_padding_ms": 250.0,
+  "raw_speech_frames": 142,
+  "padded_speech_frames": 269,
+  "feature": "energy",
+  "source_status": "Teacher-requested energy-only histogram; 25/10 ms; 250 ms candidate padding retained as 25 hops",
+  "native_threshold": 0.0017156231046586373,
+  "native_threshold_units": "sum of squared samples",
+  "candidate_regions": [
+    [
+      0.29,
+      2.995
+    ]
+  ],
+  "final_regions": [
+    [
+      0.53,
+      2.745
+    ]
+  ],
+  "endpoint_mode": "enhanced",
+  "geometry": "union of active frame supports",
+  "final_padding_ms": 0.0,
+  "padding_stage": "candidate diagnostics only",
+  "low_ste_threshold": 0.0025149672448754727,
+  "high_ste_threshold": 0.013307332273144389,
+  "endpoint_noise": {
+    "noise_mean": 0.00038711079659476316,
+    "noise_std": 0.0007092854827602364,
+    "noise_q95": 0.0012140144555334857,
+    "noise_upper": 0.0025149672448754727,
+    "noise_count": 497,
+    "calibration": "training silence only; population std; Q95 nearest rank",
+    "high_multiplier": 1.5
+  },
+  "minimum_speech_ms": 100.0,
+  "minimum_silence_ms": 200.0,
+  "endpoint_policy": "raw STE hysteresis; candidates/debug excluded; no fixed final padding"
+}

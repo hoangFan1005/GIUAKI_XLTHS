@@ -1,0 +1,72 @@
+{
+  "variant": "source",
+  "energy_threshold": 0.00136423548694805,
+  "energy": {
+    "threshold": 0.00136423548694805,
+    "peak_indices": [
+      0,
+      6,
+      16,
+      25,
+      49,
+      62
+    ],
+    "peak_values": [
+      0.0008681498553305771,
+      0.011285948119297503,
+      0.028648945225909044,
+      0.044275642621859436,
+      0.08594683567772714,
+      0.10851873191632214
+    ],
+    "first_peak": 0.0008681498553305771,
+    "second_peak": 0.011285948119297503,
+    "fallback": null,
+    "bins": 64,
+    "smooth_radius": 2,
+    "histogram_range": [
+      0.0,
+      0.11112318148231387
+    ],
+    "W": 20.0
+  },
+  "padding_frames": 25,
+  "padding_ms": 250.0,
+  "effective_padding_ms": 250.0,
+  "raw_speech_frames": 137,
+  "padded_speech_frames": 207,
+  "feature": "energy",
+  "source_status": "Teacher-requested energy-only histogram; 25/10 ms; 250 ms candidate padding retained as 25 hops",
+  "native_threshold": 0.00136423548694805,
+  "native_threshold_units": "sum of squared samples",
+  "candidate_regions": [
+    [
+      0.51,
+      2.5949886621315192
+    ]
+  ],
+  "final_regions": [
+    [
+      0.76,
+      2.3649886621315193
+    ]
+  ],
+  "endpoint_mode": "enhanced",
+  "geometry": "union of active frame supports",
+  "final_padding_ms": 0.0,
+  "padding_stage": "candidate diagnostics only",
+  "low_ste_threshold": 0.0025149672448754727,
+  "high_ste_threshold": 0.012276785714285716,
+  "endpoint_noise": {
+    "noise_mean": 0.00038711079659476316,
+    "noise_std": 0.0007092854827602364,
+    "noise_q95": 0.0012140144555334857,
+    "noise_upper": 0.0025149672448754727,
+    "noise_count": 497,
+    "calibration": "training silence only; population std; Q95 nearest rank",
+    "high_multiplier": 1.5
+  },
+  "minimum_speech_ms": 100.0,
+  "minimum_silence_ms": 200.0,
+  "endpoint_policy": "raw STE hysteresis; candidates/debug excluded; no fixed final padding"
+}

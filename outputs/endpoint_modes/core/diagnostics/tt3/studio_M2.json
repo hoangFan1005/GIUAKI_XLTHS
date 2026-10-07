@@ -1,0 +1,35 @@
+{
+  "threshold": 0.0028777336852328582,
+  "native_threshold": 0.0028777336852328582,
+  "native_threshold_units": "normalized STE",
+  "candidate_regions": [
+    [
+      0.46,
+      1.4549886621315193
+    ],
+    [
+      1.47,
+      1.5349886621315192
+    ],
+    [
+      1.57,
+      1.9349886621315193
+    ]
+  ],
+  "final_regions": [
+    [
+      0.46,
+      1.9349886621315193
+    ]
+  ],
+  "low_ste_threshold": null,
+  "high_ste_threshold": null,
+  "endpoint_noise": null,
+  "minimum_speech_ms": 0.0,
+  "minimum_silence_ms": 200.0,
+  "endpoint_mode": "core",
+  "geometry": "union of active frame supports",
+  "final_padding_ms": 0.0,
+  "padding_stage": "excluded from core FINAL",
+  "endpoint_policy": "native decisions; merge internal support gaps below 200 ms; no duration filter or final padding"
+}

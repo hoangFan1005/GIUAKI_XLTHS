@@ -1,0 +1,717 @@
+{
+  "variant": "source",
+  "frame_ms": 25.0,
+  "hop_ms": 10.0,
+  "feature": "energy",
+  "decision_rule": "Energy > threshold",
+  "sample_rounding": "nearest_integer_samples_python_round_ties_to_even",
+  "padding_ms": 250.0,
+  "bins": 64,
+  "smooth_radius": 2,
+  "padding_frames": 25,
+  "framing_adaptation": "paper 50/50 ms to assignment 25/10 ms; preserve 250 ms padding as 25 hops",
+  "W": 20.0,
+  "parameter_rule": "valid regions; minimum worst per-file regret; mean MAE; declared W preference on ties; smallest W otherwise",
+  "source": "Energy-only adaptation requested by teacher; histogram threshold from Giannakopoulos pp.1-2; 25/10 ms and candidate padding are declared choices",
+  "schema_version": 3,
+  "metrics_schema_version": 2,
+  "endpoint_mode": "core",
+  "parameter_selection_set": "train",
+  "evaluation_protocol": "train_selected_reused_test",
+  "historical_test_exposure": true,
+  "training_files": [
+    "phone_F1",
+    "phone_M1",
+    "studio_F1",
+    "studio_M1"
+  ],
+  "minimum_internal_silence_ms": 200.0,
+  "minimum_speech_ms": 0.0,
+  "minimum_silence_ms": 200.0,
+  "endpoint_noise": null,
+  "endpoint_policy": "native decisions; merge internal support gaps below 200 ms; no duration filter or final padding",
+  "feature_rule": "Energy (sum of squared samples)",
+  "padding_stage": "excluded from core FINAL",
+  "boundary_convention": "union of active frame supports",
+  "candidate_frame_selected_W": 1.0,
+  "candidate_frame_f1": 0.8986983588002264,
+  "candidate_frame_selection_scores": [
+    {
+      "W": 1.0,
+      "candidate_frame_f1": 0.8986983588002264,
+      "tp": 794,
+      "fp": 179,
+      "fn": 0
+    },
+    {
+      "W": 3.0,
+      "candidate_frame_f1": 0.8966685488424618,
+      "tp": 794,
+      "fp": 183,
+      "fn": 0
+    },
+    {
+      "W": 5.0,
+      "candidate_frame_f1": 0.8956570783981952,
+      "tp": 794,
+      "fp": 185,
+      "fn": 0
+    },
+    {
+      "W": 10.0,
+      "candidate_frame_f1": 0.8941441441441441,
+      "tp": 794,
+      "fp": 188,
+      "fn": 0
+    },
+    {
+      "W": 20.0,
+      "candidate_frame_f1": 0.8941441441441441,
+      "tp": 794,
+      "fp": 188,
+      "fn": 0
+    }
+  ],
+  "candidate_cleanup_records": {
+    "full_pipeline_records": 4,
+    "predict_only_fallback_records": 0
+  },
+  "candidate_frame_selection_applicable": true,
+  "finalW": 20.0,
+  "tie_preference_W": 20.0,
+  "W_selection_train": {
+    "endpoint_mode": "core",
+    "boundary_convention": "union of active frame supports",
+    "minimum_speech_ms": 0.0,
+    "minimum_silence_ms": 200.0,
+    "padding_stage": "excluded from core FINAL",
+    "selected_W": 20.0,
+    "tie_preference_W": 20.0,
+    "selected_summary": {
+      "W": 20.0,
+      "files": 4,
+      "invalid_files": 1,
+      "mean_MAE_ms": null,
+      "valid_files_mean_MAE_ms": 12.50377928949357,
+      "max_MAE_ms": 27.505668934240333,
+      "max_regret_ms": 0.011337868480731927
+    },
+    "summaries": [
+      {
+        "W": 1.0,
+        "files": 4,
+        "invalid_files": 2,
+        "mean_MAE_ms": null,
+        "valid_files_mean_MAE_ms": 30.00566893424034,
+        "max_MAE_ms": 42.50566893424046,
+        "max_regret_ms": 15.000000000000128
+      },
+      {
+        "W": 2.0,
+        "files": 4,
+        "invalid_files": 2,
+        "mean_MAE_ms": null,
+        "valid_files_mean_MAE_ms": 25.005668934240333,
+        "max_MAE_ms": 37.50566893424035,
+        "max_regret_ms": 10.000000000000014
+      },
+      {
+        "W": 3.0,
+        "files": 4,
+        "invalid_files": 1,
+        "mean_MAE_ms": null,
+        "valid_files_mean_MAE_ms": 19.170445956160197,
+        "max_MAE_ms": 37.50566893424035,
+        "max_regret_ms": 10.000000000000014
+      },
+      {
+        "W": 4.0,
+        "files": 4,
+        "invalid_files": 1,
+        "mean_MAE_ms": null,
+        "valid_files_mean_MAE_ms": 17.503779289493565,
+        "max_MAE_ms": 32.50566893424045,
+        "max_regret_ms": 5.011337868480626
+      },
+      {
+        "W": 5.0,
+        "files": 4,
+        "invalid_files": 1,
+        "mean_MAE_ms": null,
+        "valid_files_mean_MAE_ms": 17.503779289493565,
+        "max_MAE_ms": 32.50566893424045,
+        "max_regret_ms": 5.011337868480626
+      },
+      {
+        "W": 6.0,
+        "files": 4,
+        "invalid_files": 1,
+        "mean_MAE_ms": null,
+        "valid_files_mean_MAE_ms": 15.837112622826906,
+        "max_MAE_ms": 32.50566893424045,
+        "max_regret_ms": 5.011337868480626
+      },
+      {
+        "W": 7.0,
+        "files": 4,
+        "invalid_files": 1,
+        "mean_MAE_ms": null,
+        "valid_files_mean_MAE_ms": 14.170445956160274,
+        "max_MAE_ms": 32.50566893424045,
+        "max_regret_ms": 5.000000000000114
+      },
+      {
+        "W": 8.0,
+        "files": 4,
+        "invalid_files": 1,
+        "mean_MAE_ms": null,
+        "valid_files_mean_MAE_ms": 14.170445956160274,
+        "max_MAE_ms": 32.50566893424045,
+        "max_regret_ms": 5.000000000000114
+      },
+      {
+        "W": 9.0,
+        "files": 4,
+        "invalid_files": 1,
+        "mean_MAE_ms": null,
+        "valid_files_mean_MAE_ms": 14.170445956160274,
+        "max_MAE_ms": 32.50566893424045,
+        "max_regret_ms": 5.000000000000114
+      },
+      {
+        "W": 10.0,
+        "files": 4,
+        "invalid_files": 1,
+        "mean_MAE_ms": null,
+        "valid_files_mean_MAE_ms": 12.50377928949357,
+        "max_MAE_ms": 27.505668934240333,
+        "max_regret_ms": 0.011337868480731927
+      },
+      {
+        "W": 11.0,
+        "files": 4,
+        "invalid_files": 1,
+        "mean_MAE_ms": null,
+        "valid_files_mean_MAE_ms": 12.50377928949357,
+        "max_MAE_ms": 27.505668934240333,
+        "max_regret_ms": 0.011337868480731927
+      },
+      {
+        "W": 12.0,
+        "files": 4,
+        "invalid_files": 1,
+        "mean_MAE_ms": null,
+        "valid_files_mean_MAE_ms": 12.50377928949357,
+        "max_MAE_ms": 27.505668934240333,
+        "max_regret_ms": 0.011337868480731927
+      },
+      {
+        "W": 13.0,
+        "files": 4,
+        "invalid_files": 1,
+        "mean_MAE_ms": null,
+        "valid_files_mean_MAE_ms": 12.50377928949357,
+        "max_MAE_ms": 27.505668934240333,
+        "max_regret_ms": 0.011337868480731927
+      },
+      {
+        "W": 14.0,
+        "files": 4,
+        "invalid_files": 1,
+        "mean_MAE_ms": null,
+        "valid_files_mean_MAE_ms": 12.50377928949357,
+        "max_MAE_ms": 27.505668934240333,
+        "max_regret_ms": 0.011337868480731927
+      },
+      {
+        "W": 15.0,
+        "files": 4,
+        "invalid_files": 1,
+        "mean_MAE_ms": null,
+        "valid_files_mean_MAE_ms": 12.50377928949357,
+        "max_MAE_ms": 27.505668934240333,
+        "max_regret_ms": 0.011337868480731927
+      },
+      {
+        "W": 16.0,
+        "files": 4,
+        "invalid_files": 1,
+        "mean_MAE_ms": null,
+        "valid_files_mean_MAE_ms": 12.50377928949357,
+        "max_MAE_ms": 27.505668934240333,
+        "max_regret_ms": 0.011337868480731927
+      },
+      {
+        "W": 17.0,
+        "files": 4,
+        "invalid_files": 1,
+        "mean_MAE_ms": null,
+        "valid_files_mean_MAE_ms": 12.50377928949357,
+        "max_MAE_ms": 27.505668934240333,
+        "max_regret_ms": 0.011337868480731927
+      },
+      {
+        "W": 18.0,
+        "files": 4,
+        "invalid_files": 1,
+        "mean_MAE_ms": null,
+        "valid_files_mean_MAE_ms": 12.50377928949357,
+        "max_MAE_ms": 27.505668934240333,
+        "max_regret_ms": 0.011337868480731927
+      },
+      {
+        "W": 19.0,
+        "files": 4,
+        "invalid_files": 1,
+        "mean_MAE_ms": null,
+        "valid_files_mean_MAE_ms": 12.50377928949357,
+        "max_MAE_ms": 27.505668934240333,
+        "max_regret_ms": 0.011337868480731927
+      },
+      {
+        "W": 20.0,
+        "files": 4,
+        "invalid_files": 1,
+        "mean_MAE_ms": null,
+        "valid_files_mean_MAE_ms": 12.50377928949357,
+        "max_MAE_ms": 27.505668934240333,
+        "max_regret_ms": 0.011337868480731927
+      },
+      {
+        "W": 21.0,
+        "files": 4,
+        "invalid_files": 1,
+        "mean_MAE_ms": null,
+        "valid_files_mean_MAE_ms": 12.50377928949357,
+        "max_MAE_ms": 27.505668934240333,
+        "max_regret_ms": 0.011337868480731927
+      },
+      {
+        "W": 22.0,
+        "files": 4,
+        "invalid_files": 1,
+        "mean_MAE_ms": null,
+        "valid_files_mean_MAE_ms": 12.50377928949357,
+        "max_MAE_ms": 27.505668934240333,
+        "max_regret_ms": 0.011337868480731927
+      },
+      {
+        "W": 23.0,
+        "files": 4,
+        "invalid_files": 1,
+        "mean_MAE_ms": null,
+        "valid_files_mean_MAE_ms": 12.50377928949357,
+        "max_MAE_ms": 27.505668934240333,
+        "max_regret_ms": 0.011337868480731927
+      },
+      {
+        "W": 24.0,
+        "files": 4,
+        "invalid_files": 1,
+        "mean_MAE_ms": null,
+        "valid_files_mean_MAE_ms": 12.50377928949357,
+        "max_MAE_ms": 27.505668934240333,
+        "max_regret_ms": 0.011337868480731927
+      },
+      {
+        "W": 25.0,
+        "files": 4,
+        "invalid_files": 1,
+        "mean_MAE_ms": null,
+        "valid_files_mean_MAE_ms": 12.50377928949357,
+        "max_MAE_ms": 27.505668934240333,
+        "max_regret_ms": 0.011337868480731927
+      },
+      {
+        "W": 26.0,
+        "files": 4,
+        "invalid_files": 1,
+        "mean_MAE_ms": null,
+        "valid_files_mean_MAE_ms": 12.50377928949357,
+        "max_MAE_ms": 27.505668934240333,
+        "max_regret_ms": 0.011337868480731927
+      },
+      {
+        "W": 27.0,
+        "files": 4,
+        "invalid_files": 1,
+        "mean_MAE_ms": null,
+        "valid_files_mean_MAE_ms": 12.50377928949357,
+        "max_MAE_ms": 27.505668934240333,
+        "max_regret_ms": 0.011337868480731927
+      },
+      {
+        "W": 28.0,
+        "files": 4,
+        "invalid_files": 1,
+        "mean_MAE_ms": null,
+        "valid_files_mean_MAE_ms": 12.50377928949357,
+        "max_MAE_ms": 27.505668934240333,
+        "max_regret_ms": 0.011337868480731927
+      },
+      {
+        "W": 29.0,
+        "files": 4,
+        "invalid_files": 1,
+        "mean_MAE_ms": null,
+        "valid_files_mean_MAE_ms": 14.170445956160274,
+        "max_MAE_ms": 27.505668934240333,
+        "max_regret_ms": 5.0000000000001155
+      },
+      {
+        "W": 30.0,
+        "files": 4,
+        "invalid_files": 1,
+        "mean_MAE_ms": null,
+        "valid_files_mean_MAE_ms": 14.170445956160274,
+        "max_MAE_ms": 27.505668934240333,
+        "max_regret_ms": 5.0000000000001155
+      },
+      {
+        "W": 31.0,
+        "files": 4,
+        "invalid_files": 1,
+        "mean_MAE_ms": null,
+        "valid_files_mean_MAE_ms": 14.170445956160274,
+        "max_MAE_ms": 27.505668934240333,
+        "max_regret_ms": 5.0000000000001155
+      },
+      {
+        "W": 32.0,
+        "files": 4,
+        "invalid_files": 1,
+        "mean_MAE_ms": null,
+        "valid_files_mean_MAE_ms": 14.170445956160274,
+        "max_MAE_ms": 27.505668934240333,
+        "max_regret_ms": 5.0000000000001155
+      },
+      {
+        "W": 33.0,
+        "files": 4,
+        "invalid_files": 1,
+        "mean_MAE_ms": null,
+        "valid_files_mean_MAE_ms": 14.170445956160274,
+        "max_MAE_ms": 27.505668934240333,
+        "max_regret_ms": 5.0000000000001155
+      },
+      {
+        "W": 34.0,
+        "files": 4,
+        "invalid_files": 1,
+        "mean_MAE_ms": null,
+        "valid_files_mean_MAE_ms": 14.170445956160274,
+        "max_MAE_ms": 27.505668934240333,
+        "max_regret_ms": 5.0000000000001155
+      },
+      {
+        "W": 35.0,
+        "files": 4,
+        "invalid_files": 1,
+        "mean_MAE_ms": null,
+        "valid_files_mean_MAE_ms": 14.170445956160274,
+        "max_MAE_ms": 27.505668934240333,
+        "max_regret_ms": 5.0000000000001155
+      },
+      {
+        "W": 36.0,
+        "files": 4,
+        "invalid_files": 1,
+        "mean_MAE_ms": null,
+        "valid_files_mean_MAE_ms": 14.170445956160274,
+        "max_MAE_ms": 27.505668934240333,
+        "max_regret_ms": 5.0000000000001155
+      },
+      {
+        "W": 37.0,
+        "files": 4,
+        "invalid_files": 1,
+        "mean_MAE_ms": null,
+        "valid_files_mean_MAE_ms": 14.166666666666698,
+        "max_MAE_ms": 27.505668934240333,
+        "max_regret_ms": 5.0000000000001155
+      },
+      {
+        "W": 38.0,
+        "files": 4,
+        "invalid_files": 1,
+        "mean_MAE_ms": null,
+        "valid_files_mean_MAE_ms": 14.166666666666698,
+        "max_MAE_ms": 27.505668934240333,
+        "max_regret_ms": 5.0000000000001155
+      },
+      {
+        "W": 39.0,
+        "files": 4,
+        "invalid_files": 1,
+        "mean_MAE_ms": null,
+        "valid_files_mean_MAE_ms": 14.166666666666698,
+        "max_MAE_ms": 27.505668934240333,
+        "max_regret_ms": 5.0000000000001155
+      },
+      {
+        "W": 40.0,
+        "files": 4,
+        "invalid_files": 1,
+        "mean_MAE_ms": null,
+        "valid_files_mean_MAE_ms": 14.166666666666698,
+        "max_MAE_ms": 27.505668934240333,
+        "max_regret_ms": 5.0000000000001155
+      },
+      {
+        "W": 41.0,
+        "files": 4,
+        "invalid_files": 1,
+        "mean_MAE_ms": null,
+        "valid_files_mean_MAE_ms": 14.166666666666698,
+        "max_MAE_ms": 27.505668934240333,
+        "max_regret_ms": 5.0000000000001155
+      },
+      {
+        "W": 42.0,
+        "files": 4,
+        "invalid_files": 1,
+        "mean_MAE_ms": null,
+        "valid_files_mean_MAE_ms": 14.166666666666698,
+        "max_MAE_ms": 27.505668934240333,
+        "max_regret_ms": 5.0000000000001155
+      },
+      {
+        "W": 43.0,
+        "files": 4,
+        "invalid_files": 1,
+        "mean_MAE_ms": null,
+        "valid_files_mean_MAE_ms": 14.166666666666698,
+        "max_MAE_ms": 27.505668934240333,
+        "max_regret_ms": 5.0000000000001155
+      },
+      {
+        "W": 44.0,
+        "files": 4,
+        "invalid_files": 1,
+        "mean_MAE_ms": null,
+        "valid_files_mean_MAE_ms": 14.166666666666698,
+        "max_MAE_ms": 27.505668934240333,
+        "max_regret_ms": 5.0000000000001155
+      },
+      {
+        "W": 45.0,
+        "files": 4,
+        "invalid_files": 1,
+        "mean_MAE_ms": null,
+        "valid_files_mean_MAE_ms": 14.166666666666698,
+        "max_MAE_ms": 27.505668934240333,
+        "max_regret_ms": 5.0000000000001155
+      },
+      {
+        "W": 46.0,
+        "files": 4,
+        "invalid_files": 1,
+        "mean_MAE_ms": null,
+        "valid_files_mean_MAE_ms": 14.166666666666698,
+        "max_MAE_ms": 27.505668934240333,
+        "max_regret_ms": 5.0000000000001155
+      },
+      {
+        "W": 47.0,
+        "files": 4,
+        "invalid_files": 1,
+        "mean_MAE_ms": null,
+        "valid_files_mean_MAE_ms": 14.166666666666698,
+        "max_MAE_ms": 27.505668934240333,
+        "max_regret_ms": 5.0000000000001155
+      },
+      {
+        "W": 48.0,
+        "files": 4,
+        "invalid_files": 1,
+        "mean_MAE_ms": null,
+        "valid_files_mean_MAE_ms": 14.166666666666698,
+        "max_MAE_ms": 27.505668934240333,
+        "max_regret_ms": 5.0000000000001155
+      },
+      {
+        "W": 49.0,
+        "files": 4,
+        "invalid_files": 1,
+        "mean_MAE_ms": null,
+        "valid_files_mean_MAE_ms": 14.166666666666698,
+        "max_MAE_ms": 27.505668934240333,
+        "max_regret_ms": 5.0000000000001155
+      },
+      {
+        "W": 50.0,
+        "files": 4,
+        "invalid_files": 1,
+        "mean_MAE_ms": null,
+        "valid_files_mean_MAE_ms": 14.166666666666698,
+        "max_MAE_ms": 27.505668934240333,
+        "max_regret_ms": 5.0000000000001155
+      }
+    ],
+    "best_by_file": {
+      "phone_F1": {
+        "minimum_MAE_ms": null,
+        "optimal_W": []
+      },
+      "phone_M1": {
+        "minimum_MAE_ms": 2.4999999999999467,
+        "optimal_W": [
+          6.0,
+          7.0,
+          8.0,
+          9.0,
+          10.0,
+          11.0,
+          12.0,
+          13.0,
+          14.0,
+          15.0,
+          16.0,
+          17.0,
+          18.0,
+          19.0,
+          20.0,
+          21.0,
+          22.0,
+          23.0,
+          24.0,
+          25.0,
+          26.0,
+          27.0,
+          28.0
+        ]
+      },
+      "studio_F1": {
+        "minimum_MAE_ms": 7.494331065759696,
+        "optimal_W": [
+          37.0,
+          38.0,
+          39.0,
+          40.0,
+          41.0,
+          42.0,
+          43.0,
+          44.0,
+          45.0,
+          46.0,
+          47.0,
+          48.0,
+          49.0,
+          50.0
+        ]
+      },
+      "studio_M1": {
+        "minimum_MAE_ms": 27.505668934240333,
+        "optimal_W": [
+          10.0,
+          11.0,
+          12.0,
+          13.0,
+          14.0,
+          15.0,
+          16.0,
+          17.0,
+          18.0,
+          19.0,
+          20.0,
+          21.0,
+          22.0,
+          23.0,
+          24.0,
+          25.0,
+          26.0,
+          27.0,
+          28.0,
+          29.0,
+          30.0,
+          31.0,
+          32.0,
+          33.0,
+          34.0,
+          35.0,
+          36.0,
+          37.0,
+          38.0,
+          39.0,
+          40.0,
+          41.0,
+          42.0,
+          43.0,
+          44.0,
+          45.0,
+          46.0,
+          47.0,
+          48.0,
+          49.0,
+          50.0
+        ]
+      }
+    },
+    "shared_optimal_W": [],
+    "candidate_W": [
+      1.0,
+      2.0,
+      3.0,
+      4.0,
+      5.0,
+      6.0,
+      7.0,
+      8.0,
+      9.0,
+      10.0,
+      11.0,
+      12.0,
+      13.0,
+      14.0,
+      15.0,
+      16.0,
+      17.0,
+      18.0,
+      19.0,
+      20.0,
+      21.0,
+      22.0,
+      23.0,
+      24.0,
+      25.0,
+      26.0,
+      27.0,
+      28.0,
+      29.0,
+      30.0,
+      31.0,
+      32.0,
+      33.0,
+      34.0,
+      35.0,
+      36.0,
+      37.0,
+      38.0,
+      39.0,
+      40.0,
+      41.0,
+      42.0,
+      43.0,
+      44.0,
+      45.0,
+      46.0,
+      47.0,
+      48.0,
+      49.0,
+      50.0
+    ],
+    "selection_set": "train",
+    "evaluation_protocol": "train_final_calibration",
+    "selection_rule": "valid regions; minimum worst per-file regret; mean MAE; declared W preference on ties; smallest W otherwise",
+    "evaluated_files": [
+      "phone_F1",
+      "phone_M1",
+      "studio_F1",
+      "studio_M1"
+    ],
+    "endpoint_policy": "native decisions; merge internal support gaps below 200 ms; no duration filter or final padding",
+    "note": "W was calibrated using these TRAIN LABs; TEST has historical exposure and is reused for scoring, so no holdout independence is claimed.",
+    "calibration_digest": "44b1591191d1956579d75f195c1f40f7fffc8a1b953104a9227f42dda5b40509"
+  },
+  "calibration_digest": "44b1591191d1956579d75f195c1f40f7fffc8a1b953104a9227f42dda5b40509"
+}

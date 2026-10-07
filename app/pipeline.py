@@ -12,6 +12,7 @@ import matplotlib.pyplot as plt
 from algorithms import tt1_hodgkinson as tt1
 from algorithms import tt2_histogram as tt2
 from algorithms import tt3_gaussian as tt3
+from app.config import endpoint_mode_root
 from app.config import (PROJECT_ROOT, TRAIN_DIR, TEST_DIR, OUTPUT_DIR, FILE_ORDER,
                         FRAME_MS, HOP_MS, SAMPLE_ROUNDING,
                         MIN_SILENCE_SECONDS, MIN_SPEECH_SECONDS, BOUNDARY_TOLERANCE_SECONDS,
@@ -265,6 +266,15 @@ def predict_and_score(algorithm, record, params):
                   parameter_selection_set='test' if legacy_test_tuned else params.get('parameter_selection_set', 'train'),
                   evaluation_protocol='test_tuned_not_independent' if legacy_test_tuned else params.get('evaluation_protocol', 'train_selected_reused_test'),
                   historical_test_exposure=True if legacy_test_tuned else params.get('historical_test_exposure', True))
+    # Export the actual sampled timing and the locked mode policy beside metrics.
+    scores.update(endpoint_mode=params.get('endpoint_mode', 'enhanced'),
+                  boundary_convention=params.get('boundary_convention', diagnostic.get('geometry')),
+                  minimum_speech_ms=diagnostic.get('minimum_speech_ms'),
+                  minimum_silence_ms=diagnostic.get('minimum_silence_ms'),
+                  padding_stage=diagnostic.get('padding_stage'), final_padding_ms=diagnostic.get('final_padding_ms'),
+                  frame_ms=FRAME_MS, hop_ms=HOP_MS, sample_rounding=SAMPLE_ROUNDING,
+                  actual_frame_ms=record['features'].get('frame_ms'), actual_hop_ms=record['features'].get('hop_ms'),
+                  frame_samples=record['features'].get('frame_size'), hop_samples=record['features'].get('hop_size'))
     return dict(file=record["name"], algorithm=algorithm, mask=mask, metrics=scores,
                 final_regions=final_regions, ground_truth_regions=expected_regions,region_pairs=region_scores['region_pairs'],
                 predicted_boundaries=predicted_boundaries,
@@ -383,23 +393,27 @@ def summarize(metrics):
 
     Input: metrics là rows endpoint/frame của từng file. Output: rows mean
     MAE/RMSE, pooled endpoint RMSE, F1 và số file có metric không xác định;
-    metric không xác định được loại khỏi mean và được đếm rõ.
+    primary mean chỉ xác định khi mọi file hợp lệ; mean subset được ghi riêng.
     """
     rows = []
-    for algorithm in dict.fromkeys(row["algorithm"] for row in metrics):
-        selected = [row for row in metrics if row["algorithm"] == algorithm]
-        valid = [row for row in selected if row["mae_ms"] is not None]
+    for algorithm, mode in dict.fromkeys((row["algorithm"], row.get("endpoint_mode", "enhanced")) for row in metrics):
+        selected = [row for row in metrics if row["algorithm"] == algorithm and row.get("endpoint_mode", "enhanced") == mode]
+        valid = [row for row in selected if row["mae_ms"] is not None
+                 and row.get("ground_truth_region_count") == row.get("predicted_region_count")]
         squared=sum(row.get('endpoint_squared_error_ms2',(row['rmse_ms']**2)*2) for row in valid)
         error_count=sum(row.get('endpoint_error_count',2) for row in valid)
         ordered=sorted(row['mae_ms'] for row in valid)
         median=(ordered[len(ordered)//2] if len(ordered)%2 else (ordered[len(ordered)//2-1]+ordered[len(ordered)//2])/2) if ordered else None
         count_correct=sum(row.get('ground_truth_region_count')==row.get('predicted_region_count') for row in selected)
-        rows.append(dict(algorithm=algorithm, metrics_schema_version=2,
+        rows.append(dict(algorithm=algorithm, endpoint_mode=mode, metrics_schema_version=2,
                          files=len(selected), evaluated_files=len(valid),
                          missing_speech_files=len(selected) - len(valid),
-                         mean_file_mae_ms=sum(row["mae_ms"] for row in valid) / len(valid) if valid else None,
-                         mean_file_rmse_ms=sum(row["rmse_ms"] for row in valid) / len(valid) if valid else None,
-                         pooled_endpoint_rmse_ms=math.sqrt(squared/error_count) if error_count else None,
+                         mean_file_mae_ms=sum(row["mae_ms"] for row in valid) / len(valid) if valid and len(valid)==len(selected) else None,
+                         valid_files_mean_file_mae_ms=sum(row["mae_ms"] for row in valid) / len(valid) if valid else None,
+                         mean_file_rmse_ms=sum(row["rmse_ms"] for row in valid) / len(valid) if valid and len(valid)==len(selected) else None,
+                         valid_files_mean_file_rmse_ms=sum(row["rmse_ms"] for row in valid) / len(valid) if valid else None,
+                         pooled_endpoint_rmse_ms=math.sqrt(squared/error_count) if error_count and len(valid)==len(selected) else None,
+                         valid_files_pooled_endpoint_rmse_ms=math.sqrt(squared/error_count) if error_count else None,
                          median_file_mae_ms=median,min_file_mae_ms=min(ordered) if ordered else None,max_file_mae_ms=max(ordered) if ordered else None,
                          region_count_correct_files=count_correct,region_count_incorrect_files=len(selected)-count_correct,
                          top_mae_files='; '.join(f"{r['file']}:{r['mae_ms']:.2f}ms" for r in sorted(valid,key=lambda r:r['mae_ms'],reverse=True)[:3]),
@@ -495,9 +509,12 @@ def run_experiment(args):
         selected.append("tt2-context")
 
     # Lock every model, including FINAL W and noise, before TEST WAV/LAB I/O.
-    models, sweeps = {}, {}
-    for key in selected:
-        models[key], sweeps[key] = fit_training_model(key, train_common)
+    modes = ('core', 'enhanced') if getattr(args, 'compare_endpoint_modes', False) else (getattr(args, 'endpoint_mode', 'enhanced'),)
+    locked_models, locked_sweeps = {}, {}
+    for mode in modes:
+        locked_models[mode], locked_sweeps[mode] = {}, {}
+        for key in selected:
+            locked_models[mode][key], locked_sweeps[mode][key] = fit_training_model(key, train_common, endpoint_mode=mode)
 
     evaluate_all=getattr(args,'evaluate_all',False)
     audio_test = [load_audio_file(input_path)] if input_path else audio_train+load_audio_folder(TEST_DIR) if evaluate_all else load_audio_folder(TEST_DIR)
@@ -507,128 +524,144 @@ def run_experiment(args):
     evaluation_split = 'all_dataset' if evaluate_all else "train" if input_path and input_path.parent == TRAIN_DIR.resolve() else "external" if input_path and input_path.parent != TEST_DIR.resolve() else "test"
     test_common = prepare_records(audio_test)
     records_by_algorithm = {key: test_common for key in selected}
-    tables = OUTPUT_DIR / "tables"
-    figures_root = OUTPUT_DIR / "figures"
-    tables.mkdir(parents=True, exist_ok=True)
-    figures_root.mkdir(parents=True, exist_ok=True)
-    run_name = args.algorithm + ("_with_context" if args.compare_context else "")
-    if evaluate_all:run_name+='_all_dataset'
-    run_folder = tables / run_name
-    if input_path:
-        # Một lần thử file không ghi đè metric tổng hợp của batch bốn test.
-        run_folder = run_folder / "single" / input_path.stem
-        print(f"Chạy WAV: {input_path} | tập {evaluation_split}; ngưỡng/noise/W đã chọn trên 4 WAV TRAIN.")
+    all_mode_rows = []
+    for mode in modes:
+        models, sweeps = locked_models[mode], locked_sweeps[mode]
+        output_root = endpoint_mode_root(mode, OUTPUT_DIR)
+        tables = output_root / "tables"
+        figures_root = output_root / "figures"
+        tables.mkdir(parents=True, exist_ok=True)
+        figures_root.mkdir(parents=True, exist_ok=True)
+        run_name = args.algorithm + ("_with_context" if args.compare_context else "")
+        if evaluate_all:run_name+='_all_dataset'
+        run_folder = tables / run_name
+        if input_path:
+            # Một lần thử file không ghi đè metric tổng hợp của batch bốn test.
+            run_folder = run_folder / "single" / input_path.stem
+            print(f"Chạy WAV: {input_path} | tập {evaluation_split}; ngưỡng/noise/W đã chọn trên 4 WAV TRAIN.")
 
-    # Export the already locked TRAIN models and calibration audit.
-    for key in selected:
-        model = models[key]
-        if key=='tt2':
-            selection, sweep_rows = model['W_selection_train'], sweeps[key]
-            audit=tables/'tt2_w_selection'
-            write_csv(audit/'sweep.csv',sweep_rows)
-            write_csv(audit/'summary.csv',selection['summaries'])
-            write_csv(audit/'best_by_file.csv',[dict(filename=name,**values) for name,values in selection['best_by_file'].items()])
-            write_json(audit/'selection.json',selection)
-            print(f"TT2 W={model['W']:g}: selected on four TRAIN LABs; TEST scoring reuses historically exposed data; "
-                  f"mean final MAE={selection['selected_summary']['mean_MAE_ms']} ms")
-        write_json(OUTPUT_DIR / "models" / f"{key}.json", model)
+        # Export the already locked TRAIN models and calibration audit.
+        for key in selected:
+            model = models[key]
+            if key=='tt2':
+                selection, sweep_rows = model['W_selection_train'], sweeps[key]
+                audit=tables/'tt2_w_selection'
+                write_csv(audit/'sweep.csv',sweep_rows)
+                write_csv(audit/'summary.csv',selection['summaries'])
+                write_csv(audit/'best_by_file.csv',[dict(filename=name,**values) for name,values in selection['best_by_file'].items()])
+                write_json(audit/'selection.json',selection)
+                print(f"TT2 W={model['W']:g}: selected on four TRAIN LABs; TEST scoring reuses historically exposed data; "
+                      f"mean final MAE={selection['selected_summary']['mean_MAE_ms']} ms")
+            write_json(output_root / "models" / f"{key}.json", model)
 
-    # Lưu dữ liệu thống kê giúp kiểm tra lại mean/std, normalization và LAB.
-    training_frames = []
-    for record in train_common:
-        for center, value, label in zip(record["features"]["centers"], record["features"]["ste_norm"], record["labels"]):
-            training_frames.append(dict(file=record["name"], center_s=center, ste_norm=value,
-                                        label="unlabeled" if label is None else "speech" if label else "silence"))
-    write_csv(tables / "training_frames.csv", training_frames)
-    statistics_path = run_folder / "dataset_statistics.csv" if input_path else tables / "dataset_statistics.csv"
-    write_csv(statistics_path, data_statistics(audio_train, "train") + data_statistics(audio_test, evaluation_split))
-    if "tt3" in models:
-        values_by_class = {0: [], 1: []}
+        # Lưu dữ liệu thống kê giúp kiểm tra lại mean/std, normalization và LAB.
+        training_frames = []
         for record in train_common:
-            for value, label in zip(record["features"]["ste_norm"], record["labels"]):
-                if label is not None:
-                    values_by_class[label].append(value)
-        training_figures = figures_root / "training"
-        training_figures.mkdir(exist_ok=True)
-        plot_gaussian_training(values_by_class, models["tt3"], training_figures / "gaussian_distributions.png")
+            for center, value, label in zip(record["features"]["centers"], record["features"]["ste_norm"], record["labels"]):
+                training_frames.append(dict(file=record["name"], center_s=center, ste_norm=value,
+                                            label="unlabeled" if label is None else "speech" if label else "silence"))
+        write_csv(tables / "training_frames.csv", training_frames)
+        statistics_path = run_folder / "dataset_statistics.csv" if input_path else tables / "dataset_statistics.csv"
+        write_csv(statistics_path, data_statistics(audio_train, "train") + data_statistics(audio_test, evaluation_split))
+        if "tt3" in models:
+            values_by_class = {0: [], 1: []}
+            for record in train_common:
+                for value, label in zip(record["features"]["ste_norm"], record["labels"]):
+                    if label is not None:
+                        values_by_class[label].append(value)
+            training_figures = figures_root / "training"
+            training_figures.mkdir(exist_ok=True)
+            plot_gaussian_training(values_by_class, models["tt3"], training_figures / "gaussian_distributions.png")
 
-    metric_rows, threshold_rows, results_by_file = [], [], {}
-    demo_figures, noise_rows = [], []
-    for key in selected:
-        folder = figures_root / key
-        folder.mkdir(exist_ok=True)
-        for record in records_by_algorithm[key]:
-            result = predict_and_score(key, record, models[key])
-            metric_rows.append(dict(file=record["name"],split=record.get('split',evaluation_split),algorithm=key, **result["metrics"]))
-            threshold_rows.append(dict(file=record["name"], algorithm=key,
-                                       **{name: value for name, value in result["diagnostic"].items() if not isinstance(value, (dict, list))}))
-            results_by_file.setdefault(record["name"], {})[key] = (record, result)
-            write_json(OUTPUT_DIR / "diagnostics" / key / f"{record['name']}.json", result["diagnostic"])
-            segments = mask_segments(result["mask"], record["features"]["starts"], record["duration"], frame_ends=record["features"]["ends"])
-            write_csv(OUTPUT_DIR / "predictions" / key / f"{record['name']}.csv",
-                      [dict(start_s=start, end_s=end, label="speech" if state else "sil") for start, end, state in segments])
-            figure = make_file_figure(record["name"], [(record, result)], folder / f"{record['name']}.png")
-            # Batch giữ 4 figure, --file chỉ giữ 1; các bản xuất phụ đóng ngay.
-            if args.algorithm != "all" and key == args.algorithm and not args.no_show:
-                demo_figures.append(figure)
-            else:
-                plt.close(figure)
+        metric_rows, threshold_rows, results_by_file = [], [], {}
+        demo_figures, noise_rows = [], []
+        for key in selected:
+            folder = figures_root / key
+            folder.mkdir(exist_ok=True)
+            for record in records_by_algorithm[key]:
+                result = predict_and_score(key, record, models[key])
+                metric_rows.append(dict(file=record["name"],split=record.get('split',evaluation_split),algorithm=key, **result["metrics"]))
+                threshold_rows.append(dict(file=record["name"], algorithm=key,
+                                           **{name: value for name, value in result["diagnostic"].items() if not isinstance(value, (dict, list))}))
+                results_by_file.setdefault(record["name"], {})[key] = (record, result)
+                write_json(output_root / "diagnostics" / key / f"{record['name']}.json", result["diagnostic"])
+                segments = mask_segments(result["mask"], record["features"]["starts"], record["duration"], frame_ends=record["features"]["ends"])
+                write_csv(output_root / "predictions" / key / f"{record['name']}.csv",
+                          [dict(start_s=start, end_s=end, label="speech" if state else "sil") for start, end, state in segments])
+                figure = make_file_figure(record["name"], [(record, result)], folder / f"{record['name']}.png")
+                # Batch giữ 4 figure, --file chỉ giữ 1; các bản xuất phụ đóng ngay.
+                if args.algorithm != "all" and key == args.algorithm and not args.no_show:
+                    demo_figures.append(figure)
+                else:
+                    plt.close(figure)
 
-            if args.snr_study:
-                noise_rows.append(dict(file=record["name"], algorithm=key, added_snr_db="clean", **result["metrics"]))
-                for level in NOISE_LEVELS_DB:
-                    file_seed = FILE_ORDER.index(record["name"]) if record["name"] in FILE_ORDER else zlib.crc32(record["name"].encode("utf-8"))
-                    base_noisy = noisy_copy(record, level, RANDOM_SEED + file_seed * 100 + level)
-                    noisy = prepare_records([base_noisy], key == "tt2")[0]
-                    noisy_result = predict_and_score(key, noisy, models[key])
-                    noise_rows.append(dict(file=record["name"], algorithm=key, added_snr_db=level, **noisy_result["metrics"]))
+                if args.snr_study:
+                    noise_rows.append(dict(file=record["name"], algorithm=key, added_snr_db="clean", **result["metrics"]))
+                    for level in NOISE_LEVELS_DB:
+                        file_seed = FILE_ORDER.index(record["name"]) if record["name"] in FILE_ORDER else zlib.crc32(record["name"].encode("utf-8"))
+                        base_noisy = noisy_copy(record, level, RANDOM_SEED + file_seed * 100 + level)
+                        noisy = prepare_records([base_noisy], key == "tt2")[0]
+                        noisy_result = predict_and_score(key, noisy, models[key])
+                        noise_rows.append(dict(file=record["name"], algorithm=key, added_snr_db=level, **noisy_result["metrics"]))
 
-    # all có một figure so sánh ba hàng/file; subset chỉ vẽ các WAV đã chọn.
-    if args.algorithm == "all":
-        comparison_folder = figures_root / "comparison"
-        comparison_folder.mkdir(exist_ok=True)
-        for name in display_order:
-            figure = make_file_figure(name, [results_by_file[name][key] for key in ("tt1", "tt2", "tt3")], comparison_folder / f"{name}.png")
-            if args.no_show:
-                plt.close(figure)
-            else:
-                demo_figures.append(figure)
-    else:
-        demo_figures.sort(key=lambda figure: display_order.index(figure._suptitle.get_text()))
-
-    # Lưu từng run độc lập; demo một thuật toán không ghi đè bảng tổng hợp all.
-    write_csv(run_folder / "test_metrics.csv", metric_rows)
-    write_csv(run_folder / "summary.csv", summarize(metric_rows))
-    write_csv(run_folder / "test_thresholds.csv", threshold_rows)
-    if args.snr_study:
-        write_csv(run_folder / "snr_study.csv", noise_rows)
-    if args.compare_context:
-        write_csv(tables / "context_benchmark_check.csv", context_benchmark(test_common))
-    write_json(run_folder / "run_config.json", dict(algorithm=args.algorithm, selected=selected,
-               input_file=str(input_path) if input_path else None, evaluated_files=evaluated_names,
-               evaluation_split=evaluation_split,
-               schema_version=2, metrics_schema_version=2,
-               parameter_selection_set='train', evaluation_protocol='train_selected_reused_test',
-               historical_test_exposure=True, training_files=[record['name'] for record in train_common],
-               parameter_selection={key:model['evaluation_protocol'] for key,model in models.items()},
-               frame_ms=FRAME_MS, hop_ms=HOP_MS, sample_rounding=SAMPLE_ROUNDING,
-               minimum_internal_silence_ms=MIN_SILENCE_SECONDS * 1000,minimum_speech_ms=MIN_SPEECH_SECONDS*1000,
-               snr_study=args.snr_study, normalization="per_recording_max", lab_center_convention="sample_exact_half_open",
-               boundary_convention="final confirmed regions; union of active frame supports", primary_metric="ordered final-region START/END MAE; unmatched regions explicitly undefined",
-               noise_seed=RANDOM_SEED))
-    print(f"Đã xuất kết quả: {OUTPUT_DIR}")
-    for row in summarize(metric_rows):
-        mae = f"{row['mean_file_mae_ms']:.2f}" if row["mean_file_mae_ms"] is not None else "N/A"
-        rmse = f"{row['mean_file_rmse_ms']:.2f}" if row["mean_file_rmse_ms"] is not None else "N/A"
-        print(f"{row['algorithm']}: mean endpoint MAE={mae} ms; "
-              f"mean per-file RMSE={rmse} ms; frame F1={row['mean_frame_f1']:.3f}")
-        print(f"  median={row['median_file_mae_ms']}; min={row['min_file_mae_ms']}; max={row['max_file_mae_ms']} ms; "
-              f"region counts correct={row['region_count_correct_files']}/{row['files']}; wrong={row['region_count_incorrect_files']}")
-        print(f"  highest MAE: {row['top_mae_files']}")
-    if not args.no_show:
-        positions = show_figures(demo_figures, args.show_seconds)
-        write_json(run_folder / "demo_layout.json", positions)
-        if len(demo_figures) == 4:
-            print(f"Demo đã bố trí {len(positions)} cửa sổ tại bốn góc.")
+        # all có một figure so sánh ba hàng/file; subset chỉ vẽ các WAV đã chọn.
+        if args.algorithm == "all":
+            comparison_folder = figures_root / "comparison"
+            comparison_folder.mkdir(exist_ok=True)
+            for name in display_order:
+                figure = make_file_figure(name, [results_by_file[name][key] for key in ("tt1", "tt2", "tt3")], comparison_folder / f"{name}.png")
+                if args.no_show:
+                    plt.close(figure)
+                else:
+                    demo_figures.append(figure)
         else:
-            print(f"Đã hiển thị {len(demo_figures)} figure cho WAV đã chọn.")
+            demo_figures.sort(key=lambda figure: display_order.index(figure._suptitle.get_text()))
+
+        # Lưu từng run độc lập; demo một thuật toán không ghi đè bảng tổng hợp all.
+        all_mode_rows.extend(metric_rows)
+        write_csv(run_folder / "test_metrics.csv", metric_rows)
+        if evaluate_all:
+            write_csv(tables / "all" / "test_metrics.csv", [row for row in metric_rows if row["split"]=="test"])
+            write_csv(tables / "all" / "summary.csv", summarize([row for row in metric_rows if row["split"]=="test"]))
+        write_csv(run_folder / "summary.csv", summarize(metric_rows))
+        write_csv(run_folder / "test_thresholds.csv", threshold_rows)
+        if args.snr_study:
+            write_csv(run_folder / "snr_study.csv", noise_rows)
+        if args.compare_context:
+            write_csv(tables / "context_benchmark_check.csv", context_benchmark(test_common))
+        write_json(run_folder / "run_config.json", dict(algorithm=args.algorithm, endpoint_mode=mode, selected=selected,
+                   input_file=str(input_path) if input_path else None, evaluated_files=evaluated_names,
+                   evaluation_split=evaluation_split,
+                   schema_version=2, metrics_schema_version=2,
+                   parameter_selection_set='train', evaluation_protocol='train_selected_reused_test',
+                   historical_test_exposure=True, training_files=[record['name'] for record in train_common],
+                   parameter_selection={key:model['evaluation_protocol'] for key,model in models.items()},
+                   frame_ms=FRAME_MS, hop_ms=HOP_MS, sample_rounding=SAMPLE_ROUNDING,
+                   minimum_internal_silence_ms=MIN_SILENCE_SECONDS * 1000,minimum_speech_ms=0. if mode=="core" else MIN_SPEECH_SECONDS*1000,
+                   snr_study=args.snr_study, normalization="per_recording_max", lab_center_convention="sample_exact_half_open",
+                   boundary_convention="union of active frame supports", primary_metric="ordered final-region START/END MAE; unmatched regions explicitly undefined",
+                   noise_seed=RANDOM_SEED))
+        print(f"Đã xuất kết quả: {output_root}")
+        for row in summarize(metric_rows):
+            mae = f"{row['mean_file_mae_ms']:.2f}" if row["mean_file_mae_ms"] is not None else "N/A"
+            rmse = f"{row['mean_file_rmse_ms']:.2f}" if row["mean_file_rmse_ms"] is not None else "N/A"
+            print(f"{row['algorithm']} [{mode}]: mean FINAL-region endpoint MAE={mae} ms; "
+                  f"mean per-file RMSE={rmse} ms; frame F1={row['mean_frame_f1']:.3f}")
+            print(f"  median={row['median_file_mae_ms']}; min={row['min_file_mae_ms']}; max={row['max_file_mae_ms']} ms; "
+                  f"region counts correct={row['region_count_correct_files']}/{row['files']}; wrong={row['region_count_incorrect_files']}")
+            print(f"  highest MAE: {row['top_mae_files']}")
+        if not args.no_show:
+            positions = show_figures(demo_figures, args.show_seconds)
+            write_json(run_folder / "demo_layout.json", positions)
+            if len(demo_figures) == 4:
+                print(f"Demo đã bố trí {len(positions)} cửa sổ tại bốn góc.")
+            else:
+                print(f"Đã hiển thị {len(demo_figures)} figure cho WAV đã chọn.")
+
+    if len(modes) == 2:
+        comparison = endpoint_mode_root('comparison', OUTPUT_DIR) / 'tables'
+        write_csv(comparison / 'all_metrics.csv', all_mode_rows)
+        write_csv(comparison / 'all_summary.csv', summarize(all_mode_rows))
+        test_rows = [row for row in all_mode_rows if row['split']=='test']
+        write_csv(comparison / 'test_metrics.csv', test_rows)
+        write_csv(comparison / 'test_summary.csv', summarize(test_rows))

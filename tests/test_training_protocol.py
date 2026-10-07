@@ -112,7 +112,7 @@ class DetectionContractTests(unittest.TestCase):
         self.assertIn('matched_boundary_mae_ms', metrics)
         self.assertIn('tolerance_boundary_mae_ms', metrics)
         self.assertNotIn('boundary_MAE_ms', metrics)
-        self.assertFalse(any(key.startswith('boundary_') and not key.startswith('boundary_inside_')
+        self.assertFalse(any(key.startswith('boundary_') and key != 'boundary_convention' and not key.startswith('boundary_inside_')
                              for key in metrics))
         with tempfile.TemporaryDirectory() as folder:
             path = Path(folder) / 'metrics.csv'
@@ -269,8 +269,8 @@ class TrainingProtocolTests(unittest.TestCase):
         lock = []
         self.require_fit()
         real_fit = pipeline.fit_training_model
-        def fit(algorithm, records):
-            value = real_fit(algorithm, records)
+        def fit(algorithm, records, **kwargs):
+            value = real_fit(algorithm, records, **kwargs)
             lock.append(algorithm)
             return value
         def load_file(path):
@@ -289,13 +289,13 @@ class TrainingProtocolTests(unittest.TestCase):
                 patch.object(pipeline, 'plot_gaussian_training'), \
                 patch.object(pipeline, 'plt'), contextlib.redirect_stdout(io.StringIO()):
             pipeline.run_experiment(args)
-            config = json.loads((Path(folder) / 'tables/all/single/phone_F2/run_config.json').read_text())
+            config = json.loads((Path(folder) / 'endpoint_modes/enhanced/tables/all/single/phone_F2/run_config.json').read_text())
             self.assertEqual(config['metrics_schema_version'], 2)
             self.assertEqual(config['parameter_selection_set'], 'train')
             self.assertEqual(config['evaluation_protocol'], 'train_selected_reused_test')
             self.assertTrue(config['historical_test_exposure'])
             self.assertEqual(config['evaluated_files'], ['phone_F2'])
-            with (Path(folder) / 'tables/all/single/phone_F2/test_metrics.csv').open(encoding='utf-8-sig', newline='') as handle:
+            with (Path(folder) / 'endpoint_modes/enhanced/tables/all/single/phone_F2/test_metrics.csv').open(encoding='utf-8-sig', newline='') as handle:
                 fields = next(csv.reader(handle))
             self.assertNotIn('boundary_MAE_ms', fields)
             self.assertEqual(len(fields), len(set(key.casefold() for key in fields)))

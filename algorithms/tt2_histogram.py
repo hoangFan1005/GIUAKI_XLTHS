@@ -3,7 +3,7 @@
 Reference: Giannakopoulos PDF pp.1–2 supplies the histogram threshold method.
 This assignment uses energy only, not the reference's two-feature AND rule.
 Assignment adaptation: 25/10 ms framing; retain 250 ms candidate padding each
-side as 25 hop steps. FINAL endpoints use raw STE hysteresis without padding.
+side as 25 hop steps. Enhanced FINAL uses raw STE hysteresis without final padding; core FINAL uses native Energy decisions and support-gap merging.
 The paper does not fix bin count, smoothing window, W or fallback behavior.
 These engineering choices are exposed as parameters and diagnostics.
 """

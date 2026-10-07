@@ -1,5 +1,21 @@
 # TT3 — Thống kê phân phối chuẩn Gaussian: giải thích thuật toán và code
 
+## Hai chế độ endpoint (07/10/2026)
+
+Mặc định `enhanced`: ngưỡng native tạo seed; noise TRAIN và HIGH/LOW xác nhận, giữ speech; nối gap support dưới 200 ms và lọc span dưới 100 ms. `core` giữ quyết định native và chỉ nối gap support dưới 200 ms, không lọc duration hoặc padding FINAL; LOW/HIGH là null. Gap ước lượng đúng 200 ms được giữ riêng. TT1 dùng STE ≥ T, TT2 dùng Energy > T, TT3 giữ hướng high/low của Gaussian native. Đây là hai chế độ endpoint của cùng ba thuật toán; enhanced là phần bổ sung của dự án.
+
+```powershell
+python main_tt1.py --endpoint-mode core
+python main.py --evaluate-all --compare-endpoint-modes
+```
+
+Mỗi mode fit và khóa model độc lập trên bốn TRAIN trước đọc TEST. Kết quả mới ở `outputs/endpoint_modes/core/` và `outputs/endpoint_modes/enhanced/`; bảng so sánh ở `outputs/endpoint_modes/comparison/tables/`. Model schema 3 giữ policy/digest, metric schema 2 tiếp tục `mae_ms`/`rmse_ms`. Thiếu/thừa vùng làm primary mean toàn bộ file undefined; `valid_files_*` là thống kê subset riêng. TEST có `historical_test_exposure=true`, không phải holdout độc lập. Không chọn mode tốt hơn riêng cho từng WAV.
+
+Notebook dùng `MODE="enhanced"` mặc định cho bốn TEST figure và một illustration; luôn fit/khóa `MODELS` cả hai mode trước TEST, xuất 16 dòng tám WAV/mode và bảng bốn TEST/mode. TT2 có 200 TRAIN sweep rows mỗi mode. Core plot native T; Energy TT2 được chuẩn hóa chỉ ở bước hiển thị. Source digest và model lock digests độc lập kiểm tra nguồn/outputs và model; Restart Kernel → Run All → Save vẫn chạy độc lập.
+
+PPTX/PDF và ZIP Python cũ giữ nguyên previous version. Các bảng, noise và ví dụ HIGH/LOW bên dưới mô tả enhanced; không phải công thức quyết định FINAL của core. Xem [báo cáo hai mode](KET_QUA_ENDPOINT_MODES_2026_10_07.md).
+
+
 Cập nhật theo code hiện tại ngày 06/10/2026. Tài liệu này mô tả TT3 đang chạy: thống kê trên normalized STE tuyến tính, tìm giao điểm hai mật độ Gaussian bằng phép tính đã center/scale, sau đó lấy biên bằng xử lý chung.
 
 ## Giao thức Stage1 và schema 2
@@ -203,7 +219,7 @@ Ta nằm giữa mean silence và mean speech, Tb không nằm trong miền đó,
 \boxed{T3=0.0028777336852}
 \]
 
-[Model TT3](../outputs/models/tt3.json) lưu ngưỡng và hai nghiệm này. Không có sigma nào bị floor trên dữ liệu hiện tại.
+[Model TT3](../outputs/endpoint_modes/enhanced/models/tt3.json) lưu ngưỡng và hai nghiệm này. Không có sigma nào bị floor trên dữ liệu hiện tại.
 
 ## 6. Tạo nhãn ứng viên
 
@@ -214,7 +230,7 @@ Ta nằm giữa mean silence và mean speech, Tb không nằm trong miền đó,
 
 Dataset hiện tại dùng hướng **high**. Ví dụ z=0.001 → silence ứng viên, z=0.01 → speech ứng viên.
 
-Nhánh lõi hỗ trợ mean đảo hướng, nhưng **FINAL hysteresis chỉ hỗ trợ speech có năng lượng cao**. `fit_training_model()` từ chối TRAIN cho hướng `low`; `detect_regions()` cũng từ chối model nhập vào có hướng `low` hoặc không hợp lệ bằng `ValueError` rõ ràng. Model cũ thiếu trường direction được hiểu là `high` để giữ tương thích. Không còn tình trạng âm thầm trả zero speech do candidate `z<=T` mâu thuẫn với HIGH `z>T`.
+Gaussian native và core FINAL hỗ trợ mean đảo hướng. **Enhanced FINAL hysteresis chỉ hỗ trợ speech có năng lượng cao**. Chỉ khi `endpoint_mode="enhanced"`, `fit_training_model()` từ chối TRAIN hướng `low` và `detect_regions()` từ chối model hướng `low` hoặc không hợp lệ bằng `ValueError`; core giữ hướng high/low native. Model cũ thiếu trường direction được hiểu là `high` để giữ tương thích. Không còn tình trạng âm thầm trả zero speech do candidate `z<=T` mâu thuẫn với HIGH `z>T`.
 
 Đây là giới hạn được công bố của pipeline FINAL, không phải hỗ trợ hoàn chỉnh việc phát hiện speech năng lượng thấp hơn noise. Các hàm lõi `fit()/predict()` vẫn có thể dùng riêng cho thí nghiệm hướng đảo.
 
@@ -341,11 +357,11 @@ python main_tt3.py --evaluate-all
 
 Mặc định chạy bốn test; `--file` chọn một WAV có LAB cùng tên; `--no-show` chỉ xuất file; `--evaluate-all` chấm cả tám WAV và không mở cửa sổ.
 
-- [Model TT3](../outputs/models/tt3.json): mean/std, nghiệm, sigma floor, T3, noise.
-- [Bảng metric TT3](../outputs/tables/tt3/test_metrics.csv).
-- [Ảnh phân phối train](../outputs/figures/training/gaussian_distributions.png): minh họa mật độ từ tham số đã học, không chứng minh phân phối thực đúng Gaussian.
-- [Diagnostic phone_F2](../outputs/diagnostics/tt3/phone_F2.json).
-- [Ảnh kết quả phone_F2](../outputs/figures/tt3/phone_F2.png).
+- [Model TT3](../outputs/endpoint_modes/enhanced/models/tt3.json): mean/std, nghiệm, sigma floor, T3, noise.
+- [Bảng metric TT3](../outputs/endpoint_modes/enhanced/tables/tt3/test_metrics.csv).
+- [Ảnh phân phối train](../outputs/endpoint_modes/enhanced/figures/training/gaussian_distributions.png): minh họa mật độ từ tham số đã học, không chứng minh phân phối thực đúng Gaussian.
+- [Diagnostic phone_F2](../outputs/endpoint_modes/enhanced/diagnostics/tt3/phone_F2.json).
+- [Ảnh kết quả phone_F2](../outputs/endpoint_modes/enhanced/figures/tt3/phone_F2.png).
 
 ## 11. Cách giải thích ngắn và giới hạn
 

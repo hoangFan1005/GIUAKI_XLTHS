@@ -169,6 +169,9 @@ def second(value):
                                                   "TEST reads must follow TRAIN calibration and lock")
                                     self.assertEqual(namespace["MODEL_LOCK_DIGEST"],
                                                      namespace["model_digest"](namespace["MODEL"]))
+                                    self.assertEqual(set(namespace['MODELS']), {'core','enhanced'})
+                                    for mode, model in namespace['MODELS'].items():
+                                        self.assertEqual(namespace['MODEL_LOCK_DIGESTS'][mode], namespace['model_digest'](model))
                                     checked.append(split)
                                 return real_loader(data_root, split)
                             namespace["load_dataset_folder"] = guarded_loader
@@ -183,6 +186,7 @@ def second(value):
                     self.assertIs(model["historical_test_exposure"], True)
                     self.assertEqual(namespace["MODEL_LOCK_DIGEST"], namespace["model_digest"](model))
                     self.assertEqual(len(namespace["DATASET_MANIFEST"]), 8)
+                    self.assertEqual(len(namespace["ALL_METRIC_ROWS"]), 16)
                     for row in namespace["ALL_METRIC_ROWS"]:
                         self.assertEqual(len(row), len({key.casefold() for key in row}))
                         self.assertNotIn("boundary_MAE_ms", row)
@@ -206,20 +210,22 @@ def second(value):
     def audit_with_core_benchmark(self, namespace, root):
         """Use tiny real core runs to catch generated metadata/scorer drift."""
         algorithm = namespace['ALGORITHM']
-        with patch.multiple(pipeline, TRAIN_DIR=root / 'data/train', TEST_DIR=root / 'data/test'):
-            train = pipeline.prepare_records(pipeline.load_audio_folder(root / 'data/train'))
-            test = pipeline.prepare_records(pipeline.load_audio_folder(root / 'data/test'))
-            model, rows = pipeline.fit_training_model(algorithm, train)
-        results = [pipeline.predict_and_score(algorithm, record, model) for record in train + test]
-        metric_rows = [dict(file=result['file'], algorithm=algorithm, **result['metrics']) for result in results]
-        pipeline.write_csv(root / 'outputs/tables/all_all_dataset/test_metrics.csv', metric_rows)
-        pipeline.write_csv(root / 'outputs/tables/all/summary.csv', pipeline.summarize(metric_rows[4:]))
-        pipeline.write_json(root / f'outputs/models/{algorithm}.json', model)
-        for result in results:
-            pipeline.write_json(root / f'outputs/diagnostics/{algorithm}/{result["file"]}.json', result['diagnostic'])
-        if algorithm == 'tt2':
-            pipeline.write_csv(root / 'outputs/tables/tt2_w_selection/sweep.csv', rows)
-            pipeline.write_json(root / 'outputs/tables/tt2_w_selection/selection.json', model['W_selection_train'])
+        for mode in ('core', 'enhanced'):
+            with patch.multiple(pipeline, TRAIN_DIR=root / 'data/train', TEST_DIR=root / 'data/test'):
+                train = pipeline.prepare_records(pipeline.load_audio_folder(root / 'data/train'))
+                model, rows = pipeline.fit_training_model(algorithm, train, endpoint_mode=mode)
+                test = pipeline.prepare_records(pipeline.load_audio_folder(root / 'data/test'))
+            results = [pipeline.predict_and_score(algorithm, record, model) for record in train + test]
+            metric_rows = [dict(file=result['file'],algorithm=algorithm,**result['metrics']) for result in results]
+            target = runner.endpoint_mode_root(mode, root / 'outputs')
+            pipeline.write_csv(target / 'tables/all_all_dataset/test_metrics.csv', metric_rows)
+            pipeline.write_csv(target / 'tables/all/summary.csv', pipeline.summarize(metric_rows[4:]))
+            pipeline.write_json(target / f'models/{algorithm}.json', model)
+            for result in results:
+                pipeline.write_json(target / f'diagnostics/{algorithm}/{result["file"]}.json', result['diagnostic'])
+            if algorithm == 'tt2':
+                pipeline.write_csv(target / 'tables/tt2_w_selection/sweep.csv', rows)
+                pipeline.write_json(target / 'tables/tt2_w_selection/selection.json', model['W_selection_train'])
         stream = io.StringIO()
         with contextlib.redirect_stdout(stream):
             exec(runner.AUDIT_CELL, namespace)
@@ -258,6 +264,7 @@ class NotebookAuditTests(unittest.TestCase):
                      training_files=list(runner.TRAIN_NAMES), endpoint_mode='core',
                      minimum_speech_ms=0., minimum_silence_ms=200., endpoint_noise=None,
                      boundary_convention='union of active frame supports', padding_stage='excluded from core FINAL')
+        model["calibration_digest"] = hashlib.sha256(json.dumps(model, sort_keys=True, ensure_ascii=False, allow_nan=False).encode("utf-8")).hexdigest()
         runner.audit_model_protocol(model, runner.model_digest(model))
         selected = dict(model, W=20., finalW=20., W_selection_train=dict(
             endpoint_mode='enhanced', minimum_speech_ms=100., minimum_silence_ms=200.,

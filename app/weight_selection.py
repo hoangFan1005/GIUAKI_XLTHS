@@ -94,6 +94,8 @@ def sweep_final_weights(records,model,predictor,candidates=W_CANDIDATES,
             result=predictor('tt2',record,params);metrics=result['metrics'];diag=result['diagnostic']
             if diag.get('endpoint_mode','enhanced') != mode:
                 raise ValueError('Predictor endpoint_mode disagrees with calibration model')
+            if diag.get('geometry', policy['boundary_convention']) != policy['boundary_convention']:
+                raise ValueError('Predictor geometry disagrees with calibration boundary_convention')
             for key in ('minimum_speech_ms','minimum_silence_ms','padding_stage'):
                 if key in diag and diag[key] != policy[key]:
                     raise ValueError(f'Predictor {key} disagrees with calibration model')

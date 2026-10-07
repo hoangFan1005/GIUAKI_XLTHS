@@ -24,11 +24,22 @@ def _plot_axis(axis, record, result):
     energy_axis = axis.twinx()
     energy_axis.plot(record["features"]["centers"], record["features"]["ste_norm"],
                      color="#dd8b12", linewidth=1.6, alpha=.95)
-    # These are the exact thresholds used by detection, not plot-only lines.
-    low=result['diagnostic']['low_ste_threshold']
-    high=result['diagnostic']['high_ste_threshold']
-    energy_axis.axhline(high,color='#8E44AD',linestyle='-.',linewidth=1.2)
-    energy_axis.axhline(low,color='#148F77',linestyle=':',linewidth=1.2)
+    diagnostic = result['diagnostic']
+    mode = diagnostic.get('endpoint_mode', 'enhanced')
+    threshold_handles = []
+    if mode == 'core':
+        native = diagnostic['native_threshold']
+        if diagnostic['native_threshold_units'] == 'sum of squared samples':
+            peak = max(record['features']['energy'], default=0.)
+            native = native / peak if peak else 0.
+        energy_axis.axhline(native, color='#8E44AD', linestyle='-.', linewidth=1.2)
+        threshold_handles.append(Line2D([], [], color='#8E44AD', linestyle='-.', label=f'Native T ({diagnostic.get("native_threshold_units")}): {diagnostic["native_threshold"]:.5g}'))
+    else:
+        low, high = diagnostic['low_ste_threshold'], diagnostic['high_ste_threshold']
+        energy_axis.axhline(high,color='#8E44AD',linestyle='-.',linewidth=1.2)
+        energy_axis.axhline(low,color='#148F77',linestyle=':',linewidth=1.2)
+        threshold_handles.extend([Line2D([], [], color='#8E44AD',linestyle='-.',label=f'High STE: {high:.5g}'),
+                                  Line2D([], [], color='#148F77',linestyle=':',label=f'Low STE: {low:.5g}')])
     energy_axis.set_ylim(-.05, 1.1)
     energy_axis.set_ylabel("Normalized STE", color="#a2670a", fontsize=9)
     axis.set_ylabel("Amplitude", fontsize=9)
@@ -41,16 +52,16 @@ def _plot_axis(axis, record, result):
     for boundary in result["predicted_boundaries"]:
         axis.axvline(boundary, color="#1766bd", linestyle="--", linewidth=1.35)
     mae = result["metrics"]["mae_ms"]
-    suffix = "Outer boundary MAE: N/A" if mae is None else f"Outer boundary MAE: {mae:.2f} ms"
-    axis.set_title(f"{record['name']} | {suffix} | {len(result['final_regions'])} speech region(s)", fontsize=10)
+    suffix = "FINAL-region endpoint MAE: N/A" if mae is None else f"FINAL-region endpoint MAE: {mae:.2f} ms"
+    axis.set_title(f"{record['name']} | {mode} | {suffix} | {len(result['final_regions'])} speech region(s)", fontsize=10)
     # Legend đủ nhãn kể cả không tìm được speech hoặc biên nội bộ.
     axis.legend(handles=[Line2D([], [], color="#555555", label="Waveform"),
                          Line2D([], [], color="#dd8b12", label="Normalized STE"),
-                         Line2D([], [], color='#8E44AD',linestyle='-.',label=f'High STE: {high:.5g}'),
-                         Line2D([], [], color='#148F77',linestyle=':',label=f'Low STE: {low:.5g}'),
+                         *threshold_handles,
                          Line2D([], [], color="#d62728", label="Ground truth"),
                          Line2D([], [], color="#1766bd", linestyle="--", label="Prediction")],
                 fontsize=8, ncol=3, loc="upper right")
+
 
 
 def make_file_figure(name, record_results, save_path):
