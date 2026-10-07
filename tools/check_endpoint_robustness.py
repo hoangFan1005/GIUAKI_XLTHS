@@ -1,8 +1,8 @@
 """Bounded synthetic characterization and four-arm TRAIN endpoint ablation.
 
-Run: python tools/check_endpoint_robustness.py
+Run: python tools/check_endpoint_robustness.py [--timing-research]
 Reads only TRAIN WAV/LABs. Writes diagnostic CSV/JSON only beneath
-outputs/tables/endpoint_robustness; never changes fitted production artifacts.
+outputs/tables/endpoint_robustness (legacy) or endpoint_modes_oct07/timing_research; never changes fitted production artifacts.
 Support gaps are estimates: true 200/210ms zero intervals can still be merged.
 """
 from __future__ import annotations
@@ -270,5 +270,282 @@ def main():
     return payload
 
 
+
+
+# Task 4 diagnostic branches: one factor at a time, never production policy.
+from copy import deepcopy
+from core.decision_timing import decision_cells
+from app.pipeline import algorithm_decision
+from app.weight_selection import select_final_weight
+
+TIMING_DESTINATION = OUTPUT_DIR / 'tables' / 'endpoint_modes_oct07' / 'timing_research'
+TIMING_TRIALS = [
+    dict(trial_id=trial_id,endpoint_mode=mode,geometry=geometry,minimum_speech_ms=minimum,
+         low_rule=low_rule,algorithms=ALGORITHMS if low_rule=='native' else ('tt1',))
+    for trial_id,mode,geometry,minimum,low_rule in (
+        ('core_support_0','core','support',0.,'native'),
+        ('core_cells_0','core','cells',0.,'native'),
+        ('core_support_100','core','support',100.,'native'),
+        ('enhanced_support_100','enhanced','support',100.,'native'),
+        ('enhanced_cells_100','enhanced','cells',100.,'native'),
+        ('enhanced_support_0','enhanced','support',0.,'native'),
+        ('enhanced_tt1_t1_support_100','enhanced','support',100.,'T1'))]
+
+
+def timing_predictor(algorithm, record, params):
+    """Same LAB-free experimental detector for fit W candidates and held-out scores.
+
+    Geometry controls every start/end, merge, duration filter and final mask.
+    Labels enter only the scorer after final detection. Native TT2 is unpadded.
+    """
+    f,duration=record['features'],record['duration']
+    geometry=params['geometry']; mode=params['endpoint_mode']
+    if geometry not in ('support','cells') or mode not in ('core','enhanced'):
+        raise ValueError('Unknown research geometry or endpoint mode')
+    starts,ends=decision_cells(f,duration) if geometry=='cells' else (f['starts'],f['ends'])
+    seed,diag=algorithm_decision(algorithm,f,params)
+    minimum=params['minimum_speech_ms']/1000
+    candidate=[(s,e) for s,e,k in mask_segments(seed,starts,duration,ends) if k]
+    low=high=None
+    if mode=='core':
+        merged=[]
+        for start,end in candidate:
+            if merged and start-merged[-1][1]<.2-1e-12:merged[-1]=(merged[-1][0],end)
+            else:merged.append((start,end))
+        final=[(s,e) for s,e in merged if e-s>=minimum-1e-12]
+    else:
+        if algorithm=='tt3' and params.get('speech_direction','high')!='high':
+            raise ValueError('Enhanced requires speech-high TT3')
+        if algorithm=='tt2':
+            peak=max(f['energy'],default=0.)
+            base=diag['energy_threshold']/peak if peak else 0.
+        else:base=params['threshold']
+        if params.get('low_rule')=='T1':
+            low=base; high=max(1.5*base,params['endpoint_noise']['noise_upper'])
+            if not 0<low<high:raise ValueError('unsupported LOW=T1: invalid hysteresis thresholds')
+        else:low,high=endpoint_thresholds(base,params['endpoint_noise'],histogram=algorithm=='tt2')
+        final=hysteresis_regions(f['ste_norm'],starts,ends,duration,low,high,.2,minimum,seed_mask=seed)
+    # Passing the chosen timing arrays provides whole-cell containment for cells.
+    mask=regions_to_mask(final,starts,ends)
+    diag.update(endpoint_mode=mode,geometry=geometry,boundary_convention=params.get('boundary_convention','nearest-frame centered decision cells' if geometry=='cells' else 'union of active frame supports'),
+        minimum_speech_ms=params['minimum_speech_ms'],minimum_silence_ms=200.,
+        padding_stage=params.get('padding_stage','excluded from core FINAL' if mode=='core' else 'none'),low_ste_threshold=low,high_ste_threshold=high,
+        candidate_regions=candidate,raw_speech_frames=sum(seed),final_regions=final,
+        last_native_active_end_s=_last_support(seed,ends))
+    reference=ground_truth_regions(record['intervals'])
+    return dict(mask=mask,final_regions=final,diagnostic=diag,metrics=region_endpoint_metrics(reference,final),
+                frame_metrics=frame_metrics(record['labels'],mask))
+
+
+def _branch_params(native,trial):
+    params=deepcopy(native)
+    # Native calibration digest and support W provenance are preliminary only.
+    params.pop('calibration_digest',None)
+    params.pop('W_selection_train',None)
+    params.update({k:v for k,v in trial.items() if k!='algorithms'})
+    params.update(boundary_convention='nearest-frame centered decision cells' if trial['geometry']=='cells'
+                  else 'union of active frame supports',minimum_silence_ms=200.,
+                  endpoint_policy='diagnostic native/hysteresis branch; merge estimated gaps below 200 ms',
+                  padding_stage='excluded from core FINAL' if trial['endpoint_mode']=='core'
+                  else 'candidate diagnostics only' if native.get('variant')=='source' else 'none')
+    return params
+
+
+def _digest(value):
+    return hashlib.sha256(json.dumps(value,sort_keys=True,ensure_ascii=False,allow_nan=False).encode('utf-8')).hexdigest()
+
+
+def timing_training_study(records):
+    """Four deterministic TRAIN folds; separate W=1..50 selection per branch."""
+    require_train(records)
+    records=sorted(records,key=lambda r:r['name'])
+    if len(records)!=4 or len({r['name'] for r in records})!=4:
+        raise ValueError('Exactly four distinct TRAIN records required')
+    heldout_rows=[]; sweep_rows=[]; models=[]
+    for fold,heldout in enumerate(records,1):
+        fit=[r for r in records if r is not heldout]
+        native={(mode,a):fit_training_model(a,fit,endpoint_mode=mode)[0]
+                for mode in ('core','enhanced') for a in ALGORITHMS}
+        for trial in TIMING_TRIALS:
+            for algorithm in trial['algorithms']:
+                params=_branch_params(native[trial['endpoint_mode'],algorithm],trial)
+                selection=None
+                if algorithm=='tt2':
+                    branch_rows=[]
+                    for w in range(1,51):
+                        candidate_params=dict(params,W=float(w),finalW=float(w))
+                        for record in fit:
+                            result=timing_predictor(algorithm,record,candidate_params)
+                            metrics=result['metrics']
+                            branch_rows.append(dict(filename=record['name'],W=float(w),
+                                endpoint_mode=trial['endpoint_mode'],boundary_convention=params['boundary_convention'],
+                                minimum_speech_ms=trial['minimum_speech_ms'],minimum_silence_ms=200.,
+                                padding_stage=params['padding_stage'],final_region_mae_ms=metrics['mae_ms'],
+                                ground_truth_region_count=metrics['ground_truth_region_count'],
+                                predicted_region_count=metrics['predicted_region_count'],status=metrics['status']))
+                    selection=select_final_weight(branch_rows)
+                    selection.update(trial_id=trial['trial_id'],geometry=trial['geometry'],low_rule=trial['low_rule'],
+                                     branch_predictor='tools.check_endpoint_robustness.timing_predictor',
+                                     selection_scorer='core.metrics.region_endpoint_metrics',evaluated_files=[r['name'] for r in fit])
+                    params.update(W=selection['selected_W'],finalW=selection['selected_W'],
+                                  W_selection_train=selection,parameter_rule=selection['selection_rule'])
+                    sweep_rows.extend(dict(fold=fold,trial_id=trial['trial_id'],geometry=trial['geometry'],**r) for r in branch_rows)
+                params.update(training_files=[r['name'] for r in fit],evaluation_protocol='four_fold_train_holdout',
+                              branch_predictor='tools.check_endpoint_robustness.timing_predictor',selection_scorer='core.metrics.region_endpoint_metrics')
+                digest=_digest(params)
+                models.append(dict(fold=fold,algorithm=algorithm,trial_id=trial['trial_id'],heldout_file=heldout['name'],
+                    fit_files=params['training_files'],model_sha256=digest,model=params,
+                    preliminary_native_W=native[trial['endpoint_mode'],algorithm].get('W'),
+                    preliminary_native_digest=native[trial['endpoint_mode'],algorithm].get('calibration_digest')))
+                try:
+                    result=timing_predictor(algorithm,heldout,params)
+                    scores=result['metrics']
+                    row=dict(**scores,final_regions=result['final_regions'],diagnostic=result['diagnostic'],
+                             **{f'frame_{k}':v for k,v in result['frame_metrics'].items()})
+                    if trial['trial_id'] in ('core_support_0','enhanced_support_100'):
+                        production=detect_regions(algorithm,heldout['features'],heldout['duration'],params)
+                        if production['final_regions']!=result['final_regions'] or production['mask']!=result['mask']:
+                            raise AssertionError('Matching support baseline differs from production')
+                except ValueError as error:
+                    if 'unsupported LOW=T1' not in str(error):raise
+                    row=dict(status=str(error),mae_ms=None,rmse_ms=None,missing_region_count=0,
+                             extra_region_count=0,signed_endpoint_errors_ms=[],region_pairs=[],final_regions=None)
+                heldout_rows.append(dict(fold=fold,file=heldout['name'],algorithm=algorithm,
+                    trial_id=trial['trial_id'],arm=trial['trial_id'],geometry=trial['geometry'],endpoint_mode=trial['endpoint_mode'],
+                    low_rule=trial['low_rule'],minimum_speech_ms=trial['minimum_speech_ms'],W=params.get('W'),
+                    model_sha256=digest,fit_files=params['training_files'],**row))
+        print(f'Timing TRAIN fold {fold}/4 complete',flush=True)
+    if len(heldout_rows)!=76 or len(sweep_rows)!=3600:raise AssertionError('Declared evaluation budget changed')
+    comparisons=[]
+    for row in heldout_rows:
+        baseline_id='core_support_0' if row['endpoint_mode']=='core' else 'enhanced_support_100'
+        if row['trial_id']==baseline_id:continue
+        baseline=next(r for r in heldout_rows if r['fold']==row['fold'] and r['algorithm']==row['algorithm'] and r['trial_id']==baseline_id)
+        a,b=row['mae_ms'],baseline['mae_ms']
+        comparisons.append(dict(fold=row['fold'],file=row['file'],algorithm=row['algorithm'],trial_id=row['trial_id'],
+            baseline_trial_id=baseline_id,baseline_status=baseline['status'],status=row['status'],
+            baseline_mae_ms=b,mae_ms=a,delta_mae_ms=a-b if a is not None and b is not None else None,
+            baseline_rmse_ms=baseline['rmse_ms'],rmse_ms=row['rmse_ms'],
+            delta_rmse_ms=row['rmse_ms']-baseline['rmse_ms'] if row['rmse_ms'] is not None and baseline['rmse_ms'] is not None else None,
+            validity_transition=f'{"valid" if b is not None else "undefined"}->{"valid" if a is not None else "undefined"}',
+            count_regression=row['missing_region_count']+row['extra_region_count']>baseline['missing_region_count']+baseline['extra_region_count'],
+            metric_regression=a is not None and b is not None and a>b+1e-8,
+            rmse_regression=row['rmse_ms'] is not None and baseline['rmse_ms'] is not None and row['rmse_ms']>baseline['rmse_ms']+1e-8))
+    return dict(heldout=heldout_rows,sweep=sweep_rows,models=models,comparisons=comparisons,summary=ablation_summary(heldout_rows))
+
+
+def _synthetic_record(samples,fs,speech,name):
+    duration=len(samples)/fs
+    intervals=[];cursor=0.
+    for a,b in speech:
+        start,end=a/fs,b/fs
+        if start>cursor:intervals.append((cursor,start,'sil'))
+        intervals.append((start,end,'v'));cursor=end
+    if cursor<duration:intervals.append((cursor,duration,'sil'))
+    return prepare_records([dict(name=name,split='train',samples=samples,sample_rate=fs,
+                                 duration=duration,intervals=intervals)])[0]
+
+
+def timing_waveform_study(records):
+    """Characterize physical GT separately using locked four-TRAIN models."""
+    require_train(records)
+    native={(mode,a):fit_training_model(a,records,endpoint_mode=mode)[0]
+            for mode in ('core','enhanced') for a in ALGORITHMS}
+    rows=[];oracle_cells=[];fixtures=[]
+    for fs in (16000,44100):
+        hop=round(fs*.01)
+        for gap in (190,200,210,250):
+            for phase in (0,1,hop//4,hop//2,3*hop//4,hop-1):
+                samples,speech=rectangular_case(fs,phase,gap)
+                record=_synthetic_record(samples,fs,speech,f'gap_{fs}_{gap}_{phase}')
+                metadata=dict(case='physical_gap',sample_rate_hz=fs,phase_samples=phase,
+                              true_gap_ms=(speech[1][0]-speech[0][1])/fs*1000)
+                fixtures.append((record,metadata))
+                f=record['features'];starts,ends=decision_cells(f,record['duration'])
+                values,supports=_overlap_oracle(speech,len(starts),f['frame_size'],f['hop_size'],fs)
+                # Independent cell LOW gap from literal integer-overlap active indices.
+                runs=[]
+                for i in range(len(starts)):
+                    count=sum(max(0,min(i*f['hop_size']+f['frame_size'],b)-max(i*f['hop_size'],a)) for a,b in speech)
+                    if count*10>=f['frame_size']:
+                        if runs and i==runs[-1][1]+1:runs[-1]=(runs[-1][0],i)
+                        else:runs.append((i,i))
+                left=runs[0][1];right=runs[1][0]
+                left_edge=((left+.5)*f['hop_size']+f['frame_size']/2)/fs
+                right_edge=((right-.5)*f['hop_size']+f['frame_size']/2)/fs
+                final=hysteresis_regions(values,starts,ends,record['duration'],.1,.5,.2,.1)
+                oracle_cells.append(dict(**metadata,geometry='cells',threshold_source='fixed diagnostic LOW=.1 HIGH=.5',
+                    estimated_cell_gap_ms=(right_edge-left_edge)*1000,support_gap_ms=(supports[1][0]-supports[0][1])*1000,
+                    low=.1,high=.5,final_regions=final,**region_endpoint_metrics(ground_truth_regions(record['intervals']),final)))
+        for burst in (75,95,100,105):
+            a=round(fs*.1);b=a+round(fs*burst/1000)
+            samples=[0.]*a+[1.]*(b-a)+[0.]*round(fs*.3)
+            fixtures.append((_synthetic_record(samples,fs,[(a,b)],f'burst_{fs}_{burst}'),
+                dict(case='physical_burst',sample_rate_hz=fs,true_speech_ms=(b-a)/fs*1000)))
+        for edge in ('start','end','both','weak_tail'):
+            n=round(fs*.6);a=0 if edge in ('start','both') else round(fs*.1)
+            b=n if edge in ('end','both','weak_tail') else round(fs*.4)
+            samples=[0.]*n
+            samples[a:b]=[1.]*(b-a)
+            if edge=='weak_tail':samples[round(fs*.4):b]=[.05]*(b-round(fs*.4))
+            fixtures.append((_synthetic_record(samples,fs,[(a,b)],f'edge_{fs}_{edge}'),
+                dict(case='physical_edge_or_tail',sample_rate_hz=fs,edge=edge,weak_tail_amplitude=.05 if edge=='weak_tail' else None)))
+    for record,metadata in fixtures:
+        for trial in TIMING_TRIALS:
+            for a in trial['algorithms']:
+                params=_branch_params(native[trial['endpoint_mode'],a],trial)
+                try:
+                    result=timing_predictor(a,record,params)
+                    extra=dict(final_regions=result['final_regions'],diagnostic=result['diagnostic'],**result['metrics'])
+                except ValueError as error:
+                    if 'unsupported LOW=T1' not in str(error):raise
+                    extra=dict(status=str(error),mae_ms=None,rmse_ms=None,final_regions=None)
+                rows.append(dict(**metadata,trial_id=trial['trial_id'],algorithm=a,geometry=trial['geometry'],
+                    endpoint_mode=trial['endpoint_mode'],minimum_speech_ms=trial['minimum_speech_ms'],
+                    model_sha256=_digest(params),threshold_source='locked four-TRAIN calibration; synthetic characterization only',
+                    ground_truth_regions=ground_truth_regions(record['intervals']),**extra))
+    return dict(waveforms=rows,oracle_cells=oracle_cells,synthetic_models=[dict(mode=mode,algorithm=a,model=model,
+        model_sha256=_digest(model)) for (mode,a),model in native.items()])
+
+
+def _write_research_table(name,rows):
+    fields=list(dict.fromkeys(k for row in rows for k in row))
+    with (TIMING_DESTINATION/f'{name}.csv').open('w',encoding='utf-8-sig',newline='') as handle:
+        writer=csv.DictWriter(handle,fieldnames=fields);writer.writeheader()
+        for row in rows:writer.writerow({k:_json_value(v) if v is None or isinstance(v,(tuple,list,dict)) else v for k,v in row.items()})
+
+
+def timing_research_main():
+    """Run Task 4 diagnostics explicitly; no TEST reads or automatic selection."""
+    TIMING_DESTINATION.mkdir(parents=True,exist_ok=True)
+    records=prepare_records(load_audio_folder(TRAIN_DIR));require_train(records)
+    hashes={str(path.relative_to(ROOT)):hashlib.sha256(path.read_bytes()).hexdigest()
+        for r in records for path in (Path(r['wav_path']),Path(r['wav_path']).with_suffix('.lab'))}
+    payload=timing_training_study(records)
+    synthetic=timing_waveform_study(records)
+    old_oracle=waveform_characterization()
+    for name,rows in (('heldout_scores',payload['heldout']),('tt2_branch_fit_sweep',payload['sweep']),
+                      ('fold_comparisons',payload['comparisons']),('heldout_summary',payload['summary']),
+                      ('locked_model_waveforms',synthetic['waveforms']),('fixed_oracle_support',old_oracle),
+                      ('fixed_oracle_cells',synthetic['oracle_cells'])):
+        _write_research_table(name,rows)
+    manifest=dict(parameter_selection_set='train',historical_test_exposure=True,
+        evaluation_protocol='four_fold_train_holdout',input_sha256=hashes,trials=TIMING_TRIALS,
+        heldout_rows=len(payload['heldout']),tt2_fit_branch_evaluations=len(payload['sweep']),
+        declared_TT2_W_candidates=list(range(1,51)),heldout_used_for_selection=False,
+        preliminary_native_support_sweeps_are_not_branch_selection=True,
+        branch_predictor='tools.check_endpoint_robustness.timing_predictor',selection_scorer='core.metrics.region_endpoint_metrics',
+        models=payload['models'],synthetic_models=synthetic['synthetic_models'],
+        limitations=['Cells extend nearest decisions to audio edges and unanalysed tail.',
+            'Full analysis windows remain 25 ms (1102 samples at 44.1 kHz).',
+            'Cells do not guarantee preservation of physical 200 ms silence.',
+            'Physical GT has not been changed; estimated gaps below 200 ms still merge.',
+            'Primary full mean remains undefined whenever any held-out score is undefined.',
+            'Four TRAIN folds and historically exposed data do not create an independent TEST set.',
+            'No default/convention/LOW automatically selected or applied.'])
+    (TIMING_DESTINATION/'manifest.json').write_text(json.dumps(manifest,ensure_ascii=False,indent=2),encoding='utf-8')
+    print(f"Research: {len(payload['heldout'])} heldout rows; {len(payload['sweep'])} branch W fit evaluations; {len(synthetic['waveforms'])} locked-model synthetic rows",flush=True)
+    return dict(**payload,**synthetic,manifest=manifest)
+
 if __name__ == '__main__':
-    main()
+    timing_research_main() if '--timing-research' in sys.argv else main()

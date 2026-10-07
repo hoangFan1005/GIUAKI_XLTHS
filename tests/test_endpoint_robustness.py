@@ -253,5 +253,67 @@ class DiagnosticToolTests(unittest.TestCase):
         self.assertEqual(models['tt2']['W'], 20.)
 
 
+
+
+class TimingResearchTests(unittest.TestCase):
+    def setUp(self):
+        self.tool=importlib.import_module('tools.check_endpoint_robustness')
+
+    def test_cells_branch_scores_cell_membership_and_audio_edges(self):
+        self.assertTrue(hasattr(self.tool,'timing_predictor'), 'Shared research predictor required')
+        f=dict(centers=[.0125,.0225,.0325],starts=[0.,.01,.02],ends=[.025,.035,.045],ste_norm=[1.,0.,1.])
+        record=dict(name='edge',split='train',features=f,duration=.05,labels=[1,1,1],intervals=[(0.,.05,'v')])
+        params=dict(endpoint_mode='core',threshold=.5,geometry='cells',minimum_speech_ms=0.)
+        result=self.tool.timing_predictor('tt1',record,params)
+        self.assertEqual(result['final_regions'],[(0.,.05)])
+        self.assertEqual(result['mask'],[1,1,1])
+        self.assertEqual(result['metrics']['mae_ms'],0.)
+
+    def test_trial_matrix_is_bounded_one_factor_and_rejects_nontrain(self):
+        self.assertTrue(hasattr(self.tool,'TIMING_TRIALS'), 'Declared matrix required')
+        trials=self.tool.TIMING_TRIALS
+        self.assertEqual(len(trials),7)
+        self.assertEqual(sum(len(t['algorithms']) for t in trials)*4,76)
+        self.assertNotIn(('cells',0.,'enhanced'),{(t['geometry'],t['minimum_speech_ms'],t['endpoint_mode']) for t in trials})
+        with self.assertRaisesRegex(ValueError,'TRAIN'):
+            self.tool.timing_training_study([dict(split='test')])
+
+    def test_t1_zero_is_explicitly_unsupported_without_floor(self):
+        self.assertTrue(hasattr(self.tool,'timing_predictor'))
+        f=dict(centers=[.0125],starts=[0.],ends=[.025],ste_norm=[1.])
+        record=dict(name='zero',split='train',features=f,duration=.03,labels=[1],intervals=[(0.,.03,'v')])
+        params=dict(endpoint_mode='enhanced',threshold=0.,geometry='support',minimum_speech_ms=100.,low_rule='T1',
+                    endpoint_noise=dict(noise_upper=.03))
+        with self.assertRaisesRegex(ValueError,'unsupported LOW=T1'):
+            self.tool.timing_predictor('tt1',record,params)
+
+class TimingFoldIntegrationTests(unittest.TestCase):
+    def test_real_train_folds_budget_locked_geometry_and_full_undefined_scores(self):
+        tool=importlib.import_module('tools.check_endpoint_robustness')
+        records=prepare_records(load_audio_folder(TRAIN_DIR))
+        before=copy.deepcopy(records)
+        with redirect_stdout(io.StringIO()):payload=tool.timing_training_study(records)
+        self.assertEqual(records,before)
+        self.assertEqual(len(payload['heldout']),76)
+        self.assertEqual(len(payload['sweep']),3600)
+        self.assertEqual(len(payload['models']),76)
+        for entry in payload['models']:
+            self.assertEqual(len(entry['fit_files']),3)
+            self.assertNotIn(entry['heldout_file'],entry['fit_files'])
+            model=entry['model']
+            self.assertEqual(model['historical_test_exposure'],True)
+            self.assertEqual(model['boundary_convention'],'nearest-frame centered decision cells' if model['geometry']=='cells' else 'union of active frame supports')
+            if entry['algorithm']=='tt2':
+                chosen=model['W_selection_train']
+                self.assertEqual(chosen['candidate_W'],[float(i) for i in range(1,51)])
+                self.assertEqual(chosen['minimum_speech_ms'],model['minimum_speech_ms'])
+                self.assertEqual(chosen['boundary_convention'],model['boundary_convention'])
+                self.assertEqual(model['W'],model['finalW'])
+        for summary in payload['summary']:
+            if summary['invalid_count']:
+                self.assertIsNone(summary['mean_mae_ms'])
+                self.assertIsNone(summary['mean_file_rmse_ms'])
+        self.assertEqual(len(payload['comparisons']),52)
+
 if __name__ == '__main__':
     unittest.main()
