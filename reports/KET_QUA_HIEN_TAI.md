@@ -10,6 +10,8 @@
 
 ## 1. Phiên bản đang dùng
 
+Baseline cho đợt đánh giá thuật toán/endpoint ngày 07/10 được khóa tại [baseline.json](../outputs/tables/endpoint_modes_oct07/baseline.json): **ba model enhanced hiện tại và 24 kết quả (8 WAV × 3 thuật toán)**, gồm FINAL regions, full masks, metrics/status, T/W/LOW/HIGH, record/features, SHA256 input/artifacts và versions môi trường. Đối chiếu trước sửa tài liệu khớp đủ 24 diagnostics/metric rows hiện hành và FINAL/MAE/status của nghiệm thu 07/10; mean TEST vẫn 20.00/13.75/12.50 ms. Đây là capture bằng model đã lưu, không fit lại hoặc tái tạo số liệu. Model core riêng chưa được tạo trong đợt khóa baseline.
+
 - TT1: Binary Search cân bằng diện tích nhầm lẫn trên normalized STE.
 - TT2: Histogram **chỉ Energy** theo yêu cầu mới của thầy; W = 20 chung, 64 bins, smoothing radius 2.
 - TT3: thống kê Gaussian population trên normalized STE, ngưỡng giao hai mật độ.
@@ -99,7 +101,9 @@ Nhiều vùng được ghép theo thời gian. Thiếu/thừa vùng làm MAE ch�
 
 Các bảng là kết quả pipeline hiện hành đã tính sau chuyển TT2 Energy-only. Việc dọn thư mục, tách tài liệu và đổi ngôn ngữ slide không thay đổi code thuật toán.
 
-## 8. Stage1: thay đổi và bằng chứng hồi quy
+## 8. Lịch sử 05/10/2026 — Stage1 và bằng chứng hồi quy
+
+Mục này giữ nguyên bằng chứng Stage1/Stage4 ngày 05/10; số 98 tests và branch/trạng thái push dưới đây chỉ áp dụng thời điểm đó. Nghiệm thu hiện hành 07/10 là 133 tests trong mục cập nhật đầu báo cáo.
 
 Stage1 tách detector khỏi chấm LAB, fit toàn bộ TRAIN trước TEST, hiệu chỉnh W trên TRAIN FINAL, khóa mô hình khi đánh giá và chuyển sang schema 2. Các main Python hiện hành đã đồng bộ.
 

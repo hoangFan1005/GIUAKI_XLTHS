@@ -1,4 +1,16 @@
-# Gói CODE chính và artifacts trước Stage1
+# Gói CODE chính — nghiệm thu 07/10/2026
+
+[JUPYTER_NOTEBOOKS_CODE_ONLY.zip](JUPYTER_NOTEBOOKS_CODE_ONLY.zip) là gói CODE hiện hành đã được kiểm tra nguồn/bytes ngày **07/10/2026**: đúng ba notebook đã thực thi, byte trùng file ngoài ZIP, không WAV/LAB/audio/module Python/slide. Ba notebook khớp model/metric/FINAL/ngưỡng với Python ở **24/24** trường hợp trên tám WAV, lưu tổng 15 PNG. Xem [hướng dẫn notebook](../notebooks/README.md) và [bằng chứng nghiệm thu](../outputs/tables/hotfix_oct06/verification.json).
+
+Nghiệm thu hiện hành đạt **133/133 tests trong 13.862 s**, 0 regression trên 24 trường hợp; mean bốn TEST TT1/TT2/TT3 vẫn **20.00/13.75/12.50 ms**. Đợt sửa tài liệu và [khóa baseline](../outputs/tables/endpoint_modes_oct07/baseline.json) giữ số liệu này, không tái tạo notebook/ZIP. Năm trường hợp END muộn vẫn còn; không có tuyên bố cải thiện MAE.
+
+Ba model enhanced dùng giao thức TRAIN/schema 2: model/noise/W fit TRAIN trước TEST, TT2 W1–50 chấm FINAL trên bốn TRAIN (200 dòng), chọn W20 bằng tie preference 20 khi hòa. Candidate W1/F1 ≈ 0.898698 là diagnostic riêng. Metric chính là `mae_ms` / `rmse_ms`; thiếu/thừa vùng làm primary undefined. TEST đã được xem trong phát triển: `train_selected_reused_test`, `historical_test_exposure=true`; đổi protocol không tạo holdout độc lập.
+
+`THUAT_TOAN_1.zip`, `THUAT_TOAN_2.zip`, `THUAT_TOAN_3.zip` và PPTX/PDF là **previous version (trước Stage1)**, cả chín binary giữ nguyên byte, chưa đồng bộ giao thức TRAIN/schema 2. Runtime đã chạy là Python 3.14; Python 3.10 chỉ kiểm tra cú pháp. CLI chấm cần WAV/LAB cùng tên. STT nhóm/họ tên/MSSV còn placeholder. Các trạng thái branch/push ngày 05/10 dưới đây là lịch sử, không mô tả trạng thái Git hiện tại.
+
+## Lịch sử 05/10/2026
+
+Các số test, thời gian chạy và trạng thái tích hợp trong mục này là bằng chứng lịch sử Stage1/Stage4.
 
 [JUPYTER_NOTEBOOKS_CODE_ONLY.zip](JUPYTER_NOTEBOOKS_CODE_ONLY.zip) là gói CODE chính đã tái tạo và kiểm tra ngày **05/10/2026**: đúng ba notebook đã chạy, byte trùng file ngoài ZIP, không WAV/LAB/audio/module Python/slide. Xem [hướng dẫn notebook](../notebooks/README.md).
 

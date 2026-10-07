@@ -26,6 +26,57 @@ def synthetic_record():
                 labels=frame_labels([(s + e) / 2 for s, e in zip(starts, ends)], intervals))
 
 
+class CurrentArtifactDocumentationTests(unittest.TestCase):
+    """Prevent current artifact labels from drifting to legacy TEST/schema 1."""
+    root = Path(__file__).resolve().parents[1]
+
+    def test_current_w_sweep_contains_train_names_and_unique_headers(self):
+        with (self.root / 'outputs/tables/tt2_w_selection/sweep.csv').open(
+                encoding='utf-8-sig', newline='') as handle:
+            reader = csv.DictReader(handle)
+            fields = reader.fieldnames
+            rows = list(reader)
+        self.assertEqual(len(rows), 200)
+        self.assertEqual({row['filename'] for row in rows},
+                         {'phone_F1', 'phone_M1', 'studio_F1', 'studio_M1'})
+        self.assertEqual(len(fields), len({key.casefold() for key in fields}))
+        self.assertIn('final_region_mae_ms', fields)
+
+    def test_current_metric_exports_have_schema_two_unique_headers(self):
+        for folder in ('all', 'all_all_dataset', 'tt1', 'tt2', 'tt3'):
+            with self.subTest(folder=folder):
+                with (self.root / 'outputs/tables' / folder / 'test_metrics.csv').open(
+                        encoding='utf-8-sig', newline='') as handle:
+                    reader = csv.DictReader(handle)
+                    fields = reader.fieldnames
+                    rows = list(reader)
+                self.assertEqual(len(fields), len({key.casefold() for key in fields}))
+                self.assertTrue({'mae_ms', 'rmse_ms', 'tolerance_boundary_mae_ms'} <= set(fields))
+                self.assertNotIn('boundary_MAE_ms', fields)
+                self.assertTrue(all(row['metrics_schema_version'] == '2' for row in rows))
+
+    def test_outputs_readme_labels_current_sweep_as_train_and_schema_two(self):
+        text = (self.root / 'outputs/README.md').read_text(encoding='utf-8')
+        sweep_line = next(line for line in text.splitlines() if '`tables/tt2_w_selection/`' in line)
+        self.assertIn('TRAIN', sweep_line)
+        self.assertNotIn('test', sweep_line.casefold())
+        self.assertIn('`mae_ms` / `rmse_ms`', text)
+        self.assertNotIn('`boundary_MAE_ms`', text)
+        self.assertNotIn('`boundary_mae_ms`', text)
+        self.assertIn('historical_test_exposure=true', text)
+
+    def test_submission_readme_separates_current_acceptance_from_oct05_history(self):
+        text = (self.root / 'submission/README.md').read_text(encoding='utf-8')
+        self.assertIn('## Lịch sử 05/10/2026', text)
+        current, history = text.split('## Lịch sử 05/10/2026', 1)
+        self.assertIn('07/10/2026', current)
+        self.assertIn('133/133', current)
+        self.assertNotIn('98/98', current)
+        self.assertIn('98/98', history)
+        self.assertIn('historical_test_exposure=true', current)
+        self.assertIn('schema 2', current)
+
+
 class DetectionContractTests(unittest.TestCase):
     def test_lab_free_detection_and_changed_lab_only_change_scoring(self):
         self.assertTrue(callable(getattr(pipeline, 'detect_regions', None)),
