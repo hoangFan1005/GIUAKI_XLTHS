@@ -48,7 +48,7 @@ class EndpointModeIntegrationTests(unittest.TestCase):
         from app.plotting import _plot_axis
         record=dict(name='a',samples=[0.,1.,0.],sample_rate=100,duration=.03,
                     features=dict(centers=[.01,.02],ste_norm=[.5,1.],energy=[2.,4.]))
-        result=dict(diagnostic=dict(endpoint_mode='core',native_threshold=2.,native_threshold_units='sum of squared samples',
+        result=dict(diagnostic=dict(endpoint_mode='core',native_threshold=2.,native_threshold_units='mean squared sample amplitude',
                                     low_ste_threshold=None,high_ste_threshold=None),ground_truth_boundaries=[],predicted_boundaries=[],
                     metrics=dict(mae_ms=None),final_regions=[])
         fig,axis=plt.subplots()
@@ -58,6 +58,7 @@ class EndpointModeIntegrationTests(unittest.TestCase):
             self.assertTrue(any('Native T' in label for label in labels))
             self.assertFalse(any('High STE' in label or 'Low STE' in label for label in labels))
             self.assertIn('core',axis.get_title())
+            self.assertEqual(list(fig.axes[1].lines[-1].get_ydata()),[.5,.5])
             self.assertIn('FINAL-region endpoint MAE',axis.get_title())
         finally:plt.close(fig)
 
@@ -104,3 +105,36 @@ class EndpointModeIntegrationTests(unittest.TestCase):
                 pipeline.run_experiment(parse_args([]))
             show.assert_called_once()
             self.assertEqual(len(show.call_args.args[0]),4)
+
+    def test_fixed_algorithm_all_dataset_preserves_shared_all_benchmarks(self):
+        import contextlib,csv,io,tempfile
+        from pathlib import Path
+        from unittest.mock import patch
+        from app import pipeline
+        from tests.test_notebook_protocol import tiny_dataset
+        with tempfile.TemporaryDirectory() as temporary:
+            root=Path(temporary);tiny_dataset(root)
+            with patch.multiple(pipeline,TRAIN_DIR=root/'train',TEST_DIR=root/'test',OUTPUT_DIR=root/'outputs'), \
+                 patch.object(pipeline,'make_file_figure',return_value=None),patch.object(pipeline,'plot_gaussian_training'), \
+                 contextlib.redirect_stdout(io.StringIO()):
+                pipeline.run_experiment(parse_args(['--evaluate-all','--compare-endpoint-modes']))
+                sentinels={}
+                for mode in ('core','enhanced'):
+                    target=root/'outputs/endpoint_modes'/mode/'tables/all'
+                    for name in ('test_metrics.csv','summary.csv'):
+                        path=target/name;sentinels[path]=path.read_bytes()
+                for algorithm in ('tt1','tt2','tt3'):
+                    pipeline.run_experiment(parse_args(['--evaluate-all','--compare-endpoint-modes'],fixed_algorithm=algorithm))
+                    for path,original in sentinels.items():
+                        self.assertEqual(path.read_bytes(),original, f'{algorithm} must preserve {path.name} shared benchmark')
+                    for mode in ('core','enhanced'):
+                        path=root/'outputs/endpoint_modes'/mode/'tables'/f'{algorithm}_all_dataset'/'test_metrics.csv'
+                        with path.open(encoding='utf-8-sig') as handle:rows=list(csv.DictReader(handle))
+                        self.assertEqual(len(rows),8)
+                        self.assertEqual({row['algorithm'] for row in rows},{algorithm})
+
+    def test_histogram_metadata_names_mean_squared_energy(self):
+        from app import pipeline
+        features=dict(ste_norm=[0.,.5,1.],energy=[0.,2.,4.],starts=[0.,.01,.02],ends=[.025,.035,.045])
+        _,diagnostic=pipeline.algorithm_decision('tt2',features,dict(bins=1,smooth_radius=0,W=5.,padding_frames=25))
+        self.assertEqual(diagnostic['native_threshold_units'],'mean squared sample amplitude')

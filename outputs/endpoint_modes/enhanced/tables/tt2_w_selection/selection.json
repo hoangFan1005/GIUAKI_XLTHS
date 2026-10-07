@@ -804,5 +804,5 @@
   ],
   "endpoint_policy": "hysteresis final regions; no fixed final padding",
   "note": "W was calibrated using these TRAIN LABs; TEST has historical exposure and is reused for scoring, so no holdout independence is claimed.",
-  "calibration_digest": "72c661f212a202e564e4546c76425ce4ab20883144fd12d7e0a971ac20c469dd"
+  "calibration_digest": "33a016d798ea363b0079dc61e2b390848a391ad7384847142cb5dedb03684361"
 }

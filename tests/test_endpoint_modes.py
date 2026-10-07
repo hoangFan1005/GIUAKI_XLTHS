@@ -37,7 +37,7 @@ class EndpointModesTests(unittest.TestCase):
                                dict(bins=1,smooth_radius=0,W=5.,padding_frames=25))
         self.assertEqual(mask, [0,0,1])  # one peak -> midpoint 2, equality is silence
         self.assertEqual(d['native_threshold'], 2.)
-        self.assertEqual(d['native_threshold_units'], 'sum of squared samples')
+        self.assertEqual(d['native_threshold_units'], 'mean squared sample amplitude')
 
     def test_context_native_decision_uses_normalized_ste(self):
         mask, d = self.decision('tt2-context', dict(ste_norm=[0.,.5,1.]),

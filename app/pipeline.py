@@ -152,7 +152,7 @@ def algorithm_decision(algorithm: str, features: dict, params: dict) -> tuple[li
         raise ValueError(f'Unknown algorithm: {algorithm}')
     source_histogram = algorithm in ('tt2', 'tt2-context') and diagnostic.get('variant') == 'source'
     diagnostic.update(native_threshold=diagnostic['energy_threshold'] if algorithm in ('tt2', 'tt2-context') else params['threshold'],
-                      native_threshold_units='sum of squared samples' if source_histogram else 'normalized STE')
+                      native_threshold_units='mean squared sample amplitude' if source_histogram else 'normalized STE')
     return mask, diagnostic
 
 
@@ -179,7 +179,7 @@ def detect_regions(algorithm, features, duration, params):
     source_histogram=algorithm=='tt2' and params.get('variant','source')=='source'
     mask = tt2.pad_speech(seed, diagnostic['padding_frames']) if mode == 'enhanced' and source_histogram else seed
 
-    # Algorithm masks are candidates. Final endpoints require HIGH confirmation,
+    # Algorithm masks are candidates. Enhanced endpoints require HIGH confirmation,
     # LOW continuation, short-gap merging and duration filtering.
     candidate_regions=[(s,e) for s,e,state in mask_segments(mask,features['starts'],duration,features['ends']) if state]
     if mode == 'core':
@@ -321,7 +321,7 @@ def fit_training_model(algorithm, train_records, *, endpoint_mode='enhanced'):
                  minimum_silence_ms=MIN_SILENCE_SECONDS*1000,
                  endpoint_noise=fit_noise_floor(train_records) if endpoint_mode == 'enhanced' else None,
                  endpoint_policy='native decisions; merge internal support gaps below 200 ms; no duration filter or final padding' if endpoint_mode == 'core' else 'hysteresis final regions; no fixed final padding',
-                 feature_rule='Energy (sum of squared samples)' if algorithm == 'tt2' else 'normalized STE',
+                 feature_rule='Energy (mean squared sample amplitude)' if algorithm == 'tt2' else 'normalized STE',
                  decision_rule='Energy > threshold' if algorithm == 'tt2' else 'STE <= threshold' if model.get('speech_direction') == 'low' else 'STE >= threshold',
                  padding_stage='excluded from core FINAL' if endpoint_mode == 'core' else 'candidate diagnostics only' if algorithm == 'tt2' else 'none',
                  boundary_convention='union of active frame supports')
@@ -620,7 +620,7 @@ def run_experiment(args):
         # Lưu từng run độc lập; demo một thuật toán không ghi đè bảng tổng hợp all.
         all_mode_rows.extend(metric_rows)
         write_csv(run_folder / "test_metrics.csv", metric_rows)
-        if evaluate_all:
+        if evaluate_all and {"tt1", "tt2", "tt3"}.issubset(selected):
             write_csv(tables / "all" / "test_metrics.csv", [row for row in metric_rows if row["split"]=="test"])
             write_csv(tables / "all" / "summary.csv", summarize([row for row in metric_rows if row["split"]=="test"]))
         write_csv(run_folder / "summary.csv", summarize(metric_rows))

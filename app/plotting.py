@@ -29,7 +29,7 @@ def _plot_axis(axis, record, result):
     threshold_handles = []
     if mode == 'core':
         native = diagnostic['native_threshold']
-        if diagnostic['native_threshold_units'] == 'sum of squared samples':
+        if diagnostic['native_threshold_units'] == 'mean squared sample amplitude':
             peak = max(record['features']['energy'], default=0.)
             native = native / peak if peak else 0.
         energy_axis.axhline(native, color='#8E44AD', linestyle='-.', linewidth=1.2)

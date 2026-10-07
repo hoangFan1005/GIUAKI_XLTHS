@@ -30,7 +30,7 @@
   "minimum_silence_ms": 200.0,
   "endpoint_noise": null,
   "endpoint_policy": "native decisions; merge internal support gaps below 200 ms; no duration filter or final padding",
-  "feature_rule": "Energy (sum of squared samples)",
+  "feature_rule": "Energy (mean squared sample amplitude)",
   "padding_stage": "excluded from core FINAL",
   "boundary_convention": "union of active frame supports",
   "candidate_frame_selected_W": 1.0,
@@ -711,7 +711,7 @@
     ],
     "endpoint_policy": "native decisions; merge internal support gaps below 200 ms; no duration filter or final padding",
     "note": "W was calibrated using these TRAIN LABs; TEST has historical exposure and is reused for scoring, so no holdout independence is claimed.",
-    "calibration_digest": "44b1591191d1956579d75f195c1f40f7fffc8a1b953104a9227f42dda5b40509"
+    "calibration_digest": "2432f69d291a4d9dc5de612b34976b687041294d8943f502f3ec53ef8e2de80f"
   },
-  "calibration_digest": "44b1591191d1956579d75f195c1f40f7fffc8a1b953104a9227f42dda5b40509"
+  "calibration_digest": "2432f69d291a4d9dc5de612b34976b687041294d8943f502f3ec53ef8e2de80f"
 }

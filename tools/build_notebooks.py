@@ -508,7 +508,7 @@ def plot_record(record, result):
                  linewidth=1, label="Normalized STE")
     if diagnostic["endpoint_mode"] == "core":
         native = diagnostic["native_threshold"]
-        if diagnostic["native_threshold_units"] == "sum of squared samples":
+        if diagnostic["native_threshold_units"] == "mean squared sample amplitude":
             peak = max(features["energy"], default=0.)
             native = native / peak if peak else 0.
         axes[1].axhline(native, color="#9b6700", linestyle=":", label="Native T (display normalized)")

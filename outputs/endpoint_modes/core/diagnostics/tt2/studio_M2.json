@@ -44,7 +44,7 @@
   "feature": "energy",
   "source_status": "Teacher-requested energy-only histogram; 25/10 ms; 250 ms candidate padding retained as 25 hops",
   "native_threshold": 0.00025823544010657173,
-  "native_threshold_units": "sum of squared samples",
+  "native_threshold_units": "mean squared sample amplitude",
   "candidate_regions": [
     [
       0.46,

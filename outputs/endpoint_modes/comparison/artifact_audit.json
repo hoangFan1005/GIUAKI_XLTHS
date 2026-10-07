@@ -1,8 +1,23 @@
 {
   "stable_detector_fit_AST": {
+    "algorithm_decision": false,
+    "detect_regions": true,
+    "fit_training_model": false
+  },
+  "arithmetic_and_API_AST_preserved_after_two_metadata_literals": {
     "algorithm_decision": true,
     "detect_regions": true,
     "fit_training_model": true
+  },
+  "intentional_metadata_delta": {
+    "algorithm_decision.native_threshold_units": [
+      "sum of squared samples",
+      "mean squared sample amplitude"
+    ],
+    "fit_training_model.feature_rule": [
+      "Energy (sum of squared samples)",
+      "Energy (mean squared sample amplitude)"
+    ]
   },
   "mode_rows": {
     "core": 24,
@@ -19,7 +34,7 @@
         "core": 8,
         "enhanced": 8
       },
-      "code_source_sha256": "0752fcc76d08500624dc8eabef683b48df1ed00fc9a63c9dceff38ba331f396c",
+      "code_source_sha256": "4275ea2687f52a07b5df13efd22729407e2923257f22face217de054fa415b78",
       "model_lock_digests": {
         "core": "5100b645bfdadfa9f1635a3cf7934cd9894256909a72fca8360d3341297c6d68",
         "enhanced": "38ce0f36959e363d38b7921f892c0b2d274a9233a9d05c064be89d32c8743f8d"
@@ -31,10 +46,10 @@
         "core": 8,
         "enhanced": 8
       },
-      "code_source_sha256": "c35b274765431ae9413fecdc96672467489246a7eea1488738bac9782bb4ac46",
+      "code_source_sha256": "6be6d5ad4bd277b55f3c0547035fe008a65b53daf3fbc53eaa80719dd4a8cf00",
       "model_lock_digests": {
-        "core": "83d3e69001dbf50452f385f7997196403129fcc4aa198e50bf6bf629e69e5c45",
-        "enhanced": "169f44d678a4518c37bacf2f6493693f8f1c2950cb0b2c7fee1585fedd98ca7c"
+        "core": "eb3abf8e67947a86d6f37465a3194484e354a9f69bcf66aea43f08f64b1a57bc",
+        "enhanced": "4ca7fe4de10a36394f330016e7bce494e6fe77067bde1b9e6549d23c4b091705"
       }
     },
     "THUAT_TOAN_3.ipynb": {
@@ -43,7 +58,7 @@
         "core": 8,
         "enhanced": 8
       },
-      "code_source_sha256": "cd630d306fbe2150dca8a8f06d0234be027bdde81d98c6bf4fb255d96eca0568",
+      "code_source_sha256": "4bbd40bf0b3fbbed68898e8e35ec313e20a1eb0ed7155fcecabc38210c11f4e2",
       "model_lock_digests": {
         "core": "aa765832be8c85e0b8b4320cd4e64a47718792f34a39193cfe88b1c7f30d0bfe",
         "enhanced": "607e418b02303a8cb6b339656b0cbde3b26d3f257b3001606985ab03e213a3e7"
@@ -55,5 +70,34 @@
     "tt1": true,
     "tt2": true,
     "tt3": true
+  },
+  "round1_numeric_regression": {
+    "core": {
+      "all24_diagnostics_equal_except_unit_label": true,
+      "all24_prediction_CSVs_byteequal": true,
+      "all24_metrics_status_rows_CSV_byteequal": true
+    },
+    "enhanced": {
+      "all24_diagnostics_equal_except_unit_label": true,
+      "all24_prediction_CSVs_byteequal": true,
+      "all24_metrics_status_rows_CSV_byteequal": true
+    }
+  },
+  "touched_sha256": {
+    "app/pipeline.py": "7bd39fd5a85dd5710624dfc8cd861a3bba5dce4f9b52b8afe401a50b70a5378b",
+    "app/plotting.py": "56f9a58050273898361e8384845d25f86b06a06ce3782d6b411d2d094a85aaa2",
+    "tools/build_notebooks.py": "74dcce2c42c785bb59dcffcea8e111702ace8d248dce4722ee7c530ce878cd27",
+    "tests/test_endpoint_modes.py": "7fc2ab5d2e0d3af41639ac5cc858b3e226b385d39c2a4fb2a77ab491751b941e",
+    "tests/test_endpoint_mode_integration.py": "5923fe02040cce0aa33e9facd76a1c304b5887e7a7e797d8ccf63984e9c7f575",
+    "notebooks/THUAT_TOAN_1.ipynb": "cc3bfd3f3abf5f7b7e74b8edf5973f1972f42e084652362e41d68de16a5c8c4c",
+    "notebooks/THUAT_TOAN_2.ipynb": "f2904adc854002217c4873b0b39eba40379e4ea2a9d7e64857551824fd5160fc",
+    "notebooks/THUAT_TOAN_3.ipynb": "c7fbea5ab82dfa2db62493d50692e8310cd46f421709c86a2d91da45217bb605",
+    "submission/JUPYTER_NOTEBOOKS_CODE_ONLY.zip": "c4c668bafa97db7f8ab0364ad1aa23e6e7f08c15c8f59ec1f2b0e87fda4e437e",
+    "outputs/endpoint_modes/core/models/tt1.json": "fb91bcb188a5a970b1c5bc5fb15c1c3a21cfbb6a5a05fa66dc1fbd5d53466203",
+    "outputs/endpoint_modes/core/models/tt2.json": "bb4d0151431d5efd089ef8a0d1fd9c2201007c94a0614d3a4c9def84698d5536",
+    "outputs/endpoint_modes/core/models/tt3.json": "6929871511ba9cb5ce4ec3f677ae2f921b46cc0f8f6cdd237955ede85e13ff96",
+    "outputs/endpoint_modes/enhanced/models/tt1.json": "b4f80954272209feb43e4ad7b6cf50aaa2c69ff0fb6b96d7dd567c0401a5c668",
+    "outputs/endpoint_modes/enhanced/models/tt2.json": "0dc7884d18b55ba415396fbb3259e2022caec89e7eaf88f27bf6b0ac500a3aa6",
+    "outputs/endpoint_modes/enhanced/models/tt3.json": "f490662a37c4001b6033a02949ab76ae2fdf9148194c1ce309e23dbacb2160cf"
   }
 }
