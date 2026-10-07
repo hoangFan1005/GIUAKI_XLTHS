@@ -1,7 +1,7 @@
 """Final-region W selection: balanced errors, valid counts, deterministic ties."""
 import unittest
 from app import pipeline
-from app.config import TRAIN_DIR
+from app.config import TEST_DIR, TRAIN_DIR
 
 def row(weight,name,error,gt=1,pred=1):
     return dict(W=weight,filename=name,final_region_mae_ms=error,
@@ -20,14 +20,16 @@ class FinalWeightSelectionTests(unittest.TestCase):
         self.assertEqual(result['selected_summary']['invalid_files'],1)
         self.assertEqual(result['selected_summary']['valid_files_mean_MAE_ms'],10)
 
-    def select(self,rows,tie_preference=20):
+    def select(self,rows,tie_preference=None):
         return pipeline.select_final_weight(rows,tie_preference)
 
-    def test_all_four_optimal_uses_declared_tie_preference(self):
+    def test_all_four_optimal_uses_smallest_w_without_preferential_weight(self):
         rows=[row(w,n,e) for w in (1,5,20) for n,e in [('a',32.5),('b',7.5),('c',7.5),('d',7.5)]]
         result=self.select(rows)
-        self.assertEqual(result['selected_W'],20)
+        self.assertEqual(result['selected_W'],1)
         self.assertEqual(result['shared_optimal_W'],[1,5,20])
+        self.assertIsNone(result['tie_preference_W'])
+        self.assertIn('smallest W',result['selection_rule'])
         self.assertAlmostEqual(result['selected_summary']['mean_MAE_ms'],13.75)
 
     def test_conflicting_optima_minimize_worst_per_file_regret(self):
@@ -56,11 +58,45 @@ class FinalWeightSelectionTests(unittest.TestCase):
         with self.assertRaises(ValueError):self.select([row(1,'a',1),row(1,'a',2)])
         with self.assertRaises(ValueError):self.select([row(1,'a',1),row(1,'b',2),row(3,'a',3)])
 
-    def test_tie_preference_is_not_the_model_candidate_frame_weight(self):
-        result=pipeline.select_final_weight([row(w,'a',10) for w in (1,5,20)],tie_preference_W=20)
-        self.assertEqual(result['selected_W'],20)
-        self.assertEqual(result['tie_preference_W'],20)
-        self.assertNotIn('previous_W',result)
+    def test_tie_rule_cannot_be_overridden_to_prefer_w20(self):
+        with self.assertRaisesRegex(ValueError,'tie|preference|smallest'):
+            pipeline.select_final_weight([row(w,'a',10) for w in (1,5,20)],tie_preference_W=20)
+
+    def test_sweep_rejects_test_and_external_records(self):
+        for split in ('test','external'):
+            with self.subTest(split=split), self.assertRaisesRegex(ValueError,'TRAIN|train'):
+                pipeline.sweep_final_weights([dict(name='holdout',split=split)], {},
+                                             lambda *_: self.fail('predictor must not run'),
+                                             candidates=(1,20))
+        spoofed=dict(name='phone_F2',split='train',wav_path=str(TEST_DIR/'phone_F2.wav'))
+        with self.assertRaisesRegex(ValueError,'TRAIN|train'):
+            pipeline.sweep_final_weights([spoofed], {},
+                                         lambda *_: self.fail('predictor must not run'),
+                                         candidates=(1,20))
+
+    def test_selected_w_is_recomputable_from_train_sweep_manifest(self):
+        records=[dict(name='train_a',split='train',wav_path=str(TRAIN_DIR/'train_a.wav')),
+                 dict(name='train_b',split='train',wav_path=str(TRAIN_DIR/'train_b.wav'))]
+        def predictor(_algorithm,record,params):
+            error=0. if params['W']==1 else 0.
+            return dict(metrics=dict(ground_truth_region_count=1,predicted_region_count=1,
+                                     mae_ms=error,status='ok',start_error_ms=error,end_error_ms=error),
+                        diagnostic=dict(endpoint_mode='core',geometry='union of active frame supports',
+                                        minimum_speech_ms=0.,minimum_silence_ms=200.,padding_stage='excluded from core FINAL',
+                                        energy_threshold=.1,low_ste_threshold=None,high_ste_threshold=None,
+                                        raw_speech_frames=3,candidate_regions=[(0.,.1)]),
+                        final_regions=[(.0,.1)])
+        selection,rows=pipeline.sweep_final_weights(records,dict(endpoint_mode='core'),predictor,candidates=(20,1))
+        self.assertEqual(selection['evaluated_files'],['train_a','train_b'])
+        self.assertEqual(selection['selection_set'],'train')
+        self.assertEqual(selection['selected_W'],1.)
+        self.assertEqual(sorted({row['W'] for row in rows}),[1.,20.])
+
+    def test_sweep_rejects_train_claim_without_wav_provenance(self):
+        with self.assertRaisesRegex(ValueError,'paths must belong to TRAIN'):
+            pipeline.sweep_final_weights([dict(name='train_a',split='train')], {},
+                                         lambda *_: self.fail('predictor must not run'),
+                                         candidates=(1,))
 
     def test_real_four_train_file_sweep_scores_final_regions(self):
         self.assertTrue(callable(getattr(pipeline,'fit_training_model',None)))

@@ -257,6 +257,7 @@ def standalone_pipeline(algorithm: str) -> str:
 
 CONFIG = '''
 import math
+import random
 import wave
 import hashlib
 import json
@@ -274,7 +275,7 @@ SAMPLE_ROUNDING = "nearest_integer_samples_python_round_ties_to_even"
 MIN_SILENCE_SECONDS = 0.200
 MIN_SPEECH_SECONDS = 0.100
 BOUNDARY_TOLERANCE_SECONDS = 0.100
-HISTOGRAM_W_TIE_PREFERENCE = 20.0
+HISTOGRAM_W_TIE_PREFERENCE = None  # Equal TRAIN objectives choose the smallest W.
 PADDING_MS = 250.0
 PADDING_FRAMES = round(PADDING_MS / HOP_MS)
 FILE_ORDER = ("phone_F2", "phone_M2", "studio_F2", "studio_M2")
@@ -380,6 +381,117 @@ display_table(DATASET_MANIFEST,
 '''
 
 
+SNR_PROXY_ANALYSIS = functions("app/pipeline.py", "data_statistics") + '''
+
+SNR_PROXY_ROWS = []
+for split_name, split_records in (("train", TRAIN_RECORDS), ("test", TEST_RECORDS)):
+    for record in split_records:
+        SNR_PROXY_ROWS.extend(data_statistics([record], split_name))
+
+SNR_PROXY_COMPARISON = []
+for split_name in ("train", "test"):
+    for recording_source in ("phone", "studio"):
+        values = [row["snr_proxy_db"] for row in SNR_PROXY_ROWS
+                  if row["split"] == split_name
+                  and row["file"].startswith(recording_source + "_")
+                  and row["snr_proxy_db"] is not None]
+        SNR_PROXY_COMPARISON.append(dict(split=split_name, source=recording_source,
+                                         files=len(values),
+                                         mean_snr_proxy_db=sum(values) / len(values) if values else None))
+
+display_table(SNR_PROXY_ROWS,
+              [("split", "Split"), ("file", "WAV"), ("silence_power", "LAB silence mean-square"),
+               ("speech_plus_noise_power", "LAB speech+noise mean-square"),
+               ("snr_proxy_db", "SNR proxy (dB)")],
+              "Measured recording SNR proxy from LAB intervals")
+display_table(SNR_PROXY_COMPARISON,
+              [("split", "Split"), ("source", "Recording source"),
+               ("files", "WAV count"), ("mean_snr_proxy_db", "Mean SNR proxy (dB)")],
+              "Phone vs studio, summarized separately for TRAIN and TEST")
+
+SNR_SOURCE_COLORS = {"phone": "#3977ad", "studio": "#d58232"}
+figure, axes = plt.subplots(1, 2, figsize=(10.5, 3.6), sharey=True)
+for axis, split_name in zip(axes, ("train", "test")):
+    split_rows = [row for row in SNR_PROXY_ROWS if row["split"] == split_name]
+    plotted_rows = [row for row in split_rows if row["snr_proxy_db"] is not None]
+    positions = list(range(len(plotted_rows)))
+    axis.bar(positions, [row["snr_proxy_db"] for row in plotted_rows],
+             color=[SNR_SOURCE_COLORS[row["file"].split("_", 1)[0]] for row in plotted_rows])
+    axis.set_xticks(positions, [row["file"] for row in plotted_rows], rotation=25, ha="right")
+    for source in ("phone", "studio"):
+        summary = next(row for row in SNR_PROXY_COMPARISON
+                       if row["split"] == split_name and row["source"] == source)
+        if summary["mean_snr_proxy_db"] is not None:
+            axis.axhline(summary["mean_snr_proxy_db"], color=SNR_SOURCE_COLORS[source],
+                         linestyle="--", linewidth=1.4)
+    axis.set_title(split_name.upper())
+    axis.set_xlabel("WAV (bar) and recording source")
+    axis.grid(axis="y", alpha=0.2)
+    for source in ("phone", "studio"):
+        axis.plot([], [], color=SNR_SOURCE_COLORS[source], marker="s", linestyle="None",
+                  label=f"{source} per-WAV proxy")
+        summary = next(row for row in SNR_PROXY_COMPARISON
+                       if row["split"] == split_name and row["source"] == source)
+        if summary["mean_snr_proxy_db"] is not None:
+            axis.plot([], [], color=SNR_SOURCE_COLORS[source], linestyle="--",
+                      label=f"{source} mean ({summary['mean_snr_proxy_db']:.1f} dB)")
+axes[0].set_ylabel("SNR proxy (dB)")
+axes[0].legend(fontsize=8)
+figure.suptitle("Measured recording SNR proxy by split; dashed lines show phone/studio means")
+figure.tight_layout()
+plt.show()
+plt.close(figure)
+'''
+
+
+SYNTHETIC_NOISE_STUDY = functions("app/pipeline.py", "noisy_copy") + '''
+
+# This is a separate robustness experiment; it never refits or changes MODEL.
+SYNTHETIC_NOISE_LEVELS_DB = (20, 10, 0)
+SYNTHETIC_NOISE_RANDOM_SEED = 20261001
+FROZEN_MODEL_DIGESTS_BEFORE_SNR_STUDY = {
+    mode: model_digest(model) for mode, model in MODELS.items()
+}
+if FROZEN_MODEL_DIGESTS_BEFORE_SNR_STUDY != MODEL_LOCK_DIGESTS:
+    raise ValueError("Synthetic-noise study requires the locked TRAIN models")
+
+SYNTHETIC_NOISE_STUDY_ROWS = []
+for mode, model in MODELS.items():
+    clean_results = {result["file"]: result for result in TEST_RESULTS_BY_MODE[mode]}
+    for record in TEST_RECORDS:
+        clean_metrics = clean_results[record["name"]]["metrics"]
+        SYNTHETIC_NOISE_STUDY_ROWS.append(dict(
+            split="test", file=record["name"], endpoint_mode=mode,
+            added_snr_db="clean baseline", mae_ms=clean_metrics["mae_ms"],
+            ground_truth_region_count=clean_metrics["ground_truth_region_count"],
+            predicted_region_count=clean_metrics["predicted_region_count"],
+            status=clean_metrics["status"]))
+        file_index = FILE_ORDER.index(record["name"])
+        for noise_level_db in SYNTHETIC_NOISE_LEVELS_DB:
+            noisy_record = noisy_copy(
+                record, noise_level_db,
+                SYNTHETIC_NOISE_RANDOM_SEED + file_index * 100 + noise_level_db)
+            noisy_record = prepare_records([noisy_record])[0]
+            noisy_metrics = predict_and_score(ALGORITHM, noisy_record, model)["metrics"]
+            SYNTHETIC_NOISE_STUDY_ROWS.append(dict(
+                split="test", file=record["name"], endpoint_mode=mode,
+                added_snr_db=noise_level_db, mae_ms=noisy_metrics["mae_ms"],
+                ground_truth_region_count=noisy_metrics["ground_truth_region_count"],
+                predicted_region_count=noisy_metrics["predicted_region_count"],
+                status=noisy_metrics["status"]))
+
+assert_model_locked()
+if {mode: model_digest(model) for mode, model in MODELS.items()} != FROZEN_MODEL_DIGESTS_BEFORE_SNR_STUDY:
+    raise ValueError("Synthetic-noise study changed a frozen TRAIN model")
+display_table(SYNTHETIC_NOISE_STUDY_ROWS,
+              [("split", "Split"), ("file", "WAV"), ("endpoint_mode", "Mode"),
+               ("added_snr_db", "Added synthetic SNR (dB)"), ("mae_ms", "Final MAE (ms)"),
+               ("ground_truth_region_count", "GT regions"),
+               ("predicted_region_count", "Pred regions"), ("status", "Status")],
+              "Separate optional synthetic-noise robustness sweep (frozen TRAIN models)")
+'''
+
+
 FIT_MODEL = '''
 MODELS, TT2W_SWEEPS = {}, {}
 for endpoint_mode in ("core", "enhanced"):
@@ -400,7 +512,7 @@ display_table(W_SELECTION["summaries"],
               [("W", "W"), ("invalid_files", "Invalid files"),
                ("mean_MAE_ms", "Mean final MAE (ms)"), ("max_MAE_ms", "Max MAE (ms)"),
                ("max_regret_ms", "Worst per-file regret (ms)")],
-              f"TRAIN FINAL calibration: all W=1…50; selected W={MODEL['W']:g}; tie preference W20")
+              f"TRAIN FINAL calibration: all W=1…50; selected W={MODEL['W']:g}; smallest W on ties")
 display_table(TT2W_SWEEP_ROWS,
               [("filename", "TRAIN file"), ("W", "W"),
                ("final_region_mae_ms", "FINAL region MAE (ms)"),
@@ -751,7 +863,7 @@ Project maintainers refresh this repository's audited CODE ZIP by rebuilding wit
     md("## Manual frame features\n\nEach full frame computes STE and mean absolute amplitude by sample loops. Normalization divides by the recording's maximum; an all-zero recording stays zero. The short tail is discarded.")
     code(manual_features())
     md("## LAB alignment and scoring\n\nLAB labels use the frame center and half-open intervals. Region MAE/RMSE score START and END of complete matched final regions. A missing or extra region leaves the primary MAE undefined; frame and tolerance-based boundary scores are additional diagnostics.\n\nFor multiple speech regions, \"outer\" refers to each final region's START/END; the metric does not collapse regions into a single global envelope.")
-    code(functions("core/metrics.py", "frame_labels", "frame_metrics", "ground_truth_regions", "region_endpoint_metrics", "boundary_metrics"))
+    code(functions("core/metrics.py", "frame_labels", "frame_metrics", "ground_truth_speech_envelope", "ground_truth_regions", "region_endpoint_metrics", "boundary_metrics"))
     md("## Final endpoint confirmation\n\nIn enhanced mode the noise floor is estimated from TRAIN silence only. Core uses native decisions and merges internal support gaps below 200 ms. Enhanced HIGH confirms speech; LOW retains weak speech. The 200 ms estimated support-gap rule and 100 ms support-span filter are heuristics, without a guarantee about physical silence or voiced duration. Silence waiting time and TT2 candidate padding do not extend final boundaries.")
     code(functions("core/endpoints.py", "fit_noise_floor", "endpoint_thresholds", "hysteresis_regions", "regions_to_mask"))
     post_names = ("_validate", "mask_segments", "fill_short_internal_silences") if algorithm == "tt2" else ("_validate", "mask_segments")
@@ -768,8 +880,13 @@ Project maintainers refresh this repository's audited CODE ZIP by rebuilding wit
     code(prepared + "\n\n\n" + standalone_pipeline(algorithm))
     code(source_function("app/pipeline.py", "summarize"))
     if algorithm == "tt2":
-        md("## Global W calibration rule\n\nEvaluate integer W=1…50 on the four TRAIN LABs using the actual FINAL endpoint pipeline. Prefer valid region counts, minimize worst per-file regret, then mean MAE; tied values prefer W=20. Historical TEST sweeps are prior development evidence only; they are not rerun for calibration.")
-        code('W_CANDIDATES = tuple(float(w) for w in range(1, 51))\nERROR_EPS_MS = 1e-8\nPOLICY_FIELDS = ("endpoint_mode", "boundary_convention", "minimum_speech_ms", "minimum_silence_ms", "padding_stage")\n\n' + functions("app/weight_selection.py", "select_final_weight", "sweep_final_weights"))
+        md("## Global W calibration rule\n\nEvaluate integer W=1…50 on the four TRAIN LABs using the actual FINAL endpoint pipeline. Prefer valid region counts, minimize worst per-file regret, then mean MAE; if every objective ties, choose the smallest W deterministically. Historical TEST sweeps are prior development evidence only; they are not rerun for calibration.")
+        weight_selection_source = functions("app/weight_selection.py", "select_final_weight", "sweep_final_weights")
+        # The standalone notebook has no app.config import. Bind the source
+        # provenance guard to the dataset root selected in the notebook.
+        weight_selection_source = weight_selection_source.replace(
+            "TRAIN_DIR.resolve()", "(DATA_ROOT / 'train').resolve()")
+        code('W_CANDIDATES = tuple(float(w) for w in range(1, 51))\nERROR_EPS_MS = 1e-8\nPOLICY_FIELDS = ("endpoint_mode", "boundary_convention", "minimum_speech_ms", "minimum_silence_ms", "padding_stage")\n\n' + weight_selection_source)
     md("## Load four TRAIN input pairs\n\nTRAIN is read first. TEST WAV/LAB reads follow calibration and model locking.")
     code(LOAD_DATA)
     md("## Fit fresh TRAIN parameters\n\nBoth mode models are fit independently on the four TRAIN recordings; noise is calibrated only for enhanced.")
@@ -786,10 +903,14 @@ Project maintainers refresh this repository's audited CODE ZIP by rebuilding wit
     md("## Lock TRAIN model, then load TEST\n\nBoth mode model digests are captured before TEST input reads and checked after scoring. Schema 3 model policy with schema 2 metrics uses `parameter_selection_set=train`, `evaluation_protocol=train_selected_reused_test`, and `historical_test_exposure=true`: these TEST recordings were seen during earlier development. The eight-file manifest retains WAV/LAB hashes and split provenance.")
     code(LOCK_MODEL)
     code(LOAD_TEST)
+    md("## Measured recording SNR proxy\n\nFor each WAV, calculate mean squared sample power in LAB `v`/`uv` speech intervals (speech plus any noise) and in LAB `sil` intervals, then compute `10 log10(Pspeech+noise / Psilence)` in dB. This is an SNR proxy based on speech/silence LAB intervals, not true SNR from a known clean reference: speech level, microphone gain, room acoustics and residual noise also change the value. The table compares phone vs studio separately on TRAIN and TEST; each group/split has only two WAVs, so treat the means as descriptive and consider the different speakers and variable speech levels. TEST measurements are descriptive and do not tune thresholds or model parameters.")
+    code(SNR_PROXY_ANALYSIS)
     md("## Computed algorithm illustration\n\nThe illustration uses the features and statistics calculated in this run.")
     code({"tt1": TT1_ILLUSTRATION, "tt2": TT2_ILLUSTRATION, "tt3": TT3_ILLUSTRATION}[algorithm])
     md("## Four TEST results\n\nThe main table scores the final confirmed regions. START/END columns are in seconds; MAE/RMSE are in milliseconds.")
     code(EVALUATION)
+    md("## Synthetic-noise robustness sweep\n\nThis separate experiment adds deterministic Gaussian noise at 20, 10 and 0 dB relative to the LAB speech-interval power and compares each TEST WAV with its clean baseline. These are controlled added-noise levels, not the measured phone/studio SNR proxy above. Both already fitted TRAIN models (`core` and `enhanced`) are frozen; model digests are checked before and after, and this sweep does not refit, select or tune any parameter. TEST has historical exposure in earlier development, so its rows describe reuse of that evaluation set rather than a new independent holdout.")
+    code(SYNTHETIC_NOISE_STUDY)
     md("### TEST summary\n\nMean, median, minimum, maximum, count correctness and highest-error files describe only the four TEST recordings.")
     code(SUMMARY_DISPLAY)
     md("## All eight input files\n\nThis separate table includes TRAIN and TEST with explicit split labels. TRAIN results reuse the model fitted from TRAIN and therefore describe its training fit.")

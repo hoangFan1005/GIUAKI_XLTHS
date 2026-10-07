@@ -211,7 +211,8 @@ def second(value):
         """Use tiny real core runs to catch generated metadata/scorer drift."""
         algorithm = namespace['ALGORITHM']
         for mode in ('core', 'enhanced'):
-            with patch.multiple(pipeline, TRAIN_DIR=root / 'data/train', TEST_DIR=root / 'data/test'):
+            with patch.multiple(pipeline, TRAIN_DIR=root / 'data/train', TEST_DIR=root / 'data/test'), \
+                    patch('app.weight_selection.TRAIN_DIR', root / 'data/train'):
                 train = pipeline.prepare_records(pipeline.load_audio_folder(root / 'data/train'))
                 model, rows = pipeline.fit_training_model(algorithm, train, endpoint_mode=mode)
                 test = pipeline.prepare_records(pipeline.load_audio_folder(root / 'data/test'))
@@ -245,8 +246,9 @@ def second(value):
 def executed_plot_notebook():
     # Minimal valid PNG header: the auditor promises signature checks only.
     output = nbformat.v4.new_output('display_data', data={'image/png': 'iVBORw0KGgo='})
-    cells = [nbformat.v4.new_code_cell('pass', execution_count=1, outputs=[output])]
-    for index, name in enumerate(runner.TEST_NAMES, 2):
+    cells = [nbformat.v4.new_code_cell('illustration()', execution_count=1, outputs=[output]),
+             nbformat.v4.new_code_cell('plot_snr()', execution_count=2, outputs=[copy.deepcopy(output)])]
+    for index, name in enumerate(runner.TEST_NAMES, 3):
         cells.append(nbformat.v4.new_code_cell(
             '# Display this TEST record from the freshly computed results.\n'
             f'plot_record(TEST_RECORDS_BY_FILE["{name}"], TEST_RESULTS_BY_FILE["{name}"])',
@@ -288,7 +290,7 @@ class NotebookAuditTests(unittest.TestCase):
     def test_source_bound_audit_requires_digest_and_accepts_unchanged_source(self):
         notebook = executed_plot_notebook()
         with patch.object(runner, 'audit_results', return_value=10.):
-            self.assertEqual(runner.audit_notebook(notebook, 'unchanged.ipynb'), (5, 10.))
+            self.assertEqual(runner.audit_notebook(notebook, 'unchanged.ipynb'), (6, 10.))
             notebook.metadata.endpoint_execution.pop('code_source_sha256')
             with self.assertRaisesRegex(ValueError, 'source.*rerun|rerun.*source'):
                 runner.audit_notebook(notebook, 'missing.ipynb')
@@ -301,7 +303,7 @@ class NotebookAuditTests(unittest.TestCase):
         notebook.cells.insert(0, nbformat.v4.new_markdown_cell('Description'))
         notebook.cells.append(nbformat.v4.new_code_cell(runner.AUDIT_CELL))
         self.assertEqual(digest(notebook), expected)
-        notebook.cells[1], notebook.cells[2] = notebook.cells[2], notebook.cells[1]
+        notebook.cells[2], notebook.cells[3] = notebook.cells[3], notebook.cells[2]
         self.assertNotEqual(digest(notebook), expected)
 
     def test_auditor_finds_current_selection_helper_without_project_on_sys_path(self):
@@ -322,9 +324,9 @@ class NotebookAuditTests(unittest.TestCase):
     def test_saved_notebook_requires_exactly_one_png_in_each_test_cell(self):
         notebook = executed_plot_notebook()
         with patch.object(runner, 'audit_results', return_value=10.):
-            self.assertEqual(runner.audit_notebook(notebook, 'tiny.ipynb'), (5, 10.))
+            self.assertEqual(runner.audit_notebook(notebook, 'tiny.ipynb'), (6, 10.))
             duplicate = copy.deepcopy(notebook)
-            duplicate.cells[1].outputs.append(copy.deepcopy(duplicate.cells[1].outputs[0]))
+            duplicate.cells[2].outputs.append(copy.deepcopy(duplicate.cells[2].outputs[0]))
             with self.assertRaisesRegex(ValueError, 'exactly one'):
                 runner.audit_notebook(duplicate, 'duplicate.ipynb')
             missing = copy.deepcopy(notebook)
@@ -341,7 +343,7 @@ class NotebookAuditTests(unittest.TestCase):
                 for name in ("phone_F1", "phone_M1", "studio_F1", "studio_M1")]
         selection = select_final_weight(rows)
         selection.update(evaluated_files=["phone_F1", "phone_M1", "studio_F1", "studio_M1"])
-        audit = dict(model=dict(W=20., finalW=20., tie_preference_W=20., W_selection_train=selection),
+        audit = dict(model=dict(W=1., finalW=1., tie_preference_W=None, W_selection_train=selection),
                      tt2_w_sweep_rows=rows)
         with tempfile.TemporaryDirectory() as folder:
             root = Path(folder)
@@ -359,7 +361,7 @@ class NotebookAuditTests(unittest.TestCase):
                 with self.assertRaisesRegex(ValueError, "sweep|MAE|mae"):
                     runner.audit_train_sweep(damaged)
                 damaged = copy.deepcopy(audit)
-                damaged["model"]["W_selection_train"]["selected_W"] = 1.
+                damaged["model"]["W_selection_train"]["selected_W"] = 2.
                 with self.assertRaisesRegex(ValueError, "selection|selected|objective"):
                     runner.audit_train_sweep(damaged)
                 damaged = copy.deepcopy(audit)

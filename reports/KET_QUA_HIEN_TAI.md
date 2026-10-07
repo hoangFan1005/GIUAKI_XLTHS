@@ -19,7 +19,7 @@ Energy thực là STE/N (mean squared sample amplitude); production labels/model
 Baseline cho đợt đánh giá thuật toán/endpoint ngày 07/10 được khóa tại [baseline.json](../outputs/tables/endpoint_modes_oct07/baseline.json): **ba model enhanced hiện tại và 24 kết quả (8 WAV × 3 thuật toán)**, gồm FINAL regions, full masks, metrics/status, T/W/LOW/HIGH, record/features, SHA256 input/artifacts và versions môi trường. Đối chiếu trước sửa tài liệu khớp đủ 24 diagnostics/metric rows hiện hành và FINAL/MAE/status của nghiệm thu 07/10; mean TEST vẫn 20.00/13.75/12.50 ms. Đây là capture bằng model đã lưu, không fit lại hoặc tái tạo số liệu. Model core riêng chưa được tạo trong đợt khóa baseline.
 
 - TT1: Binary Search cân bằng diện tích nhầm lẫn trên normalized STE.
-- TT2: Histogram **chỉ Energy** theo yêu cầu mới của thầy; W = 20 chung, 64 bins, smoothing radius 2.
+- TT2: Histogram **chỉ Energy** theo yêu cầu mới của thầy; W được hiệu chỉnh riêng theo mode bằng TRAIN, 64 bins, smoothing radius 2. Enhanced chọn W=1 khi toàn bộ W=1…50 hòa; core chọn W=10 do objective số vùng hợp lệ.
 - TT3: thống kê Gaussian population trên normalized STE, ngưỡng giao hai mật độ.
 - Chung: frame 25 ms, hop 10 ms; HIGH/LOW hysteresis; nối silence dưới 200 ms; loại speech dưới 100 ms. Không tính F0.
 
@@ -78,9 +78,9 @@ Noise floor học từ 497 khung silence TRAIN: mean ≈ 0.0003871108, populatio
 
 TT1 có T ≈ 0.0010293375. TT3 có T ≈ 0.0028777337. TT2 tính ngưỡng Energy riêng từng WAV bằng `(W*M1 + M2)/(W+1)`.
 
-TT2 đề xuất candidate **W1** bằng TRAIN frame F1 (0.898698, không phải F1 của FINAL W20). Sau đó [fit_training_model()](../app/pipeline.py#L229) khảo sát W nguyên **1–50** trên FINAL regions của `phone_F1`, `phone_M1`, `studio_F1`, `studio_M1`: 200 dòng TRAIN. Kết quả lưu hiện tại: cả 50 W đồng tối ưu; mean FINAL MAE TRAIN **13.747165532879801 ms**. Chọn **W20** bằng `tie_preference_W=20` cố định. Đây là kết quả của TRAIN hiện tại, không phải giả định mọi dataset đều hòa. Manifest `W_selection_train` ghi `selection_set=train`, `evaluation_protocol=train_final_calibration` và tên TRAIN đã chấm.
+TT2 đề xuất candidate **W1** bằng TRAIN frame F1 (0.898698; không dùng F1 để chọn FINAL). Sau đó [fit_training_model()](../app/pipeline.py#L229) khảo sát W nguyên **1–50** trên FINAL regions của `phone_F1`, `phone_M1`, `studio_F1`, `studio_M1`: 200 dòng TRAIN. Enhanced có cả 50 W đồng tối ưu, mean FINAL MAE TRAIN **13.747165532879801 ms**, và chọn **W1** theo tie-break tổng quát “W nhỏ nhất”. Không còn `tie_preference_W=20`. Core chọn W10 vì tiêu chí số vùng hợp lệ cho kết quả khác. Manifest `W_selection_train` ghi `selection_set=train`, `evaluation_protocol=train_final_calibration` và tên TRAIN đã chấm.
 
-`candidate_frame_selected_W`, `candidate_frame_f1`, `candidate_frame_selection_scores`, `candidate_cleanup_records` chỉ mô tả bước candidate. `W`/`finalW` và manifest TRAIN mô tả lựa chọn FINAL; không gán candidate F1 cho W20.
+`candidate_frame_selected_W`, `candidate_frame_f1`, `candidate_frame_selection_scores`, `candidate_cleanup_records` chỉ mô tả bước candidate. `W`/`finalW` và manifest TRAIN mô tả lựa chọn FINAL; không gán candidate F1 cho W1.
 
 Mọi model, W và `endpoint_noise` được fit từ bốn TRAIN trước khi đọc TEST. Ba thuật toán dùng `schema_version=2`, `parameter_selection_set=train`, `evaluation_protocol=train_selected_reused_test`, `historical_test_exposure=true`. TEST đã được xem trong phát triển trước đây và được dùng lại để chấm; không gọi đây là holdout mới hoặc độc lập. Chạy một file (`--file`) vẫn fit TRAIN trước, không hiệu chỉnh bằng TEST.
 
@@ -121,7 +121,7 @@ Các lệnh nghiệm thu đã chạy bằng Python trong `.venv/Scripts/python.e
 
 Cả **15 PNG nhúng** đã được xem trực quan. [ZIP CODE](../submission/JUPYTER_NOTEBOOKS_CODE_ONLY.zip) chứa đúng **ba notebook đã thực thi**, byte trùng các file ngoài ZIP, không WAV/LAB/audio; xem [hướng dẫn notebook](../notebooks/README.md). Trước đó, cả ba notebook cũng chạy bằng kernel mới trong ba thư mục độc lập, mỗi thư mục chỉ có notebook tương ứng và data, không có module Python của dự án. Runtime thực tế là **Python 3.14**; source cells chỉ được kiểm tra cú pháp theo Python 3.10, chưa xác minh runtime 3.10.
 
-[Bảng hồi quy](../outputs/tables/all_all_dataset/regression_before_after.csv) xác nhận 24/24 trường hợp giữ nguyên so với `111ab37`, **0 regression**; đối chiếu SHA256 xác nhận **28 file data/Source** không đổi. W20 vẫn là lựa chọn theo hòa của toàn bộ W1…50 trên TRAIN FINAL, khác candidate W1/F1 ≈ 0.898698. Năm trường hợp END muộn ở mục 4 vẫn còn.
+[Bảng hồi quy](../outputs/tables/all_all_dataset/regression_before_after.csv) xác nhận 24/24 trường hợp giữ nguyên so với `111ab37`, **0 regression**; đối chiếu SHA256 xác nhận **28 file data/Source** không đổi. Trong bản trước khi sửa tie-break, W20 được chọn theo cấu hình khi toàn bộ W hòa; hiện enhanced chọn W1 theo tie-break nhỏ nhất, còn core chọn W10. Cả hai kết quả được fit riêng từ TRAIN. Candidate frame-F1 cũng đề xuất W1 nhưng là tiêu chí khác. Năm trường hợp END muộn ở mục 4 vẫn còn.
 
 Tích hợp cục bộ trên branch `codex/endpoint-train-calibration`, giữ `main`, chưa push GitHub. Giai đoạn 2/3/5 hoãn. Cả chín binary PPTX/PDF và `THUAT_TOAN_1/2/3.zip` giữ nguyên byte, là **previous version trước Stage1**, chưa dùng làm gói nộp hiện hành. STT nhóm/họ tên/MSSV còn placeholder vì người dùng chưa cung cấp.
 

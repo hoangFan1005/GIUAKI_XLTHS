@@ -180,8 +180,8 @@ def audit_train_sweep(audit):
             or set(selection.get('evaluated_files', [])) != set(TRAIN_NAMES)
             or len(selection.get('evaluated_files', [])) != 4):
         raise ValueError('TT2 selection must use exactly four TRAIN files and TRAIN FINAL calibration')
-    if selection.get('candidate_W') != list(range(1, 51)) or selection.get('tie_preference_W') != 20:
-        raise ValueError('TT2 selection requires integer W1…50 and declared tie preference W20')
+    if selection.get('candidate_W') != list(range(1, 51)) or selection.get('tie_preference_W') is not None:
+        raise ValueError('TT2 selection requires integer W1…50 and no preferential tie weight')
     keys = {(row['filename'], row['W']) for row in rows}
     if keys != {(name, float(w)) for name in TRAIN_NAMES for w in range(1, 51)} or len(keys) != 200:
         raise ValueError('TT2 TRAIN sweep rows must be unique and cover all 200 file/W pairs')
@@ -206,14 +206,15 @@ def audit_train_sweep(audit):
                 close_number(value, expected, f'TRAIN sweep/{row["filename"]}/{row["W"]}/{key}')
             elif value != expected:
                 raise ValueError(f'TRAIN sweep/{key} differs')
-    recomputed = select_final_weight(rows, tie_preference_W=20)
+    recomputed = select_final_weight(rows)
     for key, value in recomputed.items():
         compare_structure(selection.get(key), value, f'TRAIN selection objective/{key}')
     original = json.loads((target / 'selection.json').read_text(encoding='utf-8'))
     compare_structure(selection, original, 'TRAIN selection manifest')
     for key in ('W', 'finalW'):
         close_number(model[key], selection['selected_W'], f'TRAIN selected model/{key}')
-    close_number(model['tie_preference_W'], 20, 'TRAIN model tie preference')
+    if model.get('tie_preference_W') is not None:
+        raise ValueError('TRAIN model must not declare a preferential tie weight')
 
 
 def close_number(actual, expected, label, tolerance=1e-8):
@@ -445,8 +446,8 @@ def audit_notebook(notebook, filename):
     if missing_plots:
         raise ValueError(f'{filename}: missing exact test plot cells: '
                          + ', '.join(sorted(missing_plots)))
-    if images != 5:
-        raise ValueError(f'{filename}: expected four TEST PNGs and one algorithm illustration')
+    if images != 6:
+        raise ValueError(f'{filename}: expected four TEST PNGs, one algorithm illustration, and one SNR figure')
     audit = notebook.metadata.get('endpoint_execution')
     if not audit:
         raise ValueError(f'{filename}: missing fresh-kernel execution evidence')

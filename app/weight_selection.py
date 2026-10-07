@@ -4,7 +4,8 @@ TRAIN calibration is reused for scoring historically exposed TEST recordings.
 All timing, feature extraction, histogram and hysteresis settings stay fixed.
 """
 import math
-from app.config import HISTOGRAM_W_TIE_PREFERENCE
+from pathlib import Path
+from app.config import HISTOGRAM_W_TIE_PREFERENCE, TRAIN_DIR
 
 W_CANDIDATES=tuple(float(w) for w in range(1,51))
 ERROR_EPS_MS=1e-8
@@ -15,10 +16,12 @@ def select_final_weight(rows,tie_preference_W=HISTOGRAM_W_TIE_PREFERENCE):
     """Input: one MAE/count row per (W,file). Output: shared W and audit tables.
 
     Prefer valid region counts, then minimize the worst per-file loss relative
-    to that file's own optimum, then mean MAE. Ties use the declared preference;
-    if unavailable, choose the smallest W. No candidate/debug boundary is scored.
+    to that file's own optimum, then mean MAE. Remaining ties use the smallest W.
+    No candidate/debug boundary is scored.
     """
     if not rows:raise ValueError('W selection needs evaluation rows')
+    if tie_preference_W is not None:
+        raise ValueError('W tie preference is not supported; ties use the smallest W')
     policy={key:rows[0][key] for key in POLICY_FIELDS if key in rows[0]}
     if any({key:row[key] for key in POLICY_FIELDS if key in row} != policy for row in rows):
         raise ValueError('Each candidate W must use the same endpoint policy')
@@ -62,13 +65,13 @@ def select_final_weight(rows,tie_preference_W=HISTOGRAM_W_TIE_PREFERENCE):
             if left==right or (math.isfinite(left) and math.isfinite(right) and abs(left-right)<=ERROR_EPS_MS):continue
             better=left<right;tied=False;break
         if tied:
-            better=(candidate['W']!=tie_preference_W,candidate['W'])<(chosen['W']!=tie_preference_W,chosen['W'])
+            better=candidate['W']<chosen['W']
         if better:chosen=candidate;best_objectives=objectives
     shared=set.intersection(*(set(v['optimal_W']) for v in best_by_file.values()))
     return dict(**policy,selected_W=chosen['W'],tie_preference_W=tie_preference_W,selected_summary=chosen,
         summaries=summaries,best_by_file=best_by_file,shared_optimal_W=sorted(shared),
         candidate_W=sorted(grouped),selection_set='train',evaluation_protocol='train_final_calibration',
-        selection_rule='valid regions; minimum worst per-file regret; mean MAE; declared W preference on ties; smallest W otherwise')
+        selection_rule='valid regions; minimum worst per-file regret; mean MAE; smallest W on ties')
 
 def sweep_final_weights(records,model,predictor,candidates=W_CANDIDATES,
                         tie_preference_W=HISTOGRAM_W_TIE_PREFERENCE):
@@ -80,6 +83,9 @@ def sweep_final_weights(records,model,predictor,candidates=W_CANDIDATES,
     if not records:raise ValueError('W sweep needs annotated TRAIN recordings')
     if any(record.get('split')!='train' for record in records):
         raise ValueError('W sweep requires explicit TRAIN provenance (split=train)')
+    if any(not record.get('wav_path') or Path(record['wav_path']).resolve().parent != TRAIN_DIR.resolve()
+           for record in records):
+        raise ValueError('W sweep paths must belong to TRAIN, never TEST/external')
     mode=model.get('endpoint_mode','enhanced')
     if mode not in ('core','enhanced'):raise ValueError('Unknown endpoint_mode')
     policy=dict(endpoint_mode=mode,

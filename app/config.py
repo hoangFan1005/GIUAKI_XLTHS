@@ -12,9 +12,9 @@ SAMPLE_ROUNDING = "nearest_integer_samples_python_round_ties_to_even"
 MIN_SILENCE_SECONDS = 0.200
 # Engineering minimum for isolated speech/noise bursts, configurable globally.
 MIN_SPEECH_SECONDS = 0.100
-# Prefer W=20 when TRAIN FINAL-region calibration scores tie.
-# This is a tie preference only; a better calibration score can select another W.
-HISTOGRAM_W_TIE_PREFERENCE = 20.0
+# No W receives priority when TRAIN FINAL-region calibration scores tie.
+# The selection rule falls back deterministically to the smallest tied W.
+HISTOGRAM_W_TIE_PREFERENCE = None
 BOUNDARY_TOLERANCE_SECONDS = 0.100
 NOISE_LEVELS_DB = (20, 10, 0)
 RANDOM_SEED = 20261001

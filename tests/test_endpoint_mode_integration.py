@@ -37,11 +37,12 @@ class EndpointModeIntegrationTests(unittest.TestCase):
 
     def test_weight_sweep_checks_declared_geometry(self):
         from app.weight_selection import sweep_final_weights
+        from app.config import TRAIN_DIR
         model=dict(endpoint_mode='core',boundary_convention='union of active frame supports')
         def predictor(*args):
             return dict(metrics=dict(ground_truth_region_count=1,predicted_region_count=1,mae_ms=0.,status='ok',start_error_ms=0.,end_error_ms=0.), diagnostic=dict(endpoint_mode='core',geometry='frame centers',energy_threshold=1.,low_ste_threshold=None,high_ste_threshold=None,raw_speech_frames=1,candidate_regions=[]),final_regions=[])
         with self.assertRaisesRegex(ValueError,'geometry|boundary_convention'):
-            sweep_final_weights([dict(name='a',split='train')],model,predictor,candidates=(1.,))
+            sweep_final_weights([dict(name='a',split='train',wav_path=str(TRAIN_DIR/'a.wav'))],model,predictor,candidates=(1.,))
 
     def test_core_plot_uses_native_threshold_with_nullable_low_high(self):
         import matplotlib.pyplot as plt
@@ -81,6 +82,7 @@ class EndpointModeIntegrationTests(unittest.TestCase):
                     self.assertEqual(set(events),{('fit',algorithm,mode) for algorithm in ('tt1','tt2','tt3') for mode in ('core','enhanced')})
                 return real_load(folder)
             with patch.multiple(pipeline,TRAIN_DIR=root/'train',TEST_DIR=root/'test',OUTPUT_DIR=root/'outputs'), \
+                 patch('app.weight_selection.TRAIN_DIR',root/'train'), \
                  patch.object(pipeline,'fit_training_model',side_effect=fit),patch.object(pipeline,'load_audio_folder',side_effect=load), \
                  patch.object(pipeline,'make_file_figure',return_value=None),patch.object(pipeline,'plot_gaussian_training'):
                 pipeline.run_experiment(parse_args(['--evaluate-all','--compare-endpoint-modes']))
@@ -100,6 +102,7 @@ class EndpointModeIntegrationTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as temporary:
             root=Path(temporary);tiny_dataset(root)
             with patch.multiple(pipeline,TRAIN_DIR=root/'train',TEST_DIR=root/'test',OUTPUT_DIR=root/'outputs'), \
+                 patch('app.weight_selection.TRAIN_DIR',root/'train'), \
                  patch.object(pipeline,'make_file_figure',return_value=None),patch.object(pipeline,'plot_gaussian_training'), \
                  patch.object(pipeline,'show_figures',return_value=[]) as show,contextlib.redirect_stdout(io.StringIO()):
                 pipeline.run_experiment(parse_args([]))
@@ -115,6 +118,7 @@ class EndpointModeIntegrationTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as temporary:
             root=Path(temporary);tiny_dataset(root)
             with patch.multiple(pipeline,TRAIN_DIR=root/'train',TEST_DIR=root/'test',OUTPUT_DIR=root/'outputs'), \
+                 patch('app.weight_selection.TRAIN_DIR',root/'train'), \
                  patch.object(pipeline,'make_file_figure',return_value=None),patch.object(pipeline,'plot_gaussian_training'), \
                  contextlib.redirect_stdout(io.StringIO()):
                 pipeline.run_experiment(parse_args(['--evaluate-all','--compare-endpoint-modes']))
@@ -152,6 +156,7 @@ class EndpointModeIntegrationTests(unittest.TestCase):
             base=root/'outputs/endpoint_modes'
             comparison=base/'comparison/tables'
             with patch.multiple(pipeline,TRAIN_DIR=root/'train',TEST_DIR=root/'test',OUTPUT_DIR=root/'outputs'), \
+                 patch('app.weight_selection.TRAIN_DIR',root/'train'), \
                  patch.object(pipeline,'make_file_figure',return_value=None),patch.object(pipeline,'plot_gaussian_training'), \
                  contextlib.redirect_stdout(io.StringIO()):
                 full=parse_args(['--evaluate-all','--compare-endpoint-modes'])
@@ -196,6 +201,7 @@ class EndpointModeIntegrationTests(unittest.TestCase):
             external=root/'external';external.mkdir()
             for suffix in ('.wav','.lab'):shutil.copyfile(root/'train'/('phone_F1'+suffix),external/('phone_F1'+suffix))
             with patch.multiple(pipeline,TRAIN_DIR=root/'train',TEST_DIR=root/'test',OUTPUT_DIR=root/'outputs'), \
+                 patch('app.weight_selection.TRAIN_DIR',root/'train'), \
                  patch.object(pipeline,'make_file_figure',return_value=None),patch.object(pipeline,'plot_gaussian_training'), \
                  contextlib.redirect_stdout(io.StringIO()):
                 pipeline.run_experiment(parse_args(['--evaluate-all','--compare-endpoint-modes']))

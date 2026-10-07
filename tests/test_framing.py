@@ -212,14 +212,15 @@ class PipelineMetadataTests(unittest.TestCase):
                     (destination / f"{name}.lab").write_text("0 .03 sil\n.03 .07 v\n.07 .1 sil\n", encoding="utf-8")
             args = SimpleNamespace(algorithm="all", compare_context=True, snr_study=False,
                                    file=None, no_show=True, show_seconds=0)
-            with patch.multiple("app.pipeline", TRAIN_DIR=train, TEST_DIR=test, OUTPUT_DIR=output), contextlib.redirect_stdout(io.StringIO()):
+            with patch.multiple("app.pipeline", TRAIN_DIR=train, TEST_DIR=test, OUTPUT_DIR=output), \
+                    patch("app.weight_selection.TRAIN_DIR", train), contextlib.redirect_stdout(io.StringIO()):
                 run_experiment(args)
             for name in ("tt1", "tt2", "tt3", "tt2-context"):
                 model = json.loads((output / "endpoint_modes" / "enhanced" / "models" / f"{name}.json").read_text(encoding="utf-8"))
                 self.assertEqual((model["frame_ms"], model["hop_ms"]), (25.0, 10.0))
                 self.assertIn("ties_to_even", model.get("sample_rounding", ""))
                 if name == 'tt2':
-                    self.assertEqual(model['W'], 20., 'Equal final scores must retain the previously selected W=20')
+                    self.assertEqual(model['W'], 1., 'Equal TRAIN final scores must use the smallest W')
             config = json.loads((output / "endpoint_modes" / "enhanced" / "tables" / "all_with_context" / "run_config.json").read_text(encoding="utf-8"))
             self.assertEqual((config.get("frame_ms"), config.get("hop_ms")), (25.0, 10.0))
             self.assertIn("ties_to_even", config.get("sample_rounding", ""))

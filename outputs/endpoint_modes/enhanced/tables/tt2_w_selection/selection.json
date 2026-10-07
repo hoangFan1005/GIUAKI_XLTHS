@@ -4,10 +4,10 @@
   "minimum_speech_ms": 100.0,
   "minimum_silence_ms": 200.0,
   "padding_stage": "candidate diagnostics only",
-  "selected_W": 20.0,
-  "tie_preference_W": 20.0,
+  "selected_W": 1.0,
+  "tie_preference_W": null,
   "selected_summary": {
-    "W": 20.0,
+    "W": 1.0,
     "files": 4,
     "invalid_files": 0,
     "mean_MAE_ms": 13.747165532879801,
@@ -795,7 +795,7 @@
   ],
   "selection_set": "train",
   "evaluation_protocol": "train_final_calibration",
-  "selection_rule": "valid regions; minimum worst per-file regret; mean MAE; declared W preference on ties; smallest W otherwise",
+  "selection_rule": "valid regions; minimum worst per-file regret; mean MAE; smallest W on ties",
   "evaluated_files": [
     "phone_F1",
     "phone_M1",
@@ -804,5 +804,5 @@
   ],
   "endpoint_policy": "hysteresis final regions; no fixed final padding",
   "note": "W was calibrated using these TRAIN LABs; TEST has historical exposure and is reused for scoring, so no holdout independence is claimed.",
-  "calibration_digest": "33a016d798ea363b0079dc61e2b390848a391ad7384847142cb5dedb03684361"
+  "calibration_digest": "19b5c5e6abce1f76bcf91619dc734756b8a6f6b2cf5b450597398a46671cefbe"
 }

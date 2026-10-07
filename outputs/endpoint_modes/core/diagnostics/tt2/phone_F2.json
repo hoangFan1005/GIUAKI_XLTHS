@@ -1,8 +1,8 @@
 {
   "variant": "source",
-  "energy_threshold": 0.00010582343327162865,
+  "energy_threshold": 0.0001366759840278643,
   "energy": {
-    "threshold": 0.00010582343327162865,
+    "threshold": 0.0001366759840278643,
     "peak_indices": [
       0,
       5,
@@ -32,16 +32,16 @@
       6.162351928651333e-07,
       0.009123098442796618
     ],
-    "W": 20.0
+    "W": 10.0
   },
   "padding_frames": 25,
   "padding_ms": 250.0,
   "effective_padding_ms": 250.0,
-  "raw_speech_frames": 224,
+  "raw_speech_frames": 217,
   "padded_speech_frames": 345,
   "feature": "energy",
   "source_status": "Teacher-requested energy-only histogram; 25/10 ms; 250 ms candidate padding retained as 25 hops",
-  "native_threshold": 0.00010582343327162865,
+  "native_threshold": 0.0001366759840278643,
   "native_threshold_units": "mean squared sample amplitude",
   "candidate_regions": [
     [
@@ -50,19 +50,19 @@
     ],
     [
       1.95,
-      2.165
+      2.155
     ],
     [
       2.24,
-      2.565
+      2.545
     ],
     [
-      2.78,
+      2.79,
       3.045
     ],
     [
-      3.06,
-      3.295
+      3.07,
+      3.285
     ],
     [
       3.36,
@@ -70,7 +70,7 @@
     ],
     [
       3.61,
-      3.785
+      3.775
     ],
     [
       3.81,
@@ -80,10 +80,10 @@
   "final_regions": [
     [
       1.05,
-      2.565
+      2.545
     ],
     [
-      2.78,
+      2.79,
       4.015
     ]
   ],

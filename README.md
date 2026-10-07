@@ -69,7 +69,9 @@ Mỗi tài liệu gồm ý tưởng, ví dụ tính tay, công thức, các hàm
 
 [Kết quả hiện tại và giới hạn](reports/KET_QUA_HIEN_TAI.md) tổng hợp 4 test và toàn bộ 8 WAV. [Báo cáo sửa lỗi ngày 06/10, nghiệm thu 07/10](reports/KET_QUA_SUA_LOI_2026_10_06.md) ghi hai sửa TT3, khảo sát timing/TRAIN, 133 tests và hồi quy 24 trường hợp không đổi.
 
-TT2 chỉ dùng **Energy**, không Centroid/F0. Trong enhanced, W20 chọn trên bốn TRAIN FINAL, khảo sát W1–50 với tie preference cố định 20; tất cả 50 W hòa trong TRAIN hiện tại (mean 13.747165532879801 ms). Candidate frame-F1 đề xuất W1 riêng. Mọi model/noise/W fit TRAIN trước TEST. Model schema 3 và metric schema 2 ghi `train_selected_reused_test` và `historical_test_exposure=true`: TEST có lịch sử được xem, không khẳng định độc lập.
+TT2 chỉ dùng **Energy**, không Centroid/F0. Trong enhanced, cả W=1…50 hòa theo objective FINAL trên bốn TRAIN hiện tại (mean 13.747165532879801 ms), nên quy tắc xác định chọn W nhỏ nhất: **W=1**. Core chọn W=10 do objective ưu tiên số vùng hợp lệ khác nhau; không dùng một W chung để che lấp khác biệt giữa hai pipeline. Candidate frame-F1 cũng đề xuất W1 riêng, nhưng đó là bước khác. Mọi model/noise/W fit TRAIN trước TEST. Model schema 3 và metric schema 2 ghi `train_selected_reused_test` và `historical_test_exposure=true`: TEST có lịch sử được xem, không khẳng định độc lập.
+
+Các notebook báo cáo SNR proxy đo từ công suất mẫu trong khoảng LAB `v`/`uv` so với `sil`; đây không phải SNR sạch tham chiếu. Phần này tách biệt với khảo sát độ bền bằng cách thêm nhiễu Gaussian tổng hợp 20/10/0 dB vào các bản TEST, trong khi giữ nguyên model đã fit TRAIN. TEST chỉ được mô tả, không dùng để hiệu chỉnh.
 
 TT3 giải giao điểm Gaussian bằng tọa độ được dịch tâm/chia scale, sigma floor `1e-9`, nghiệm quadratic ổn định và kiểm tra log-density. Hàm Gaussian thô `fit`/`predict` vẫn hỗ trợ hướng `low`; Enhanced FINAL HIGH/LOW yêu cầu `speech_direction='high'`; core giữ hướng native. Enhanced từ chối model `low` hoặc hướng không hợp lệ khi fit/detect FINAL; core dùng hướng high/low native đã học.
 

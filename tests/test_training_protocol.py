@@ -213,7 +213,7 @@ class TrainingProtocolTests(unittest.TestCase):
         self.assertEqual(selection['candidate_W'], list(range(1, 51)))
         self.assertEqual(selection['selection_set'], 'train')
         self.assertEqual(selection['evaluation_protocol'], 'train_final_calibration')
-        self.assertEqual(selection['tie_preference_W'], 20)
+        self.assertIsNone(selection['tie_preference_W'])
         self.assertNotIn('previous_W', selection)
         self.assertEqual(set(selection['evaluated_files']), {'phone_F1', 'phone_M1', 'studio_F1', 'studio_M1'})
         self.assertEqual(model['W'], selection['selected_W'])

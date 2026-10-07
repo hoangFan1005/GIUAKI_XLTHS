@@ -250,7 +250,7 @@ class DiagnosticToolTests(unittest.TestCase):
         self.assertEqual(payload['manifest']['parameter_selection_set'], 'train')
         self.assertTrue(payload['manifest']['historical_test_exposure'])
         self.assertEqual(payload['manifest']['training_files'], [r['name'] for r in records])
-        self.assertEqual(models['tt2']['W'], 20.)
+        self.assertEqual(models['tt2']['W'], 1.)
 
 
 

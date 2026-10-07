@@ -10,8 +10,8 @@
   "smooth_radius": 2,
   "padding_frames": 25,
   "framing_adaptation": "paper 50/50 ms to assignment 25/10 ms; preserve 250 ms padding as 25 hops",
-  "W": 20.0,
-  "parameter_rule": "valid regions; minimum worst per-file regret; mean MAE; declared W preference on ties; smallest W otherwise",
+  "W": 10.0,
+  "parameter_rule": "valid regions; minimum worst per-file regret; mean MAE; smallest W on ties",
   "source": "Energy-only adaptation requested by teacher; histogram threshold from Giannakopoulos pp.1-2; 25/10 ms and candidate padding are declared choices",
   "schema_version": 3,
   "metrics_schema_version": 2,
@@ -77,18 +77,18 @@
     "predict_only_fallback_records": 0
   },
   "candidate_frame_selection_applicable": true,
-  "finalW": 20.0,
-  "tie_preference_W": 20.0,
+  "finalW": 10.0,
+  "tie_preference_W": null,
   "W_selection_train": {
     "endpoint_mode": "core",
     "boundary_convention": "union of active frame supports",
     "minimum_speech_ms": 0.0,
     "minimum_silence_ms": 200.0,
     "padding_stage": "excluded from core FINAL",
-    "selected_W": 20.0,
-    "tie_preference_W": 20.0,
+    "selected_W": 10.0,
+    "tie_preference_W": null,
     "selected_summary": {
-      "W": 20.0,
+      "W": 10.0,
       "files": 4,
       "invalid_files": 1,
       "mean_MAE_ms": null,
@@ -702,7 +702,7 @@
     ],
     "selection_set": "train",
     "evaluation_protocol": "train_final_calibration",
-    "selection_rule": "valid regions; minimum worst per-file regret; mean MAE; declared W preference on ties; smallest W otherwise",
+    "selection_rule": "valid regions; minimum worst per-file regret; mean MAE; smallest W on ties",
     "evaluated_files": [
       "phone_F1",
       "phone_M1",
@@ -711,7 +711,7 @@
     ],
     "endpoint_policy": "native decisions; merge internal support gaps below 200 ms; no duration filter or final padding",
     "note": "W was calibrated using these TRAIN LABs; TEST has historical exposure and is reused for scoring, so no holdout independence is claimed.",
-    "calibration_digest": "2432f69d291a4d9dc5de612b34976b687041294d8943f502f3ec53ef8e2de80f"
+    "calibration_digest": "bcb698e852fad95cb38fd5aabad97c6123476fe0f30e7c2d1f85db7a12e9d673"
   },
-  "calibration_digest": "2432f69d291a4d9dc5de612b34976b687041294d8943f502f3ec53ef8e2de80f"
+  "calibration_digest": "bcb698e852fad95cb38fd5aabad97c6123476fe0f30e7c2d1f85db7a12e9d673"
 }
