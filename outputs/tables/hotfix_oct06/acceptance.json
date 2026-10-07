@@ -1,0 +1,13 @@
+{
+  "cases": 24,
+  "regressions": 0,
+  "region_count_correct": 24,
+  "preserved_input_slide_legacy_package_files": 39,
+  "tt3_before_threshold": 0.0028777336852328582,
+  "tt3_after_threshold": 0.0028777336852328582,
+  "test_mean_mae_ms": {
+    "tt1": 19.999999999999993,
+    "tt2": 13.749999999999986,
+    "tt3": 12.50000000000001
+  }
+}

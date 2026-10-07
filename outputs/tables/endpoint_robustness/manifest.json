@@ -1,0 +1,79 @@
+{
+  "parameter_selection_set": "train",
+  "historical_test_exposure": true,
+  "purpose": "diagnostic ablation; no policy selection",
+  "training_files": [
+    "phone_F1",
+    "phone_M1",
+    "studio_F1",
+    "studio_M1"
+  ],
+  "input_sha256": {
+    "data\\train\\phone_F1.wav": "4209a6ffe642f93b89554000fa7766135faf7c6cd97ce99b912b44af5e39db12",
+    "data\\train\\phone_F1.lab": "e30d41cc8e84112819bd7c6ab4a2c8d3adeadd4cb85054dd37f3dc824c1ca522",
+    "data\\train\\phone_M1.wav": "f6ec4c441948ea9e749ddfdf2ec88b5400261c2f7249c54baf42e00b485eab22",
+    "data\\train\\phone_M1.lab": "02e83baed2b024143766389e7dfaf601d3531a84df7f500f744ebd089323773e",
+    "data\\train\\studio_F1.wav": "60deec10a9a1db91546503977892d17f34111d7090482b893dc46ebe09ec6fc5",
+    "data\\train\\studio_F1.lab": "46d1bd99df6deb67998c707dcaf32d153076a06593efffd3bce2c0c10895cfd4",
+    "data\\train\\studio_M1.wav": "7ad0e8baff2c69e65f680842a7cda33744358111f7662d9b6d17702b2077be78",
+    "data\\train\\studio_M1.lab": "ca3bda7a6c9c136546032ce553fde6c057646eea1f5b69ea1e8c7905878d95e8"
+  },
+  "arms": [
+    "raw0",
+    "raw100",
+    "hysteresis0",
+    "hysteresis100"
+  ],
+  "minimum_silence_ms": 200.0,
+  "minimum_speech_ms": 100.0,
+  "boundary_convention": "union of active frame supports",
+  "model_sha256": {
+    "tt1": "a5ff61ed9e261127a4a5687f8e5da20ac5d7daaceba3578118dd96c78e08255d",
+    "tt2": "9f48a41fef7e7a2de9c0c00400da6cbc7740900ae591bb9b42605b8f4e49899a",
+    "tt3": "26e61dbee5cdfc69f9abc88955109757d335862b0e46b1a4ad7a4ebb11b1db1d"
+  },
+  "locked_parameters": {
+    "tt1": {
+      "threshold": 0.0010293375196035162,
+      "W": null,
+      "endpoint_noise": {
+        "noise_mean": 0.00038711079659476316,
+        "noise_std": 0.0007092854827602364,
+        "noise_q95": 0.0012140144555334857,
+        "noise_upper": 0.0025149672448754727,
+        "noise_count": 497,
+        "calibration": "training silence only; population std; Q95 nearest rank",
+        "high_multiplier": 1.5
+      }
+    },
+    "tt2": {
+      "threshold": null,
+      "W": 20.0,
+      "endpoint_noise": {
+        "noise_mean": 0.00038711079659476316,
+        "noise_std": 0.0007092854827602364,
+        "noise_q95": 0.0012140144555334857,
+        "noise_upper": 0.0025149672448754727,
+        "noise_count": 497,
+        "calibration": "training silence only; population std; Q95 nearest rank",
+        "high_multiplier": 1.5
+      }
+    },
+    "tt3": {
+      "threshold": 0.0028777336852328582,
+      "W": null,
+      "endpoint_noise": {
+        "noise_mean": 0.00038711079659476316,
+        "noise_std": 0.0007092854827602364,
+        "noise_q95": 0.0012140144555334857,
+        "noise_upper": 0.0025149672448754727,
+        "noise_count": 497,
+        "calibration": "training silence only; population std; Q95 nearest rank",
+        "high_multiplier": 1.5
+      }
+    }
+  },
+  "physical_silence_limitation": "True200/210ms zero intervals may merge; estimated support gap is shorter.",
+  "minimum_speech_limitation": "100ms filters estimated merged span, not physical speech duration.",
+  "current_train_scores_are_not_holdout": true
+}

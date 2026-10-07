@@ -1,0 +1,210 @@
+{
+  "completed_at": "2026-10-07T10:59:02.885284+07:00",
+  "baseline_commit": "d035dcb4d12e5f01abe7b33b6bd812a806193f1e",
+  "runtime": "3.14.7 (tags/v3.14.7:823f032, Aug  5 2026, 10:51:32) [MSC v.1944 64 bit (AMD64)]",
+  "interpreter": "H:\\GIUAKI_XLTHS\\.venv\\Scripts\\python.exe",
+  "commands": [
+    {
+      "argv": [
+        "H:\\GIUAKI_XLTHS\\.venv\\Scripts\\python.exe",
+        "-B",
+        "-m",
+        "unittest",
+        "discover",
+        "-s",
+        "tests",
+        "-q"
+      ],
+      "exit_code": 0,
+      "elapsed_seconds": 16.858460400000013,
+      "output": "----------------------------------------------------------------------\nRan 133 tests in 13.862s\n\nOK\n"
+    },
+    {
+      "argv": [
+        "H:\\GIUAKI_XLTHS\\.venv\\Scripts\\python.exe",
+        "-B",
+        "H:\\GIUAKI_XLTHS\\_build\\fix_oct06\\acceptance.py"
+      ],
+      "exit_code": 0,
+      "elapsed_seconds": 1.5677769999999782,
+      "output": "{\n  \"cases\": 24,\n  \"regressions\": 0,\n  \"region_count_correct\": 24,\n  \"preserved_input_slide_legacy_package_files\": 39,\n  \"tt3_before_threshold\": 0.0028777336852328582,\n  \"tt3_after_threshold\": 0.0028777336852328582,\n  \"test_mean_mae_ms\": {\n    \"tt1\": 19.999999999999993,\n    \"tt2\": 13.749999999999986,\n    \"tt3\": 12.50000000000001\n  }\n}\n"
+    },
+    {
+      "argv": [
+        "H:\\GIUAKI_XLTHS\\.venv\\Scripts\\python.exe",
+        "-B",
+        "tools/run_notebooks.py",
+        "--validate-only"
+      ],
+      "exit_code": 0,
+      "elapsed_seconds": 2.1682843999999477,
+      "output": "THUAT_TOAN_1.ipynb: saved outputs valid, 5 figures, test mean MAE 20.00 ms.\nTHUAT_TOAN_2.ipynb: saved outputs valid, 5 figures, test mean MAE 13.75 ms.\nTHUAT_TOAN_3.ipynb: saved outputs valid, 5 figures, test mean MAE 12.50 ms.\nCODE package: JUPYTER_NOTEBOOKS_CODE_ONLY.zip; exactly 3 executed notebooks, no WAV/LAB/audio.\n"
+    },
+    {
+      "argv": [
+        "git",
+        "-c",
+        "core.whitespace=cr-at-eol",
+        "diff",
+        "--check"
+      ],
+      "exit_code": 0,
+      "elapsed_seconds": 0.07611539999993511,
+      "output": ""
+    }
+  ],
+  "unit_tests_passed": 133,
+  "acceptance": {
+    "cases": 24,
+    "regressions": 0,
+    "region_count_correct": 24,
+    "preserved_input_slide_legacy_package_files": 39,
+    "tt3_before_threshold": 0.0028777336852328582,
+    "tt3_after_threshold": 0.0028777336852328582,
+    "test_mean_mae_ms": {
+      "tt1": 19.999999999999993,
+      "tt2": 13.749999999999986,
+      "tt3": 12.50000000000001
+    }
+  },
+  "preserved_file_sha256": {
+    "Source/README.md": "6b4e4ec60d4f4adcd2c7cf990811ee2dc7abc20f36e9374a13e29fc276f34fb2",
+    "Source/assignment/Hướng dẫn BT - Phân đoạn tín hiệu thành tiếng nói và khoảng lặng_XLTHS_GK 2026.docx": "9eb6032de0c8cecac3d88d2825ca98fcfd956ce4d674c5dacd3544fec2899eab",
+    "Source/assignment/Hướng dẫn BT thi GK nhóm 3-4 SV_Phân đoạn tín hiệu thành tiếng nói và khoảng lặng_XLTHS_GK 2026.docx": "d4adfb5c5100ab64a72cb390b6137b84bf3156c9475ecbbecc7fdc4b27b26005",
+    "Source/assignment/Hướng dẫn trình bày slide và nộp bài thi.pdf": "6b3d0f7c16298f870f0626d8c35567e8a29985313db5a6c1d9d2561ddebf6e95",
+    "Source/context/BAO_CAO_NGU_CANH_GIUA_KY.pdf": "0b953dcc887ca001cd81f6457800b1f6c2b4fad21b5f710010d6f5f44875641b",
+    "Source/course_slides/Chapter6_AUDIO-SPEECH SIGNAL PROCESSING.pdf": "ad59aa3da530777b64cab70c5522cac12df2cbbdfecbff10623f69109c923747",
+    "Source/examples/sampleFigure.bmp": "c08799016d7a932f0fa6fe823032feb19bdd03ac844703a2940d453a9626e4de",
+    "Source/examples/sampleFigure.eps": "5e086918e58d43d65c3624a26731193d71cbf050b822fdec9e76ed2fff4bfb8c",
+    "Source/references/A method for silence removal and segmentation of speech signals_Giannakopoulos_2014.pdf": "570106e8d3f9eedadbd3f3294a9e18a167f6c5b116ffcb9ecb7f6b8c9b261952",
+    "Source/references/CS425 Audio and Speech Processing_Hodgkinson_2012.pdf": "242057d219ffe219ef9f5ade2cbbfd4a55af21dcd08ca03061127d2ba184c413",
+    "data/README.md": "8477775d78a7a9574ed04c3ac41f5525f627540ec36f13f692991324e9148fbc",
+    "data/test/phone_F2.lab": "694f67d9fa05389593b574455dbbd130eaf3ff44e54847a46a632fd1b6658df9",
+    "data/test/phone_F2.wav": "0855fdac93bcf9eb21a8381cea16e677e64fcf5c4546cafc7ab2fc561e9cc519",
+    "data/test/phone_M2.lab": "372aee9175328999a654c547eb353600e0ba5bf262d57db7eb7fa532f30a94ea",
+    "data/test/phone_M2.wav": "61857937c1ad0c05ef2df2933af9088b89a1109af00b181876ffe96d59d6d297",
+    "data/test/studio_F2.lab": "b34dfed30f8f59b10d4febef70ec8faa5bc0fac97a863ccd697eb53cf4d93037",
+    "data/test/studio_F2.wav": "70ee6edf2d80b5e9f2a2ca70aaa7f650dbd05bbf064f2fb9cd4c15bd4c78cb38",
+    "data/test/studio_M2.lab": "a88cd1ec912477bb03641fdea5c46dcbafe88a1651e653efa65b922ede38be52",
+    "data/test/studio_M2.wav": "237ea1ab4bece6893ff2d2b42962184e35d0a5e60c94188d9e3dd0b84714b681",
+    "data/train/README.txt": "25aed208f4a58fc31946193228c8313897f64bc538c0d2301c77850cbafe5ccb",
+    "data/train/phone_F1.lab": "e30d41cc8e84112819bd7c6ab4a2c8d3adeadd4cb85054dd37f3dc824c1ca522",
+    "data/train/phone_F1.wav": "4209a6ffe642f93b89554000fa7766135faf7c6cd97ce99b912b44af5e39db12",
+    "data/train/phone_M1.lab": "02e83baed2b024143766389e7dfaf601d3531a84df7f500f744ebd089323773e",
+    "data/train/phone_M1.wav": "f6ec4c441948ea9e749ddfdf2ec88b5400261c2f7249c54baf42e00b485eab22",
+    "data/train/studio_F1.lab": "46d1bd99df6deb67998c707dcaf32d153076a06593efffd3bce2c0c10895cfd4",
+    "data/train/studio_F1.wav": "60deec10a9a1db91546503977892d17f34111d7090482b893dc46ebe09ec6fc5",
+    "data/train/studio_M1.lab": "ca3bda7a6c9c136546032ce553fde6c057646eea1f5b69ea1e8c7905878d95e8",
+    "data/train/studio_M1.wav": "7ad0e8baff2c69e65f680842a7cda33744358111f7662d9b6d17702b2077be78",
+    "slides/README.md": "f7b96e2feb8077e6e7a9b5ecb3c3b3bed11ee33458880230d625c89d9a6c6441",
+    "slides/THUAT_TOAN_1/THUAT_TOAN_1.pdf": "2b785d4022b76bd245966ffd11999d76551c01a0e02c8a86f50793d5cbbf2f57",
+    "slides/THUAT_TOAN_1/THUAT_TOAN_1.pptx": "a884311657fec428d6dbbafce9786a3c8d40b5578263d217fbc338ae366e3018",
+    "slides/THUAT_TOAN_2/THUAT_TOAN_2.pdf": "e47856ba82240c5011073c0c9d3f223c5d78efc26c46dcdafabf155e4cebce5a",
+    "slides/THUAT_TOAN_2/THUAT_TOAN_2.pptx": "a44be7ebc60cac33c40f8eb00fed88c03923d1576fe8ee44bb6f698a450c2ee9",
+    "slides/THUAT_TOAN_3/THUAT_TOAN_3.pdf": "6730cd19744e92682fa54f16dd081de43f30f12bf316589c597aedc065955cba",
+    "slides/THUAT_TOAN_3/THUAT_TOAN_3.pptx": "2c42d708cfc953a8f454e3d78944bfe7ae893f356c6248e07022682faabb7ebd",
+    "submission/README.md": "aed0d370ae6a24803dcf913fcd350fb8d35276925d5f9208ef44b00509a4aaa8",
+    "submission/THUAT_TOAN_1.zip": "ae00f2bb91b3313012b70fe50c35ca9197af9d9f39deb1becde6f9357eecca67",
+    "submission/THUAT_TOAN_2.zip": "6433afd142ad99f8fa2ceabf89fa6108078616224f56bd90eaa368d9d3a99e22",
+    "submission/THUAT_TOAN_3.zip": "40f9f5f9af273c84ce16f99a13ab16705c974e6db3f057da855125cfc9f11073",
+    "algorithms/tt1_hodgkinson.py": "5c3638a6b7cc1a6dcd8beb3a4d02b33632c16f875433e3600f2222763139fd97",
+    "algorithms/tt2_histogram.py": "e8c86bd28eea3e0058569c6cc5890b78ca86b6ec57233f6e85cdd41f0e78ed7c",
+    "core/features.py": "69a18cddb11bee3bd76386065fed15171e4470759644e997c29ce534a320a5bd",
+    "core/endpoints.py": "14b7b481b4595152fcf00c829f651d6690d0aab083c0b028b2978f149b59d0ff",
+    "app/config.py": "639455a4fcd6ac30d8a2ff8d79c1fce2f4d31b5e3564e537fe692fcbee3643e8",
+    "tools/build_slides.mjs": "915c5821eacd6d4c084a167bc57db125f7dcc9724d6fcbed44a645592d6713f1",
+    "tools/export_slide_data.py": "f926450f66e69c6a7fad119bd186fdc5b74d03ef61213f95d933c58727206965",
+    "tools/export_slide_pdf.py": "cecb716d508866a3cd9c311c6c271b23cc8703ef1098ac75ca186bc5e39ca915"
+  },
+  "notebooks": [
+    {
+      "file": "THUAT_TOAN_1.ipynb",
+      "png_count": 5,
+      "test_mean_mae_ms": 19.999999999999993,
+      "code_source_sha256": "0ed566d75d8854fadbc344a928f251846bec8a0ad5514d4ce385a9fba3d453e8",
+      "model_lock_digest": "08408b586c60b3c98f7c62c9624a6d4c2695e538580ce47b438999520762cde9",
+      "notebook_sha256": "742579418fbf4a4921fdf900ce9a9b865ed94a9398beaae29242a795a2e81ad3",
+      "all_results_count": 8,
+      "zip_member": "STTNhom-PhanDoanTiengNoiKhoangLang/THUAT_TOAN_1.ipynb"
+    },
+    {
+      "file": "THUAT_TOAN_2.ipynb",
+      "png_count": 5,
+      "test_mean_mae_ms": 13.749999999999986,
+      "code_source_sha256": "9fdcc4487d875f81f86815ee7ccd8f680694e7b86ac0ed9cee6aae0dc6b76b52",
+      "model_lock_digest": "9128b628d262de04beb3f6c8aec04d6ec0d96cf74931a1098fcd7b2f40698fa7",
+      "notebook_sha256": "992863f7c0acdf590423bfc2162ee0d9fc4570007a0f467d14e6ddf4d3d5e8be",
+      "all_results_count": 8,
+      "zip_member": "STTNhom-PhanDoanTiengNoiKhoangLang/THUAT_TOAN_2.ipynb"
+    },
+    {
+      "file": "THUAT_TOAN_3.ipynb",
+      "png_count": 5,
+      "test_mean_mae_ms": 12.50000000000001,
+      "code_source_sha256": "5731b3c13e92ce172a75246cc6582a2e6084d1eb779c85fb3df69714fb9741ee",
+      "model_lock_digest": "602441503f6b93d4019cfa160f02b2fa162d2b52351f350be136226c2d89920f",
+      "notebook_sha256": "ac03ba7a1fc39f92ed88b6719f9499c0572d5ade8a6cc1e3254ca634390b5e20",
+      "all_results_count": 8,
+      "zip_member": "STTNhom-PhanDoanTiengNoiKhoangLang/THUAT_TOAN_3.ipynb"
+    }
+  ],
+  "code_zip_sha256": "dfebe61bb7af41a76761d29cdf0260e0c1af568a5e4b7f6d1cfc1523c501ed84",
+  "total_embedded_pngs": 15,
+  "visual_inspection": "15 fresh PNGs visually inspected via contact sheets in root turn on Oct06; current notebook bytes unchanged since fresh execution.",
+  "independent_review": {
+    "date": "2026-10-07",
+    "reviewer": "final_remediation_review_oct07",
+    "result": "No unresolved material findings in approved scope",
+    "full_report": "# Final bounded review — 2026-10-07\n\n**No unresolved material findings in the approved remediation scope.** The earlier scoped TT3 log-ratio finding is resolved. This conclusion concerns the Oct06/Oct07 fixes, not complete assignment delivery, physical-silence guarantees, or new-data robustness.\n\n## Scope reviewed\n\nRead the accepted audit section 9, progress ledger, task-1-2 review and its resolution, implementation report, current source diff, focused numerical/direction/timing/notebook tests, robustness tool and saved diagnostic tables, updated owned documentation, notebook source/metadata, and root's final verification record. No production/test edits, helper agents, full-suite runs, notebook kernels, generators, slide changes, Git mutations, or pushes were performed. This review report is the only file written by this reviewer.\n\n## Correctness assessment\n\n- The centered/scaled Gaussian equation, factored discriminant, stable quadratic roots and rounded-root log-density check are internally consistent within the finite normalized-statistics scope. Equal priors, population variance, sigma floor and explicit midpoint fallback remain. The non-near-equal branch now uses the sigma ratio logarithm, addressing the prior class-order finding.\n- FINAL fit and inference reject explicit low or unknown Gaussian direction. Raw Gaussian fitting/prediction retains low-direction classification, and missing legacy direction continues to mean high. The saved TT3 model differs from HEAD only in `crossings`; the selected threshold is unchanged.\n- The diagnostic tool loads TRAIN only, freezes fresh models before its four-arm comparison, excludes TT2 candidate padding from raw decisions/seeds, and asserts that each production arm equals `detect_regions()`. It does not select a replacement production policy. Missing/extra regions leave primary metrics undefined; any invalid file also leaves the complete-arm primary mean undefined while valid-row means remain separately labeled.\n- Synthetic timing coverage distinguishes physical sample gaps from estimated support gaps. Saved true200/210 cases are labeled `known_limitation`; short-gap190 cases retain physical two-region GT and undefined primary MAE after merging. The 100 ms rule is documented and tested as merged support span, not active-sample duration.\n- Stage comments are inserted at AST statement coordinates after transformation; tests compare the resulting AST and preserve multiline docstrings. Source digest binding hashes ordered code-cell sources, excludes only the known temporary audit cell, and rejects missing/changed source evidence. It is correctly documented as accidental-drift detection rather than authentication. Standalone Restart Kernel / Run All / Save remains available; repository runner requirements apply to its audit/package workflow.\n- The remediation report distinguishes unchanged current-dataset outputs from the fixed latent TT3 defects. It retains physical200/210 and late-END limitations, historical TEST exposure, TRAIN-only ablation, unverified Python3.10, placeholders and slide exclusion. It does not claim FINAL low-direction support, a physical200 guarantee, new-holdout generalization, or a fully synchronized slide/assignment submission.\n\n## Fresh independent read-only checks\n\nUsed standard-library inline probes with `C:/msys64/ucrt64/bin/python.exe -B -` (Python3.12), without execution of notebook cells or dumping image payloads:\n\n1. Repeated the sigma-floor reproduction, identical-means fallback, and both prior endpoint-adjacent reproductions in both class orientations. Expected crossings/fallback rules were retained; ordinary endpoint case returns `0.006887050112577372`, tiny endpoint case `1.5887050112577367e-9`, both midpoint fallback in both orientations.\n2. Recomputed ordered-code SHA256 for all three saved notebooks; all match metadata. Each contains five PNG output entries and no saved error. The saved TT3 `equal_density_threshold` AST equals the production function AST.\n3. Opened the CODE ZIP read-only: exactly three members, each byte-identical to its corresponding saved notebook.\n4. Compared saved TT3 model fields with HEAD: only `crossings` changed.\n5. Read saved diagnostics: 48 waveform cases, two short bursts, 48 TRAIN ablation rows, 12 arm summaries. Each physical-gap group has 12 cases. Gap190/200/210 gives one predicted region; gap250 gives two. True200 support gap ranges from approximately155 to175.011338 ms, matching the report. TT2 raw summaries have3valid/1invalid with `mean_mae_ms=null`.\n\nThe project venv launcher was unavailable to this sandboxed reviewer, so these small read-only probes used the system interpreter. Two initial probe commands stopped on Windows default text encoding while reading/printing Unicode; the affected checks were subsequently completed with explicit UTF-8 or PowerShell reads. These were review-command environment issues, not implementation failures.\n\n## Integrated evidence reviewed, not rerun\n\n`outputs/tables/hotfix_oct06/verification.json` records root's fresh Oct07 Python3.14 run:133 tests OK in13.862s;24 before/after cases with0regressions; three saved-notebook/source/model/PNG audits and ZIP byte checks; and a clean whitespace diff check. It also records preserved-file hashes. This reviewer did not independently rerun those integrated commands, regenerate figures, or repeat visual image inspection.\n\nRoot may close the final-review-pending statement in the report/ledger after incorporating this result. Remaining documented detector and delivery limitations do not become resolved by this bounded review.\n"
+  },
+  "final_docs_whitespace_check": {
+    "exit_code": 0,
+    "output": ""
+  },
+  "final_source_sha256": {
+    "algorithms/__init__.py": "6a8039cd32db4a8ed512bb56c39d074d2c905ea0d5ebc36125491aa67ba07e79",
+    "algorithms/tt1_hodgkinson.py": "5c3638a6b7cc1a6dcd8beb3a4d02b33632c16f875433e3600f2222763139fd97",
+    "algorithms/tt2_histogram.py": "e8c86bd28eea3e0058569c6cc5890b78ca86b6ec57233f6e85cdd41f0e78ed7c",
+    "algorithms/tt3_gaussian.py": "9c1681a588b75ea4174d5282b1c49a1732ddcb6670d76ded484a8c581abfb2da",
+    "app/__init__.py": "56721e9ce056d36cbf18a0dfe70619f0ff219f2f8325410ee9fb77eaeebc36ff",
+    "app/cli.py": "60e5a6ac505b8de109f1149bc66aaf2863ee578db93042c6720b879fa0fe7a8f",
+    "app/config.py": "639455a4fcd6ac30d8a2ff8d79c1fce2f4d31b5e3564e537fe692fcbee3643e8",
+    "app/pipeline.py": "731eb6713b06a2cf1afedcb709aa3ba0d1ac0f40cbf6d1ce198e82e64fc5e4b9",
+    "app/plotting.py": "6305984bf9c47375433d3209d0ab19537436622843b9fb46a1c226f1c9155188",
+    "app/weight_selection.py": "7ed3304e21f1e034cafaf91ab5d4b5ab80a3828a787931d6d906000aafce644d",
+    "core/__init__.py": "4dfccddb3e162c360f35bb091c305661ce6399a61e5c2458d997ba01d78fd94d",
+    "core/endpoints.py": "14b7b481b4595152fcf00c829f651d6690d0aab083c0b028b2978f149b59d0ff",
+    "core/features.py": "69a18cddb11bee3bd76386065fed15171e4470759644e997c29ce534a320a5bd",
+    "core/io_utils.py": "683878f3a2165b81a4953677c5ce727087f0eb06538811d2cd26ca36ba86ec1e",
+    "core/metrics.py": "727ed67a19fc5e2b7aeda757058f8bd49e2e14b2f6fc7f7b181907b5ef720be1",
+    "core/postprocess.py": "784c6310755e096a77cf224030539a78793d049c1e08caeb9f13465c6f7a3967",
+    "tests/__init__.py": "2c30068fb471c541ba0e4a43fa042bae0d6c629cec1bd09a49d87d706bcfb905",
+    "tests/test_algorithms.py": "8a58131e9ab7a8a8917173274aefb3a4c28914eb65c7f66193e0bd0afd6d4809",
+    "tests/test_artifact_consumers.py": "374da61d0dfa66de96c9709921a9d48d7092877da4307b185ad532b49170a5d6",
+    "tests/test_core.py": "7ed4b84fe93e3c88f0cce62835280990c2579aaaf7e9228d43dc2fb4cf35599c",
+    "tests/test_endpoint_pipeline.py": "0d646f23d56025f40beca20f5c563f67908f61dd36418c8b3b10c6a9ad0579dd",
+    "tests/test_endpoint_robustness.py": "badf238ab2af94405bd2c9e4f7709bf7c2b5de4bd1ec787651d8af9789b881dd",
+    "tests/test_endpoints.py": "313b4bf745913377a6e6ace688782f2ffba24b4a1688fb49915005423f7dd8eb",
+    "tests/test_entrypoints.py": "10b684bad9a57e2700159c424771e934b770fba7119bf5c23abc74bcc7027bc6",
+    "tests/test_framing.py": "6dc157564b179a3fb9adf1aedfc597d53631c265be540caf2fb7e416ebd876be",
+    "tests/test_gaussian_direction_contract.py": "0ba46eb6ef8bff08e76a9bf97f9b8d880c3a35e666f89bc2a5675493c7184949",
+    "tests/test_gaussian_numerics.py": "8e0727927796a700b94d805bacf77cb9a389a8027b58e8e58a59077a0d26849c",
+    "tests/test_histogram_energy_only.py": "1eda79465e9ea1325d9ec9e79179848e53a43601a94547526806b93c0c22f346",
+    "tests/test_notebook_protocol.py": "905713aa0e333065825aa5f7dbb374faf92d7ff6fec038f363df684fac92a9c2",
+    "tests/test_training_protocol.py": "2d05dee648f0c7c0d716b57a4568eae926d220d66923db5f6d542fe0fe257d48",
+    "tests/test_weight_selection.py": "658aaa6ecd707851bd80fcf86df9604edef585c7ff63a37a9b687660cc1f1cc4",
+    "tools/build_notebooks.py": "a35be6696666663dc22ae1cc922b25d7c5ddbd2472d40b03a4600d8dda5a3d29",
+    "tools/check_endpoint_robustness.py": "a5ebc95dc65bd9015eea2c4cc2934fdef8dfacabc871f4bb110582d478d57a22",
+    "tools/export_slide_data.py": "f926450f66e69c6a7fad119bd186fdc5b74d03ef61213f95d933c58727206965",
+    "tools/export_slide_pdf.py": "cecb716d508866a3cd9c311c6c271b23cc8703ef1098ac75ca186bc5e39ca915",
+    "tools/package_submission.py": "6c3b3aba562ad73726ef6e669970445bb66f221ad276c854105dbec9f820096c",
+    "tools/run_notebooks.py": "6164494545d3a2c5ea17c4d52e89b961786d421400fa479f8528d2c22c9179df",
+    "reports/KE_HOACH_CAI_TIEN_ENDPOINT.md": "d65e899123275e5d1886d1cc2f35bbdbad057109db1d0dd5b76f8105c893a286",
+    "reports/KET_QUA_HIEN_TAI.md": "f18145e934c0289f833cb7a167587564828ee2f82d2230372278f5ff4f6eef99",
+    "reports/KET_QUA_SUA_LOI_2026_10_06.md": "3c23ba2952ea517d53b15bfda55e777cfca19300b3d72f43f8b8a641e031bb58",
+    "reports/KIEM_TRA_SAU_HOTFIX_2026_10_06.md": "6d3b5a72488d5e9038b11fc50529629553a3b76afcda6d7e568214c8244092d2",
+    "reports/TT1_BINARY_SEARCH_GIAI_THICH.md": "46d9c436e124bc4517f852d3c78c176a9827328dcf13794a4b9784aea700a7fd",
+    "reports/TT2_HISTOGRAM_GIAI_THICH.md": "72c063d6c3fea7b323b1522e015ff1a6cc3b01b8d5976078f70ffbf59bffb64e",
+    "reports/TT3_GAUSSIAN_GIAI_THICH.md": "f2a92c85f53ba4d2f3910cba4bcd4fd915e011e1a9a333afb26773abd3c33fd5"
+  }
+}

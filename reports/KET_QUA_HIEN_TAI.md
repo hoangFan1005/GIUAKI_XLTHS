@@ -1,4 +1,12 @@
-# Kết quả hiện tại — 05/10/2026
+# Kết quả hiện tại — cập nhật 07/10/2026
+
+## Cập nhật sửa lỗi ngày 06/10, nghiệm thu ngày 07/10/2026
+
+[Báo cáo sửa lỗi chi tiết](KET_QUA_SUA_LOI_2026_10_06.md) ghi root cause, hàm đã sửa, TRAIN ablation, synthetic timing và nghiệm thu notebook. Solver TT3 đã dịch tâm/chia scale, kiểm tra log-density và sửa ca gần biên phụ thuộc thứ tự lớp; FINAL từ chối rõ hướng Gaussian `low`/không hợp lệ, chưa hỗ trợ hướng đó ở HIGH/LOW. Nghiệm thu lại ngày 07/10 đạt **133/133 tests trong 13.862 s**; ba notebook đã chạy bằng kernel mới, khớp 24/24 WAV, lưu 15 hình và ZIP CODE đã kiểm tra nguồn/bytes. Review độc lập cuối đã hoàn tất, không còn finding trọng yếu trong phạm vi sửa; bằng chứng tại [verification.json](../outputs/tables/hotfix_oct06/verification.json).
+
+[Before/after 24 trường hợp](../outputs/tables/hotfix_oct06/regression.csv) có **0 regression**: MAE/biên/số vùng đều không đổi, mean bốn TEST vẫn 20.00/13.75/12.50 ms. Năm cờ END muộn trong mục 4 vẫn còn. Có thêm 48 ca waveform tổng hợp và 48 dòng ablation chỉ TRAIN; giữ tham số production.
+
+Điều kiện 200 ms hiện đo **gap support ước lượng**, không bảo đảm giữ mọi silence vật lý ≥200 ms: silence thực 200/210 ms vẫn có thể bị gộp do frame chồng lấn. 100 ms lọc span support sau merge, không phải thời lượng voiced samples. Giới hạn này đã được kiểm tra/công bố, chưa sửa bằng estimator mới. Frame 25/hop 10 ms được giữ; Fs44,1k dùng 1102/441 samples, frame thực 24.988662 ms. Slide/PDF và ba ZIP Python cũ giữ nguyên theo yêu cầu, là previous version; notebook ZIP là gói CODE được làm mới. Các đoạn ngày 05/10 bên dưới là lịch sử, bao gồm trạng thái Git ở thời điểm đó.
 
 ## 1. Phiên bản đang dùng
 

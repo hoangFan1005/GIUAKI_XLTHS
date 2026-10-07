@@ -1,6 +1,6 @@
 # Giữa kỳ XLTHS — phân đoạn tiếng nói và khoảng lặng
 
-Ba thuật toán Python: **TT1 Binary Search**, **TT2 Histogram chỉ Energy**, **TT3 Gaussian**. Đặc trưng, ngưỡng và metrics được tự tính; Matplotlib dùng để vẽ. Cấu hình chung: frame **25 ms**, hop **10 ms**, khoảng lặng nội bộ tối thiểu **200 ms**, vùng nói tối thiểu **100 ms**. Không tính F0.
+Ba thuật toán Python: **TT1 Binary Search**, **TT2 Histogram chỉ Energy**, **TT3 Gaussian**. Đặc trưng, ngưỡng và metrics được tự tính; Matplotlib dùng để vẽ. Cấu hình chung: frame **25 ms**, hop **10 ms**; **200 ms** đo khoảng trống ước lượng giữa các support khung hoạt động; **100 ms** lọc theo span vùng support. Hai quy tắc này là heuristic, không bảo đảm khoảng lặng vật lý 200 ms hoặc tiếng nói thực 100 ms vì các khung có thể chồng lấn. Không tính F0.
 
 ## Mã nguồn Jupyter theo yêu cầu bổ sung
 
@@ -11,6 +11,8 @@ Mỗi sinh viên có một notebook riêng, chứa toàn bộ code và kết qu�
 - [TT3 — Gaussian](notebooks/THUAT_TOAN_3.ipynb)
 
 [Hướng dẫn mở/chạy notebook](notebooks/README.md) · [ZIP chỉ chứa 3 notebook](submission/JUPYTER_NOTEBOOKS_CODE_ONLY.zip).
+
+Người bảo trì dự án tạo lại gói CODE bằng `tools/build_notebooks.py` → `tools/run_notebooks.py` bằng kernel mới → `tools/run_notebooks.py --validate-only`. Runner lưu SHA-256 của nguồn các code cell theo thứ tự trong `endpoint_execution.code_source_sha256`. Thiếu digest hoặc sửa code/comment sau khi chạy sẽ yêu cầu thực thi lại trước audit/đóng gói của dự án; đây là kiểm tra sai lệch vô tình giữa source và outputs, không phải chữ ký xác thực. Model digest vẫn kiểm tra model khóa trước TEST riêng. Notebook độc lập vẫn chạy bằng **Restart Kernel and Run All**, rồi **Save**, không cần module dự án hay builder/runner.
 
 Kết quả số và đồ thị nằm trong `.ipynb`; xem không cần âm thanh. Gói mã nguồn notebook không chứa WAV/LAB. Mở trên máy này bằng `.\.venv\Scripts\python.exe -m jupyterlab notebooks` từ thư mục dự án. Các lệnh main Python dưới đây đã đồng bộ Stage1/schema 2. PPTX/PDF và ba ZIP Python là **previous version (trước Stage1)**; gói CODE chính hiện dùng notebook ZIP ở trên.
 
@@ -49,9 +51,11 @@ Mỗi tài liệu gồm ý tưởng, ví dụ tính tay, công thức, các hàm
 | TT2 Histogram Energy-only | [Giải thích TT2](reports/TT2_HISTOGRAM_GIAI_THICH.md) |
 | TT3 Gaussian | [Giải thích TT3](reports/TT3_GAUSSIAN_GIAI_THICH.md) |
 
-[Kết quả hiện tại và giới hạn](reports/KET_QUA_HIEN_TAI.md) tổng hợp 4 test và toàn bộ 8 WAV.
+[Kết quả hiện tại và giới hạn](reports/KET_QUA_HIEN_TAI.md) tổng hợp 4 test và toàn bộ 8 WAV. [Báo cáo sửa lỗi ngày 06/10, nghiệm thu 07/10](reports/KET_QUA_SUA_LOI_2026_10_06.md) ghi hai sửa TT3, khảo sát timing/TRAIN, 133 tests và hồi quy 24 trường hợp không đổi.
 
 TT2 chỉ dùng **Energy**, không Centroid/F0. W20 chọn trên bốn TRAIN FINAL, khảo sát W1–50 với tie preference cố định 20; tất cả 50 W hòa trong TRAIN hiện tại (mean 13.747165532879801 ms). Candidate frame-F1 đề xuất W1 riêng. Mọi model/noise/W fit TRAIN trước TEST. Schema 2 ghi `train_selected_reused_test` và `historical_test_exposure=true`: TEST có lịch sử được xem, không khẳng định độc lập.
+
+TT3 giải giao điểm Gaussian bằng tọa độ được dịch tâm/chia scale, sigma floor `1e-9`, nghiệm quadratic ổn định và kiểm tra log-density. Hàm Gaussian thô `fit`/`predict` vẫn hỗ trợ hướng `low`; FINAL HIGH/LOW hiện yêu cầu `speech_direction='high'`. Model `low` hoặc hướng không hợp lệ bị từ chối rõ ràng khi fit model FINAL và khi detect, thay vì âm thầm mất vùng nói.
 
 ## 3. Bố trí thư mục
 

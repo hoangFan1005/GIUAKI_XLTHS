@@ -34,6 +34,114 @@ def clean_code(source: str) -> str:
     return textwrap.dedent(source).strip() + "\n"
 
 
+def add_stage_comments(source: str, comments_by_name: dict) -> str:
+    """Insert comments before unique AST stage anchors, preserving every node.
+
+    Anchors name an assignment/loop target or standalone call; @input is the
+    first statement after the docstring and @return is a return statement.
+    Nested stages use their own indentation. Ambiguous or missing stages fail
+    generation so a source refactor cannot silently move explanatory prose.
+    """
+    tree = ast.parse(source)
+    lines = source.splitlines()
+    insertions = []
+    for function in tree.body:
+        if not isinstance(function, (ast.FunctionDef, ast.AsyncFunctionDef)):
+            continue
+        for anchor, comment in comments_by_name.get(function.name, []):
+            matches = []
+            for node in ast.walk(function):
+                targets = (node.targets if isinstance(node, ast.Assign) else
+                           [node.target] if isinstance(node, (ast.For, ast.AnnAssign)) else [])
+                names = {item.id for target in targets
+                         if isinstance(target, (ast.Name, ast.Tuple, ast.List))
+                         for item in ast.walk(target) if isinstance(item, ast.Name)}
+                names.update(target.slice.value for target in targets
+                             if isinstance(target, ast.Subscript)
+                             and isinstance(target.slice, ast.Constant))
+                call = node.value if isinstance(node, ast.Expr) else None
+                if (anchor in names or anchor == '@return' and isinstance(node, ast.Return)
+                        or isinstance(call, ast.Call) and isinstance(call.func, ast.Name)
+                        and call.func.id == anchor):
+                    matches.append(node)
+            if anchor == '@input':
+                matches = [function.body[1 if ast.get_docstring(function) is not None else 0]]
+            if len(matches) != 1:
+                raise ValueError(f'{function.name}: stage {anchor!r} must resolve exactly once')
+            node = matches[0]
+            insertions.append((node.lineno - 1, ' ' * node.col_offset + '# ' + comment))
+    for line, comment in sorted(insertions, reverse=True):
+        lines.insert(line, comment)
+    return '\n'.join(lines)
+
+
+TT2_STAGE_COMMENTS = {
+    'pad_speech': [
+        ('result', 'Copy the candidate mask; pad only original speech frames so padding cannot cascade.'),
+        ('@return', 'Output: padded candidates of the same length; FINAL receives no fixed padding.')],
+    '_validate_source_framing': [
+        ('@input', 'Input: feature timing and nominal parameters; Output: actual hop in ms or a framing error.'),
+        ('frame_size', 'Round sample counts using 25/10 ms, then compare actual sizes with supplied metadata.'),
+        ('key', 'Require actual timing to agree with sample rounding; legacy 50/50 framing is rejected.'),
+        ('starts', 'Validate support count and start origin before checking each sampled frame position.'),
+        ('end', 'Verify frame ends as well as starts, so cleanup uses consistent support intervals.')],
+    'predict': [
+        ('@input', 'Input: source energy and fitted histogram settings; Output: candidate mask and raw/padded diagnostics.'),
+        ('energy', 'Threshold the raw per-file energy after validating the required 25/10 ms timing.'),
+        ('padding', 'Padding extends candidates only; FINAL later seeds hysteresis from the raw energy threshold.')],
+    'fit': [
+        ('@input', 'Input: TRAIN features/labels; Output: candidate-frame F1 proposal, separate from FINAL W calibration.'),
+        ('candidates', 'Declare candidate W values and fixed bins/smoothing; per-file thresholds remain data-derived.'),
+        ('prepared', 'Validate TRAIN timing once and record whether support-based candidate cleanup is available.'),
+        ('key', 'Combine record timing with feature timing only when both sources agree.'),
+        ('_validate_source_framing', 'Check rounded framing, then count full-support records and explicit synthetic fallbacks.'),
+        ('weight', 'Evaluate each W using padded candidates and estimated support-gap cleanup when timing exists.'),
+        ('labels', 'Count pooled speech TP/FP/FN; None labels contribute to none of these totals.'),
+        ('denominator', 'Compute pooled F1; strict improvement keeps the smallest candidate W on a tie.'),
+        ('@return', 'Return proposal diagnostics; downstream TRAIN FINAL-region calibration selects the reusable W.')],
+}
+
+
+def pipeline_stage_comments(algorithm: str) -> dict:
+    decisions = {
+        'tt1': 'TT1 compares normalized STE with the TRAIN binary-search threshold.',
+        'tt2': 'TT2 estimates raw energy threshold per file; padded masks remain candidate diagnostics.',
+        'tt3': 'TT3 raw classification supports both directions; FINAL rejects explicit low/unknown models.'}
+    comments = {
+        'detect_regions': [
+            ('@input', 'Input: frame features/supports, duration and fitted model; Output: FINAL regions, mask and diagnostics.'),
+            ('noise', decisions[algorithm] + ' Require TRAIN noise before inference.'),
+            ('candidate_regions', 'Retain candidate supports for inspection; only FINAL regions produce endpoint scores.'),
+            ('base_threshold', 'Use the TRAIN normalized STE threshold and raw classifier seed.'
+             if algorithm != 'tt2' else 'Normalize TT2 raw energy threshold and seed from unpadded raw energy decisions.'),
+            ('low', 'Derive LOW/HIGH from the threshold and TRAIN silence noise statistics.'),
+            ('final_regions', 'Confirm with HIGH and continue above LOW; merge estimated support gaps below 200 ms.'),
+            ('@return', 'The 100 ms support-span filter is a heuristic; support bounds do not guarantee physical silence.')],
+        'predict_and_score': [
+            ('detected', 'Detect without LAB first; consult reference regions only after FINAL detection returns.'),
+            ('region_scores', 'Score complete FINAL regions in time order; missing/extra regions leave primary MAE undefined.'),
+            ('flags', 'Report missing/extra regions and large errors instead of hiding them in matched-only metrics.'),
+            ('boundary', 'Inspect endpoint positions against audio bounds and reference silence for diagnostics.'),
+            ('frames', 'Compute frame and tolerance-based event diagnostics separately from complete-region MAE.'),
+            ('legacy_test_tuned', 'Retain provenance for imported historical models; fresh fits record TRAIN selection.'),
+            ('@return', 'Output: FINAL detection, reference regions, scores, status and original detector diagnostics.')],
+        'fit_training_model': [
+            ('@input', 'Validate supplied TRAIN provenance before fitting; TEST reads occur after model locking.'),
+            ('model', {'tt1': 'Fit the normalized STE binary-search threshold from labeled TRAIN frames.',
+                       'tt2': 'Fit the candidate-frame histogram W proposal from TRAIN only.',
+                       'tt3': 'Fit robust centered/scaled Gaussian crossings; reject a non-high model before FINAL reuse.'}[algorithm])],
+    }
+    if algorithm == 'tt2':
+        comments['fit_training_model'].extend([
+            ('candidate_frame_selected_W', 'Preserve candidate F1 diagnostics beside schema-v2 TRAIN noise and provenance.'),
+            ('selection', 'Calibrate shared W on TRAIN FINAL regions; candidate F1 remains a separate diagnostic.'),
+            ('@return', 'Return the TRAIN-selected reusable model and all 200 W/file calibration rows.')])
+    else:
+        comments['fit_training_model'].append(
+            ('sweep_rows', 'Output: schema-v2 model with TRAIN silence noise and provenance; no W sweep for this method.'))
+    return comments
+
+
 def make_cell(kind: str, source: str, index: int) -> dict:
     result = dict(cell_type=kind, id=f"cell-{index:03d}", metadata={},
                   source=clean_code(source).splitlines(keepends=True))
@@ -92,6 +200,7 @@ def algorithm_code(algorithm: str) -> tuple[str, str]:
                 "TRAIN candidate-frame F1 proposal; FINAL W is calibrated on TRAIN separately."
                 if node.name == "fit" else "Predict the source energy histogram candidate mask."))
     prediction = ast.unparse(ast.fix_missing_locations(tree))
+    prediction = add_stage_comments(prediction, TT2_STAGE_COMMENTS)
     return helpers, prediction
 
 
@@ -142,7 +251,8 @@ def standalone_pipeline(algorithm: str) -> str:
         if node.name == "detect_regions":
             node.body[0] = ast.Expr(ast.Constant("Detect FINAL regions from features, duration and a fitted model."))
         node.body.insert(1, guard)
-    return ast.unparse(ast.fix_missing_locations(tree))
+    return add_stage_comments(ast.unparse(ast.fix_missing_locations(tree)),
+                              pipeline_stage_comments(algorithm))
 
 
 CONFIG = '''
@@ -587,7 +697,7 @@ def build_notebook(algorithm: str) -> dict:
     explanations = {
         "tt1": "Learn the normalized STE threshold from labeled TRAIN silence/speech by the source binary-search rule.",
         "tt2": "Estimate each recording's energy threshold from the first two histogram peaks. Show the TRAIN candidate-frame F1 proposal separately from global FINAL W calibration on the four TRAIN recordings.",
-        "tt3": "Fit population mean and standard deviation to labeled TRAIN normalized STE, then solve the equal-Gaussian-density threshold.",
+        "tt3": "Fit population mean and standard deviation to labeled TRAIN normalized STE. Solve equal Gaussian densities in centered/scaled coordinates with an explicit 1e-9 sigma floor, stable quadratic roots and a log-density check; use the declared midpoint fallback if no valid crossing lies between the means. Raw fit/predict supports speech_direction='low', while the current FINAL HIGH/LOW energy hysteresis requires speech_direction='high' and explicitly rejects low or unknown directions during fitting and inference.",
     }
     sections: list[tuple[str, str]] = []
     def md(source: str) -> None:
@@ -601,9 +711,11 @@ def build_notebook(algorithm: str) -> dict:
 
 This notebook contains all computation for one student's algorithm. Run the cells in order with Python 3, matplotlib and IPython. WAV/LAB input is supplied separately in `data/train/` and `data/test/`; edit `DATA_DIR` if needed. The notebook discovers these folders from its working directory and ancestors.
 
-The signal is framed with full 25 ms windows and 10 ms hops, using Python's nearest-sample rounding with ties to even. Energy is STE divided by frame size. Final regions require HIGH confirmation, continue above LOW, merge internal silence shorter than 200 ms and discard speech shorter than 100 ms. Training and test results are labeled separately. Every number and plot below is recomputed from input WAV/LAB; no saved model or result is loaded.
+The signal is framed with full 25 ms windows and 10 ms hops, using Python's nearest-sample rounding with ties to even. Energy is STE divided by frame size. Final regions require HIGH confirmation and continue above LOW. The 200 ms rule measures estimated gaps between active frame supports, and the 100 ms minimum is a support-span heuristic. Overlapping frames can bridge physical silence or retain brief impulses; these settings do not guarantee 200 ms of physical silence or 100 ms of voiced audio. Training and test results are labeled separately. Every number and plot below is recomputed from input WAV/LAB; no saved model or result is loaded.
 
-Before submission, use **Restart Kernel and Run All** and save the executed notebook so numeric tables and all plots remain visible. Submit this `.ipynb` without bundling WAV or other signal files.
+For standalone use, choose **Restart Kernel and Run All** and save the executed notebook so tables and plots stay visible; this notebook needs no project modules or generator/runner scripts to execute. Submit this `.ipynb` without bundling WAV or other signal files.
+
+Project maintainers refresh this repository's audited CODE ZIP by rebuilding with `tools/build_notebooks.py`, executing with `tools/run_notebooks.py` in fresh kernels, then checking saved evidence with `--validate-only`. That runner hashes ordered code-cell sources after removing its temporary audit cell. A code edit, including a comment, requires fresh runner execution before the repository's source-bound audit/packaging accepts it; this audit requirement is separate from standalone notebook execution.
 """)
     md("## Imports and fixed configuration\n\nOnly the standard library, matplotlib and IPython are used. Timing and endpoint rules are fixed.")
     code(CONFIG.format(algorithm=algorithm))
@@ -614,7 +726,7 @@ Before submission, use **Restart Kernel and Run All** and save the executed note
     code(manual_features())
     md("## LAB alignment and scoring\n\nLAB labels use the frame center and half-open intervals. Region MAE/RMSE score START and END of complete matched final regions. A missing or extra region leaves the primary MAE undefined; frame and tolerance-based boundary scores are additional diagnostics.\n\nFor multiple speech regions, \"outer\" refers to each final region's START/END; the metric does not collapse regions into a single global envelope.")
     code(functions("core/metrics.py", "frame_labels", "frame_metrics", "ground_truth_regions", "region_endpoint_metrics", "boundary_metrics"))
-    md("## Final endpoint confirmation\n\nThe noise floor is estimated from TRAIN silence only. HIGH confirms speech; LOW retains weak speech. Silence waiting time and TT2 candidate padding do not extend final boundaries.")
+    md("## Final endpoint confirmation\n\nThe noise floor is estimated from TRAIN silence only. HIGH confirms speech; LOW retains weak speech. The 200 ms estimated support-gap rule and 100 ms support-span filter are heuristics, without a guarantee about physical silence or voiced duration. Silence waiting time and TT2 candidate padding do not extend final boundaries.")
     code(functions("core/endpoints.py", "fit_noise_floor", "endpoint_thresholds", "hysteresis_regions", "regions_to_mask"))
     post_names = ("_validate", "mask_segments", "fill_short_internal_silences") if algorithm == "tt2" else ("_validate", "mask_segments")
     code(functions("core/postprocess.py", *post_names))

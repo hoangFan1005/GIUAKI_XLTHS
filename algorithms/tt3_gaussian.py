@@ -29,7 +29,8 @@ def equal_density_threshold(mu_sil: float, std_sil: float, mu_sp: float, std_sp:
 
     Tiny standard deviations are floored to 1e-9 on normalized STE. If no
     crossing lies between the means, their midpoint is an explicit fallback.
-    The quadratic uses stable roots to reduce cancellation.
+    The quadratic is centered/scaled before solving; rounded roots must also
+    satisfy log-density equality within arithmetic and output-rounding error.
     Input: mu_sil/std_sil và mu_sp/std_sp là mean/std của silence/speech.
     Output: dict threshold và nghiệm/diagnostic; sigma nhỏ bị floor rõ ràng,
     không có nghiệm giữa hai mean dùng midpoint đã công bố.
@@ -38,37 +39,62 @@ def equal_density_threshold(mu_sil: float, std_sil: float, mu_sp: float, std_sp:
     # Chặn sigma rất nhỏ trên thang STE chuẩn hóa để tránh chia cho 0.
     sigma_sil, sigma_sp = max(std_sil, floor), max(std_sp, floor)
     lower, upper = min(mu_sil, mu_sp), max(mu_sil, mu_sp)
-    # Nhân phương trình log-density với 2*sigma_sil²*sigma_sp² để tránh
-    # hệ số chứa phép chia phương sai nhỏ, rồi giải phương trình bậc hai.
-    vs, vp = sigma_sil * sigma_sil, sigma_sp * sigma_sp
-    a = vp - vs
-    b = 2.0 * (mu_sp * vs - mu_sil * vp)
-    c = mu_sil * mu_sil * vp - mu_sp * mu_sp * vs + 2.0 * vs * vp * math.log(sigma_sil / sigma_sp)
+    midpoint = lower + (upper - lower) / 2.0
+    # Input: means/sigmas theo STE. Output: hệ số theo x=(T-lower)/scale;
+    # một mean bằng 0 nên không trừ các bình phương mean lớn gần bằng nhau.
+    scale = max(upper - lower, sigma_sil, sigma_sp)
+    ms, mp = (mu_sil - lower) / scale, (mu_sp - lower) / scale
+    ss, sp = sigma_sil / scale, sigma_sp / scale
+    vs, vp = ss * ss, sp * sp
+    sigma_difference = sigma_sil - sigma_sp
+    # log1p giữ chính xác khi hai sigma gần bằng nhau. Trên normalized STE
+    # với sigma floor, ratio hữu hạn; log(ratio) tránh trừ hai log lớn gần nhau.
+    if abs(sigma_difference) <= 0.5 * sigma_sp:
+        log_ratio = math.log1p(sigma_difference / sigma_sp)
+    else:
+        log_ratio = math.log(sigma_sil / sigma_sp)
+    a = ((sigma_sp - sigma_sil) / scale) * (sp + ss)
+    b = 2.0 * (mp * vs - ms * vp)
+    c = math.fsum([ms * ms * vp, -mp * mp * vs, 2.0 * vs * vp * log_ratio])
     roots = []
-    equal_variance = abs(vp - vs) <= 1e-12 * max(vs, vp)
     # Hai phương sai bằng nhau cho nghiệm midpoint; trường hợp khác dùng q
     # và c/q để giảm mất chữ số do trừ hai số gần bằng nhau.
-    if equal_variance:
+    if sigma_sil == sigma_sp:
         if mu_sil != mu_sp:
-            roots.append((mu_sil + mu_sp) / 2.0)
+            roots.append(midpoint)
     else:
-        discriminant = b * b - 4.0 * a * c
-        if discriminant >= 0.0:
-            root_disc = math.sqrt(discriminant)
-            q = -0.5 * (b + (root_disc if b >= 0.0 else -root_disc))
-            if q != 0.0:
-                roots.extend([q / a, c / q])
-            else:
-                roots.append(-b / (2.0 * a))
-    candidates = [value for value in roots if lower <= value <= upper and math.isfinite(value)]
-    # Chỉ nhận nghiệm thực trong khoảng giữa hai mean; ghi rõ mọi fallback.
+        # D=4*vs*vp*((mp-ms)^2-2*a*log_ratio). Hai hạng trong ngoặc
+        # không triệt tiêu vì a và log_ratio trái dấu; tránh b²-4ac.
+        root_disc = 2.0 * ss * sp * math.sqrt((mp - ms) ** 2 - 2.0 * a * log_ratio)
+        q = -0.5 * (b + math.copysign(root_disc, b))
+        if q != 0.0:
+            roots.extend([lower + scale * (q / a), lower + scale * (c / q)])
+        else:
+            roots.append(lower + scale * (-b / (2.0 * a)))
+
+    def matches_log_density(value: float) -> bool:
+        """Input: rounded STE root. Output: equality within its rounding bound."""
+        zs, zp = (value - mu_sil) / sigma_sil, (value - mu_sp) / sigma_sp
+        sil_term, sp_term = 0.5 * zs * zs, 0.5 * zp * zp
+        gap = math.fsum([-log_ratio, -sil_term, sp_term])
+        # Sai số số học phụ thuộc độ lớn log-density, không dùng epsilon STE.
+        arithmetic_error = 32.0 * math.ulp(1.0) * (1.0 + abs(log_ratio) + sil_term + sp_term)
+        # Một ulp T bao phủ làm tròn đổi tọa độ về float STE. Taylor bound
+        # giữ residual ~1e-7 hợp lệ khi sigma=1e-9 và T gần .5.
+        rounding_step = math.ulp(value)
+        ds, dp = rounding_step / sigma_sil, rounding_step / sigma_sp
+        rounding_error = abs(zs) * ds + abs(zp) * dp + 0.5 * (ds * ds + dp * dp)
+        return abs(gap) <= arithmetic_error + rounding_error
+
+    candidates = [value for value in roots if math.isfinite(value)
+                  and lower <= value <= upper and matches_log_density(value)]
+    # Chỉ nhận nghiệm giữa hai mean đã kiểm tra log-density; fallback rõ ràng.
     if candidates:
         # Nếu có hai nghiệm trong miền, chọn nghiệm gần midpoint và lưu cả hai.
-        midpoint = (lower + upper) / 2.0
         threshold = min(candidates, key=lambda value: abs(value - midpoint))
         rule = "equal_density_between_means"
     else:
-        threshold = (lower + upper) / 2.0
+        threshold = midpoint
         rule = "no_between_means_crossing_midpoint"
     return {"threshold": threshold, "crossings": roots, "threshold_rule": rule,
             "sigma_floor": floor, "sigma_sil_effective": sigma_sil,

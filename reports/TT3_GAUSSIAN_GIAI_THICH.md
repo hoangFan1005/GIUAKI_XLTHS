@@ -1,6 +1,6 @@
 # TT3 — Thống kê phân phối chuẩn Gaussian: giải thích thuật toán và code
 
-Cập nhật theo code hiện tại ngày 05/10/2026. Tài liệu này mô tả TT3 đang chạy: thống kê trên normalized STE tuyến tính, tìm giao điểm hai mật độ Gaussian, sau đó lấy biên bằng xử lý chung.
+Cập nhật theo code hiện tại ngày 06/10/2026. Tài liệu này mô tả TT3 đang chạy: thống kê trên normalized STE tuyến tính, tìm giao điểm hai mật độ Gaussian bằng phép tính đã center/scale, sau đó lấy biên bằng xử lý chung.
 
 ## Giao thức Stage1 và schema 2
 
@@ -154,27 +154,42 @@ b=2(\mu_pv_s-\mu_sv_p)
 c=\mu_s^2v_p-\mu_p^2v_s+2v_sv_p\ln(\sigma_s/\sigma_p)
 \]
 
-Code dùng chính ba hệ số này. Không dò T trên một grid và không sử dụng solver thống kê có sẵn.
+Đây là ba hệ số đại số đúng, nhưng khai triển trực tiếp quanh 0 dễ mất chính xác khi mean gần 0.5 và sigma khoảng 1e-9. Code hiện đổi tọa độ trước khi lập hệ số:
+
+```text
+lower = min(muSil, muSp)
+scale = max(abs(muSp-muSil), sigmaSil, sigmaSp)
+x = (T-lower)/scale
+ms = (muSil-lower)/scale; mp = (muSp-lower)/scale
+ss = sigmaSil/scale; sp = sigmaSp/scale
+vs = ss²; vp = sp²
+```
+
+Sau đó thay mean/variance đã chuẩn hóa vào cùng dạng hệ số và đổi nghiệm về `T=lower+scale*x`. Một mean trong tọa độ mới bằng 0, tránh trừ hai bình phương mean lớn gần bằng nhau. Không dò T trên grid, không dùng solver thống kê có sẵn.
 
 ### 5.3. Giải nghiệm ổn định
 
 Trước khi tính, sigma nhỏ hơn `1e-9` được nâng lên `1e-9` để tránh chia/log với 0. Model lưu cả sigma gốc, sigma hiệu dụng và cờ floor.
 
-- Nếu hai phương sai gần bằng nhau theo tolerance tương đối `1e-12`, và hai mean khác nhau: nghiệm là midpoint `(μs+μp)/2`.
-- Nếu phương sai khác nhau: tính discriminant `D=b*b-4*a*c`.
-- D âm: không có nghiệm thực, chuyển fallback.
-- D không âm: dùng công thức q để giảm mất chữ số khi trừ hai số gần nhau:
+- Nếu hai sigma bằng nhau chính xác và hai mean khác nhau: nghiệm là midpoint. Sigma chỉ gần bằng vẫn được giải bằng phương trình bậc hai.
+- Tính `log_ratio` bằng `log1p` khi hai sigma gần nhau, ngược lại bằng `log(sigmaSil/sigmaSp)`. Không trừ hai logarithm lớn, vì cách đó có thể làm nghiệm sát mean đổi phía và chọn sai fallback khi đổi thứ tự hai lớp.
+- Discriminant được viết lại tương đương trong tọa độ mới: `D=4*vs*vp*((mp-ms)²-2*a*log_ratio)`. Hai hạng trong ngoặc không triệt tiêu như cách tính `b²-4ac`.
+- Dùng q để tránh phép trừ hai số gần nhau:
 
 ```python
 q = -0.5 * (b + (sqrt_D if b >= 0 else -sqrt_D))
-roots = [q / a, c / q]
+roots = [lower + scale*(q/a), lower + scale*(c/q)]
 ```
 
-Nếu q=0, code dùng `-b/(2*a)`.
+Nếu q=0, code dùng nghiệm suy biến rồi đổi về tọa độ STE. `math.fsum` hỗ trợ cộng chính xác hơn các hạng của hệ số và residual; không thay thế việc tự lập phương trình hay giải ngưỡng.
+
+Sau khi đổi nghiệm về float STE, code kiểm tra `ln pSil(T)-ln pSp(T)`. Tolerance tính từ sai số số học và một ulp của T; vì sigma nhỏ, việc làm tròn T gần0.5 có thể để lại residual khoảng1e-7 dù nghiệm đúng. Tolerance này không phải một ngưỡng STE dùng để tune prediction.
 
 ### 5.4. Chọn nghiệm nào?
 
-Chỉ giữ nghiệm hữu hạn nằm giữa hai mean. Có nhiều nghiệm phù hợp thì chọn nghiệm gần midpoint nhất. Không có nghiệm trong miền thì dùng midpoint và lưu `threshold_rule` là fallback.
+Chỉ giữ nghiệm hữu hạn nằm giữa hai mean và đạt kiểm tra log-density. Có nhiều nghiệm phù hợp thì chọn nghiệm gần midpoint nhất. Không có nghiệm trong miền thì dùng midpoint và lưu `threshold_rule` là fallback, không gọi midpoint đó là giao mật độ.
+
+Ca hồi quy: `muSil=.5, sigmaSil=1e-9, muSp=.50000001, sigmaSp=2e-9` cho T≈`.5000000034705506`; residual sau làm tròn≈`8.65e-8`. Khi hai mean cùng `.5` nhưng sigma khác nhau, hai roots nằm ngoài khoảng mean trùng nhau, nên dùng midpoint fallback rõ ràng. Bộ kiểm thử còn bảo vệ tính nhất quán khi đổi thứ tự hai lớp và nghiệm ở sát mép khoảng mean.
 
 Với dataset hiện tại, hai nghiệm là:
 
@@ -199,7 +214,9 @@ Ta nằm giữa mean silence và mean speech, Tb không nằm trong miền đó,
 
 Dataset hiện tại dùng hướng **high**. Ví dụ z=0.001 → silence ứng viên, z=0.01 → speech ứng viên.
 
-Nhánh lõi hỗ trợ mean đảo hướng, nhưng **hysteresis chung hiện là logic năng lượng cao xác nhận speech**. Vì vậy không nên khẳng định toàn pipeline đã phù hợp mọi dataset đảo hướng chỉ vì `predict()` có nhánh `low`.
+Nhánh lõi hỗ trợ mean đảo hướng, nhưng **FINAL hysteresis chỉ hỗ trợ speech có năng lượng cao**. `fit_training_model()` từ chối TRAIN cho hướng `low`; `detect_regions()` cũng từ chối model nhập vào có hướng `low` hoặc không hợp lệ bằng `ValueError` rõ ràng. Model cũ thiếu trường direction được hiểu là `high` để giữ tương thích. Không còn tình trạng âm thầm trả zero speech do candidate `z<=T` mâu thuẫn với HIGH `z>T`.
+
+Đây là giới hạn được công bố của pipeline FINAL, không phải hỗ trợ hoàn chỉnh việc phát hiện speech năng lượng thấp hơn noise. Các hàm lõi `fit()/predict()` vẫn có thể dùng riêng cho thí nghiệm hướng đảo.
 
 Một ngưỡng không tự tạo final region: các khung có thể dao động quanh T3 và tạo nhiều đoạn nhỏ. Bước xử lý chung dưới đây làm nhiệm vụ đó.
 
@@ -257,7 +274,9 @@ Ví dụ với ngưỡng TT3 hiện tại: z=`[0.001,0.003,0.006,...]`. Khung 0.
 
 START/END lấy theo support mẫu thật: START ở đầu khung bắt đầu, END ở cuối khung hỗ trợ cuối. **Không cộng 200 ms thời gian chờ vào END.** Không cố định mỗi WAV có một vùng; các gap đủ dài giữ thành nhiều regions.
 
-200 ms theo đề; 100 ms và hệ số 1.5 là lựa chọn thêm của project, áp dụng chung mọi filename.
+Ngưỡng 200 ms lấy từ đề, nhưng code đo **gap giữa các support khung hoạt động ước lượng**, không đo trực tiếp khoảng lặng vật lý trong WAV. Khung 25 ms chồng lấn với hop 10 ms có thể tràn sang hai phía khoảng lặng; ví dụ khoảng lặng thực 200 ms có thể còn gap support 165 ms và bị gộp. Không nên mô tả đây là bảo đảm giữ mọi khoảng lặng thực ≥200 ms. Khảo sát nhiều phase/Fs nằm trong `outputs/tables/endpoint_robustness/`.
+
+100 ms và hệ số 1.5 là lựa chọn thêm của project, áp dụng chung mọi filename. Bộ lọc 100 ms đo span support **sau khi gộp gap**, không phải tổng thời lượng mẫu tiếng nói thật; một burst thực 75 ms có thể tạo span support khoảng 115 ms và còn được giữ. Các giới hạn này được kiểm tra và công bố, chưa thay bằng một bộ ước lượng biên mới.
 
 ## 8. Bản đồ code để tự học
 

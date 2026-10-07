@@ -257,6 +257,8 @@ Phone_F2: LOW≈0.0025149672, HIGH≈0.0115995058. B được chặn bởi U tr�
 
 END là cuối khung hỗ trợ cuối đạt LOW. Không cộng 200 ms thời gian chờ, không thêm padding 250 ms. Nhiều gap dài tạo nhiều vùng nói, không ép mọi file có một vùng.
 
+Ngưỡng 200 ms đo gap **ước lượng giữa support khung hoạt động**. Vì khung 25 ms chồng lấn với hop 10 ms, khoảng lặng thực 200 ms có thể còn gap support 165 ms và bị gộp; không bảo đảm giữ mọi khoảng lặng vật lý ≥200 ms. 100 ms lọc span support sau khi gộp, không phải tổng thời lượng tiếng nói thật; burst thực 75 ms có thể tạo span khoảng 115 ms và được giữ. Xem [khảo sát nhiều phase/Fs và TRAIN ablation](KET_QUA_SUA_LOI_2026_10_06.md).
+
 **W chủ yếu thay ngưỡng xác nhận; LOW giữ và kết thúc vùng.** Với dataset hiện tại, W thay đổi vẫn xác nhận cùng các vùng, rồi LOW support dẫn đến cùng endpoint. Điều này giải thích plateau W1–50.
 
 ## 7. Bản đồ code cần đọc

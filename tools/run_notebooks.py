@@ -67,6 +67,17 @@ def model_digest(model):
                                      allow_nan=False, separators=(',', ':')).encode('utf-8')).hexdigest()
 
 
+def code_source_digest(notebook):
+    """Hash ordered code sources to catch accidental source/output drift.
+
+    Exclude the temporary external audit cell. This is not authentication.
+    """
+    sources = [cell.source for cell in notebook.cells
+               if cell.cell_type == 'code' and cell.source != AUDIT_CELL]
+    payload = json.dumps(sources, ensure_ascii=False, separators=(',', ':'))
+    return hashlib.sha256(payload.encode('utf-8')).hexdigest()
+
+
 def audit_metric_keys(scores, label, require_primary=True):
     if len(scores) != len({key.casefold() for key in scores}):
         raise ValueError(f'{label}: duplicate casefold metric keys')
@@ -356,6 +367,9 @@ def audit_notebook(notebook, filename):
     audit = notebook.metadata.get('endpoint_execution')
     if not audit:
         raise ValueError(f'{filename}: missing fresh-kernel execution evidence')
+    if audit.get('code_source_sha256') != code_source_digest(notebook):
+        raise ValueError(f'{filename}: missing or changed code source digest; '
+                         'rerun tools/run_notebooks.py in a fresh kernel before audit')
     mean = audit_results(audit)
     return images, mean
 
@@ -389,6 +403,7 @@ def execute_notebook(path):
         raise ValueError('Execution completed without auditable numerical results')
     evidence = json.loads(output_text[marker + len(AUDIT_PREFIX):].strip())
     notebook.cells.pop()  # Do not submit the external verification cell.
+    evidence['code_source_sha256'] = code_source_digest(notebook)
     notebook.metadata['endpoint_execution'] = evidence
     images, mean = audit_notebook(notebook, path.name)
     nbformat.write(notebook, path)

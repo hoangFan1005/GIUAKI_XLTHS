@@ -193,13 +193,13 @@ Hiện LOW = 0.0012140144555, HIGH = 0.0025149672449. **T1 đang nhỏ hơn Q95 
 3. START lùi về đầu chuỗi LOW vừa nhớ để giữ phần mở đầu yếu hơn HIGH.
 4. Khi đang speech, khung đạt LOW cập nhật điểm hỗ trợ cuối.
 5. Nếu khoảng từ END của khung hỗ trợ cuối tới START của khung tiếp theo đạt **200 ms**, chốt vùng. Gap ngắn hơn 200 ms được giữ trong cùng vùng.
-6. Sau khi nối gap, loại vùng có tổng thời lượng dưới **100 ms**.
+6. Sau khi nối gap, loại vùng có span support dưới **100 ms**.
 
 Ví dụ LOW=0.002, HIGH=0.006: chuỗi `[0.0005, 0.003, 0.007, ...]` chỉ xác nhận tại 0.007, nhưng START có thể lùi về khung 0.003. Một tiếng động 0.007 chỉ dài 40 ms có thể xác nhận ứng viên nhưng bị loại bởi min speech 100 ms.
 
 START là đầu khung bắt đầu vùng. END là cuối khung hỗ trợ cuối đạt LOW. **Không cộng 200 ms thời gian chờ vào END.** Code hỗ trợ nhiều vùng; không lấy một first/last chung để nuốt mọi khoảng lặng dài.
 
-200 ms là yêu cầu của đề. 100 ms và hệ số HIGH 1.5 là lựa chọn bổ sung của project, dùng chung mọi file, không đặt riêng theo filename.
+Ngưỡng 200 ms lấy từ đề; code đo gap **ước lượng giữa support khung**, không đo trực tiếp khoảng lặng vật lý. Khung 25 ms chồng lấn/hop 10 ms có thể làm khoảng lặng thực 200 ms còn gap support 165 ms và bị gộp. 100 ms lọc span support sau gộp, không phải tổng thời lượng mẫu tiếng nói thật. 100 ms và hệ số HIGH 1.5 là lựa chọn bổ sung của project, dùng chung mọi file, không đặt riêng theo filename. Xem [khảo sát và giới hạn sau sửa](KET_QUA_SUA_LOI_2026_10_06.md).
 
 ## 6. Đọc code theo thứ tự nào?
 

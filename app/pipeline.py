@@ -135,10 +135,17 @@ def detect_regions(algorithm, features, duration, params):
     Input: algorithm, frame features/supports, duration and frozen TRAIN model.
     Output: mask/final_regions/diagnostic and derived predicted_boundaries.
     Missing endpoint_noise requires explicit training before inference.
+    FINAL hysteresis supports speech-high energy only; inverted TT3 models
+    raise a clear error instead of silently losing every candidate region.
     """
     noise = params.get('endpoint_noise')
     if noise is None:
         raise ValueError('Fitted model requires endpoint_noise; call fit_training_model on TRAIN before inference')
+    # The raw Gaussian classifier supports both directions. FINAL HIGH/LOW
+    # requires speech-high, so reject an incompatible imported model early.
+    if algorithm == 'tt3' and params.get('speech_direction', 'high') != 'high':
+        raise ValueError("FINAL endpoint detection requires TT3 speech_direction='high'; "
+                         "inverted/unknown directions are not supported by energy hysteresis")
     if algorithm == "tt1":
         mask, diagnostic = tt1.predict(features, params), {"threshold": params["threshold"]}
     elif algorithm == "tt3":
@@ -233,6 +240,7 @@ def fit_training_model(algorithm, train_records):
     path and support future folds. Known TEST/external paths are rejected.
     Output: (schema-v2 model, FINAL W sweep rows), empty rows for other methods.
     No files are loaded here, including during the histogram calibration.
+    TT3 must fit speech-high for the current FINAL energy hysteresis.
     """
     if not train_records:
         raise ValueError('fit_training_model requires TRAIN records')
@@ -245,6 +253,10 @@ def fit_training_model(algorithm, train_records):
         model = tt1.fit(train_records)
     elif algorithm == 'tt3':
         model = tt3.fit(train_records)
+        # Do not lock a raw Gaussian model whose inequality contradicts HIGH.
+        if model.get('speech_direction', 'high') != 'high':
+            raise ValueError("FINAL endpoint detection requires TT3 speech_direction='high'; "
+                             "TRAIN speech mean is below silence mean")
     elif algorithm in ('tt2', 'tt2-context'):
         model = tt2.fit(train_records, variant='context' if algorithm == 'tt2-context' else 'source')
     else:

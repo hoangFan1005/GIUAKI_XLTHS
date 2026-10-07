@@ -3,6 +3,7 @@ import ast
 import contextlib
 import copy
 import csv
+import hashlib
 import io
 import json
 import math
@@ -41,6 +42,78 @@ class NotebookGenerationTests(unittest.TestCase):
             return builder.build_notebook(algorithm)
         except (ValueError, StopIteration) as error:
             self.fail(f"Generator must adapt current public core interfaces: {error}")
+
+    def test_stage_comments_preserve_nested_numeric_ast_and_multiline_docstrings(self):
+        inject = getattr(builder, 'add_stage_comments', None)
+        self.assertTrue(callable(inject), 'AST-coordinate stage comment injection is required')
+        source = '''def first(values):
+    """Input: values.
+    Output: sum of positive values.
+    """
+    total = 0
+    for value in values:
+        if value > 0:
+            contribution = value
+            total += contribution
+    return total
+
+def second(value):
+    result = value * 2
+    return result
+'''
+        before = ast.parse(source)
+        rendered = inject(source, {
+            'first': [('@input', 'Input: values; Output: sum of positive values.'),
+                      ('contribution', 'Accumulate positive observations without changing the loop.')],
+            'second': [('result', 'Scale the supplied observation.')],
+        })
+        after = ast.parse(rendered)
+        self.assertEqual(ast.dump(before), ast.dump(after))
+        self.assertEqual(ast.get_docstring(before.body[0]), ast.get_docstring(after.body[0]))
+        self.assertIn('            # Accumulate', rendered)
+        self.assertIn('    # Scale', rendered)
+
+    def test_both_transformed_paths_keep_stage_comments_and_numeric_ast(self):
+        for algorithm in ('tt1', 'tt2', 'tt3'):
+            with self.subTest(algorithm=algorithm):
+                pipeline_source = builder.standalone_pipeline(algorithm)
+                self.assertIn('# Confirm with HIGH', pipeline_source)
+                self.assertIn('# Score complete FINAL regions', pipeline_source)
+                with patch.object(builder, 'add_stage_comments', side_effect=lambda source, comments: source):
+                    plain = builder.standalone_pipeline(algorithm)
+                self.assertEqual(ast.dump(ast.parse(plain)), ast.dump(ast.parse(pipeline_source)))
+        _, prediction = builder.algorithm_code('tt2')
+        self.assertIn('# Threshold the raw per-file energy', prediction)
+        self.assertIn('# Count pooled speech TP/FP/FN', prediction)
+        with patch.object(builder, 'add_stage_comments', side_effect=lambda source, comments: source):
+            _, plain = builder.algorithm_code('tt2')
+        self.assertEqual(ast.dump(ast.parse(plain)), ast.dump(ast.parse(prediction)))
+
+    def test_generated_tt3_definitions_keep_sigma_floor_and_direction_contract(self):
+        namespace = {}
+        exec(builder.CONFIG.format(algorithm='tt3'), namespace)
+        for cell in self.generated('tt3')['cells']:
+            if cell['cell_type'] != 'code':
+                continue
+            tree = ast.parse(''.join(cell['source']))
+            tree.body = [node for node in tree.body
+                         if isinstance(node, (ast.FunctionDef, ast.Import, ast.ImportFrom))]
+            exec(compile(tree, '<tt3-definitions>', 'exec'), namespace)
+        namespace['ALGORITHM'] = 'tt3'
+        params = namespace['equal_density_threshold'](.5, 0., .50000001, 2e-9)
+        self.assertAlmostEqual(params['threshold'], .5000000034705506, delta=math.ulp(.5))
+        self.assertEqual(params['sigma_sil_effective'], 1e-9)
+        record = dict(name='inverted', split='train', features={'ste_norm': [.9, 1., .1, .2]},
+                      labels=[0, 0, 1, 1])
+        model = namespace['fit']([record])
+        self.assertEqual(model['speech_direction'], 'low')
+        self.assertEqual(namespace['predict'](record['features'], model), [0, 0, 1, 1])
+        for direction in ('low', 'unknown'):
+            with self.assertRaisesRegex(ValueError, 'FINAL.*speech_direction.*high'):
+                namespace['detect_regions']('tt3', record['features'], 1.,
+                                            dict(model, speech_direction=direction, endpoint_noise={}))
+        with self.assertRaisesRegex(ValueError, 'FINAL.*speech_direction.*high'):
+            namespace['fit_training_model']('tt3', [record])
 
     def test_standalone_cells_fit_and_lock_before_test_reads(self):
         with tempfile.TemporaryDirectory() as folder:
@@ -146,12 +219,42 @@ def executed_plot_notebook():
     cells = [nbformat.v4.new_code_cell('pass', execution_count=1, outputs=[output])]
     for index, name in enumerate(runner.TEST_NAMES, 2):
         cells.append(nbformat.v4.new_code_cell(
+            '# Display this TEST record from the freshly computed results.\n'
             f'plot_record(TEST_RECORDS_BY_FILE["{name}"], TEST_RESULTS_BY_FILE["{name}"])',
             execution_count=index, outputs=[copy.deepcopy(output)]))
-    return nbformat.v4.new_notebook(cells=cells, metadata={'endpoint_execution': {'fixture': True}})
+    source_digest = hashlib.sha256(json.dumps([cell.source for cell in cells],
+                                             ensure_ascii=False, separators=(',', ':')).encode('utf-8')).hexdigest()
+    return nbformat.v4.new_notebook(cells=cells, metadata={
+        'endpoint_execution': {'fixture': True, 'code_source_sha256': source_digest}})
 
 
 class NotebookAuditTests(unittest.TestCase):
+    def test_source_bound_audit_rejects_changed_code_even_when_only_a_comment_changes(self):
+        notebook = executed_plot_notebook()
+        notebook.cells[0].source += '\n# Added after execution.'
+        with patch.object(runner, 'audit_results', return_value=10.):
+            with self.assertRaisesRegex(ValueError, 'source.*rerun|rerun.*source'):
+                runner.audit_notebook(notebook, 'changed.ipynb')
+
+    def test_source_bound_audit_requires_digest_and_accepts_unchanged_source(self):
+        notebook = executed_plot_notebook()
+        with patch.object(runner, 'audit_results', return_value=10.):
+            self.assertEqual(runner.audit_notebook(notebook, 'unchanged.ipynb'), (5, 10.))
+            notebook.metadata.endpoint_execution.pop('code_source_sha256')
+            with self.assertRaisesRegex(ValueError, 'source.*rerun|rerun.*source'):
+                runner.audit_notebook(notebook, 'missing.ipynb')
+
+    def test_source_digest_uses_ordered_code_only_and_excludes_external_audit_cell(self):
+        digest = getattr(runner, 'code_source_digest', None)
+        self.assertTrue(callable(digest), 'Code source digest is required')
+        notebook = executed_plot_notebook()
+        expected = notebook.metadata.endpoint_execution.code_source_sha256
+        notebook.cells.insert(0, nbformat.v4.new_markdown_cell('Description'))
+        notebook.cells.append(nbformat.v4.new_code_cell(runner.AUDIT_CELL))
+        self.assertEqual(digest(notebook), expected)
+        notebook.cells[1], notebook.cells[2] = notebook.cells[2], notebook.cells[1]
+        self.assertNotEqual(digest(notebook), expected)
+
     def test_auditor_finds_current_selection_helper_without_project_on_sys_path(self):
         program = (
             "import runpy, sys\n"
