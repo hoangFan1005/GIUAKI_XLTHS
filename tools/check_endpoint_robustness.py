@@ -446,6 +446,26 @@ def _synthetic_record(samples,fs,speech,name):
                                  duration=duration,intervals=intervals)])[0]
 
 
+def synthetic_branch_configs(native_models, trials=TIMING_TRIALS):
+    """Resolve waveform row hashes directly while retaining native calibration sources.
+
+    Reconstruction is deterministic and needs neither audio, fitting nor scoring.
+    Stored branch parameters are exactly those hashed by synthetic waveform rows.
+    """
+    native={(entry['mode'],entry['algorithm']):entry for entry in native_models}
+    configs={}
+    for trial in trials:
+        for algorithm in trial['algorithms']:
+            source=native[trial['endpoint_mode'],algorithm]
+            params=_branch_params(source['model'],trial)
+            digest=_digest(params)
+            entry=dict(model_sha256=digest,algorithm=algorithm,trial_id=trial['trial_id'],
+                       source_native_model_sha256=source['model_sha256'],model=params)
+            if digest in configs and configs[digest] != entry:
+                raise ValueError('Synthetic branch model hash has ambiguous algorithm/trial provenance')
+            configs[digest]=entry
+    return configs
+
 def timing_waveform_study(records):
     """Characterize physical GT separately using locked four-TRAIN models."""
     require_train(records)
@@ -504,8 +524,10 @@ def timing_waveform_study(records):
                     endpoint_mode=trial['endpoint_mode'],minimum_speech_ms=trial['minimum_speech_ms'],
                     model_sha256=_digest(params),threshold_source='locked four-TRAIN calibration; synthetic characterization only',
                     ground_truth_regions=ground_truth_regions(record['intervals']),**extra))
-    return dict(waveforms=rows,oracle_cells=oracle_cells,synthetic_models=[dict(mode=mode,algorithm=a,model=model,
-        model_sha256=_digest(model)) for (mode,a),model in native.items()])
+    synthetic_models=[dict(mode=mode,algorithm=a,model=model,model_sha256=_digest(model))
+                      for (mode,a),model in native.items()]
+    return dict(waveforms=rows,oracle_cells=oracle_cells,synthetic_models=synthetic_models,
+                synthetic_branch_configs=synthetic_branch_configs(synthetic_models))
 
 
 def _write_research_table(name,rows):
@@ -536,6 +558,7 @@ def timing_research_main():
         preliminary_native_support_sweeps_are_not_branch_selection=True,
         branch_predictor='tools.check_endpoint_robustness.timing_predictor',selection_scorer='core.metrics.region_endpoint_metrics',
         models=payload['models'],synthetic_models=synthetic['synthetic_models'],
+        synthetic_branch_configs=synthetic['synthetic_branch_configs'],
         limitations=['Cells extend nearest decisions to audio edges and unanalysed tail.',
             'Full analysis windows remain 25 ms (1102 samples at 44.1 kHz).',
             'Cells do not guarantee preservation of physical 200 ms silence.',

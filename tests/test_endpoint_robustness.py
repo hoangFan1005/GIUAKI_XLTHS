@@ -315,5 +315,37 @@ class TimingFoldIntegrationTests(unittest.TestCase):
                 self.assertIsNone(summary['mean_file_rmse_ms'])
         self.assertEqual(len(payload['comparisons']),52)
 
+
+
+class SyntheticBranchProvenanceTests(unittest.TestCase):
+    def test_row_hashes_resolve_to_deduplicated_actual_configs_with_native_sources(self):
+        import hashlib
+        tool=importlib.import_module('tools.check_endpoint_robustness')
+        self.assertTrue(hasattr(tool,'synthetic_branch_configs'),'Actual synthetic branch configs must be persisted')
+        digest=lambda value:hashlib.sha256(json.dumps(value,sort_keys=True,ensure_ascii=False,allow_nan=False).encode('utf-8')).hexdigest()
+        native=[]
+        for mode in ('core','enhanced'):
+            for algorithm in ('tt1','tt2','tt3'):
+                model=dict(threshold={'tt1':.2,'tt2':.3,'tt3':.4}[algorithm],endpoint_mode=mode,calibration_digest='native-only',W_selection_train=dict(selected_W=20.))
+                if algorithm=='tt2':model['variant']='source'
+                native.append(dict(mode=mode,algorithm=algorithm,model=model,model_sha256=digest(model)))
+        before=copy.deepcopy(native)
+        configs=tool.synthetic_branch_configs(native)
+        self.assertEqual(native,before)
+        self.assertEqual(len(configs),19)
+        expected=dict(threshold=.2,endpoint_mode='enhanced',trial_id='enhanced_cells_100',geometry='cells',
+            minimum_speech_ms=100.,low_rule='native',boundary_convention='nearest-frame centered decision cells',
+            minimum_silence_ms=200.,endpoint_policy='diagnostic native/hysteresis branch; merge estimated gaps below 200 ms',padding_stage='none')
+        entry=configs[digest(expected)]
+        self.assertEqual(entry['model'],expected)
+        self.assertEqual(entry['algorithm'],'tt1')
+        self.assertEqual(entry['trial_id'],'enhanced_cells_100')
+        source=next(r for r in native if r['mode']=='enhanced' and r['algorithm']=='tt1')
+        self.assertEqual(entry['source_native_model_sha256'],source['model_sha256'])
+        for key,entry in configs.items():
+            self.assertEqual(key,digest(entry['model']))
+            self.assertEqual(entry['model_sha256'],key)
+            self.assertIn(entry['source_native_model_sha256'],[r['model_sha256'] for r in native])
+
 if __name__ == '__main__':
     unittest.main()
