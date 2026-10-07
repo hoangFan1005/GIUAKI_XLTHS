@@ -337,7 +337,7 @@ python main_tt2.py --evaluate-all
 Mặc định bốn test; `--file` chọn một WAV có LAB cùng tên; `--evaluate-all` chấm tám WAV và không mở cửa sổ. Chế độ một file fit bốn TRAIN trước khi đọc file đã chọn; không nạp bốn TEST để calibration.
 
 - [Model TT2](../outputs/endpoint_modes/enhanced/models/tt2.json): W train, W cuối, cấu hình histogram, noise.
-- [Bảng metric](../outputs/endpoint_modes/enhanced/tables/tt2/test_metrics.csv).
+- [Bảng metric chung](../outputs/endpoint_modes/enhanced/tables/all/test_metrics.csv): lọc `algorithm=tt2` để đọc bốn TEST của thuật toán này.
 - [Khảo sát W](../outputs/endpoint_modes/enhanced/tables/tt2_w_selection/sweep.csv): 200 lần chấm final regions.
 - [Diagnostic phone_F2](../outputs/endpoint_modes/enhanced/diagnostics/tt2/phone_F2.json): M1/M2, TE, High/Low, candidate/final.
 - [Ảnh phone_F2](../outputs/endpoint_modes/enhanced/figures/tt2/phone_F2.png).

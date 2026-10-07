@@ -138,3 +138,110 @@ class EndpointModeIntegrationTests(unittest.TestCase):
         features=dict(ste_norm=[0.,.5,1.],energy=[0.,2.,4.],starts=[0.,.01,.02],ends=[.025,.035,.045])
         _,diagnostic=pipeline.algorithm_decision('tt2',features,dict(bins=1,smooth_radius=0,W=5.,padding_frames=25))
         self.assertEqual(diagnostic['native_threshold_units'],'mean squared sample amplitude')
+
+    def test_partial_comparisons_preserve_complete_benchmark_and_export_scope(self):
+        import contextlib,csv,io,tempfile
+        from pathlib import Path
+        from unittest.mock import patch
+        from app import pipeline
+        from tests.test_notebook_protocol import tiny_dataset
+        def rows(path):
+            with path.open(encoding='utf-8-sig') as handle:return list(csv.DictReader(handle))
+        with tempfile.TemporaryDirectory() as temporary:
+            root=Path(temporary);tiny_dataset(root)
+            base=root/'outputs/endpoint_modes'
+            comparison=base/'comparison/tables'
+            with patch.multiple(pipeline,TRAIN_DIR=root/'train',TEST_DIR=root/'test',OUTPUT_DIR=root/'outputs'), \
+                 patch.object(pipeline,'make_file_figure',return_value=None),patch.object(pipeline,'plot_gaussian_training'), \
+                 contextlib.redirect_stdout(io.StringIO()):
+                full=parse_args(['--evaluate-all','--compare-endpoint-modes'])
+                pipeline.run_experiment(full)
+                canonical=rows(comparison/'all_metrics.csv')
+                self.assertEqual(len(canonical),8*3*2)
+                protected=[comparison/name for name in ('all_metrics.csv','all_summary.csv','test_metrics.csv','test_summary.csv')]
+                protected += [base/mode/'tables/all'/name for mode in ('core','enhanced') for name in ('test_metrics.csv','summary.csv')]
+                sentinels={path:path.read_bytes() for path in protected}
+                cases=[(parse_args(['--evaluate-all','--compare-endpoint-modes'],fixed_algorithm=algorithm),f'{algorithm}_all_dataset',8,{algorithm},None) for algorithm in ('tt1','tt2','tt3')]
+                cases.append((parse_args(['--compare-endpoint-modes']),'all',4,{'tt1','tt2','tt3'},None))
+                for algorithm in (None,'tt1','tt2','tt3'):
+                    args=parse_args(['--file',str(root/'test/phone_F2.wav'),'--compare-endpoint-modes'],fixed_algorithm=algorithm)
+                    cases.append((args,f'{algorithm or "all"}/single/phone_F2',1,{algorithm} if algorithm else {'tt1','tt2','tt3'},'phone_F2'))
+                for args,scope,count,algorithms,file in cases:
+                    with self.subTest(scope=scope):
+                        pipeline.run_experiment(args)
+                        for path,original in sentinels.items():self.assertEqual(path.read_bytes(),original,str(path))
+                        scoped=rows(comparison/scope/'all_metrics.csv')
+                        self.assertEqual(len(scoped),count*len(algorithms)*2)
+                        self.assertEqual({row['algorithm'] for row in scoped},algorithms)
+                        self.assertEqual({row['endpoint_mode'] for row in scoped},{'core','enhanced'})
+                        self.assertEqual(len(rows(comparison/scope/'all_summary.csv')),len(algorithms)*2)
+                        self.assertEqual(len(rows(comparison/scope/'test_metrics.csv')),min(count,4)*len(algorithms)*2)
+                        self.assertEqual(len(rows(comparison/scope/'test_summary.csv')),len(algorithms)*2)
+                        if file:self.assertEqual({row['file'] for row in scoped},{file})
+                self.assertEqual(rows(comparison/'all_metrics.csv'),canonical)
+                for path in protected[:4]:path.write_bytes(b'complete-benchmark-sentinel')
+                pipeline.run_experiment(full)
+                for path in protected[:4]:self.assertEqual(path.read_bytes(),sentinels[path])
+
+    def test_fresh_statistics_have_unique_sources_and_actual_splits(self):
+        import contextlib,csv,io,shutil,tempfile
+        from pathlib import Path
+        from unittest.mock import patch
+        from app import pipeline
+        from tests.test_notebook_protocol import tiny_dataset
+        def rows(path):
+            with path.open(encoding='utf-8-sig') as handle:return list(csv.DictReader(handle))
+        with tempfile.TemporaryDirectory() as temporary:
+            root=Path(temporary);tiny_dataset(root)
+            external=root/'external';external.mkdir()
+            for suffix in ('.wav','.lab'):shutil.copyfile(root/'train'/('phone_F1'+suffix),external/('phone_F1'+suffix))
+            with patch.multiple(pipeline,TRAIN_DIR=root/'train',TEST_DIR=root/'test',OUTPUT_DIR=root/'outputs'), \
+                 patch.object(pipeline,'make_file_figure',return_value=None),patch.object(pipeline,'plot_gaussian_training'), \
+                 contextlib.redirect_stdout(io.StringIO()):
+                pipeline.run_experiment(parse_args(['--evaluate-all','--compare-endpoint-modes']))
+                for mode in ('core','enhanced'):
+                    statistics=rows(root/'outputs/endpoint_modes'/mode/'tables/dataset_statistics.csv')
+                    self.assertEqual(len(statistics),8)
+                    self.assertEqual(len({row['file'] for row in statistics}),8)
+                    self.assertEqual([row['split'] for row in statistics].count('train'),4)
+                    self.assertEqual([row['split'] for row in statistics].count('test'),4)
+                pipeline.run_experiment(parse_args(['--file',str(external/'phone_F1.wav'),'--compare-endpoint-modes']))
+                for mode in ('core','enhanced'):
+                    scoped=rows(root/'outputs/endpoint_modes'/mode/'tables/all/single/phone_F1/dataset_statistics.csv')
+                    self.assertEqual(len(scoped),1)
+                    self.assertEqual((scoped[0]['file'],scoped[0]['split']),('phone_F1','external'))
+                real_load=pipeline.load_audio_folder
+                def load_with_external(folder):
+                    records=real_load(folder)
+                    return records+[pipeline.load_audio_file(external/'phone_F1.wav')] if folder==root/'test' else records
+                with patch.object(pipeline,'load_audio_folder',side_effect=load_with_external):
+                    pipeline.run_experiment(parse_args(['--compare-endpoint-modes']))
+                for mode in ('core','enhanced'):
+                    statistics=rows(root/'outputs/endpoint_modes'/mode/'tables/dataset_statistics.csv')
+                    self.assertEqual(len(statistics),9)
+                    self.assertEqual({row['split'] for row in statistics if row['file']=='phone_F1'},{'train','external'})
+
+    def test_current_guide_metric_links_exist_and_filter_algorithm(self):
+        from pathlib import Path
+        root=Path(__file__).resolve().parents[1]
+        for number,name in ((1,'BINARY_SEARCH'),(2,'HISTOGRAM'),(3,'GAUSSIAN')):
+            guide=root/f'reports/TT{number}_{name}_GIAI_THICH.md'
+            text=guide.read_text(encoding='utf-8-sig')
+            target='../outputs/endpoint_modes/enhanced/tables/all/test_metrics.csv'
+            self.assertIn(target,text)
+            self.assertTrue((guide.parent/target).is_file())
+            self.assertIn(f'algorithm=tt{number}',text)
+
+    def test_current_handoff_links_describe_dual_mode_artifacts(self):
+        import re
+        from pathlib import Path
+        root=Path(__file__).resolve().parents[1]
+        for relative in ('outputs/README.md','submission/README.md'):
+            path=root/relative;text=path.read_text(encoding='utf-8-sig')
+            current=text.split('## Lịch sử')[0]
+            for marker in ('48','schema 3','schema 2','200','16','5 PNG','final_verification.json','KET_QUA_NGHIEM_THU_2026_10_07.md'):
+                self.assertIn(marker,current,relative)
+            for target in re.findall(r'\]\(([^)]+)\)',current):
+                if target.endswith(('final_verification.json','KET_QUA_NGHIEM_THU_2026_10_07.md')):
+                    self.assertTrue((path.parent/target).is_file(),target)
+            self.assertNotIn('Chưa có model core riêng',current)

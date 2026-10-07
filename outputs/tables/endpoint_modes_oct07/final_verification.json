@@ -1,6 +1,6 @@
 {
   "handoff_status": "numeric and artifact acceptance passed; independent final review pending",
-  "verified_utc": "2026-10-07T10:41:00.670310+00:00",
+  "verified_utc": "2026-10-07T11:00:26.190854+00:00",
   "environment": {
     "python": "3.14.7 (tags/v3.14.7:823f032, Aug  5 2026, 10:51:32) [MSC v.1944 64 bit (AMD64)]",
     "executable": "H:\\GIUAKI_XLTHS\\.venv\\Scripts\\python.exe",
@@ -1832,6 +1832,8 @@
     }
   },
   "research_audit": {
+    "native_full_hashes_validated": 6,
+    "heldout_fit_provenance_models_validated": 76,
     "branch_config_count": 19,
     "native_models": 6,
     "resolved_waveform_rows": 1216,
@@ -1849,9 +1851,7 @@
       "protected_source_hashes.json": "88822173ede2b177a5e05ce25e6b54be7934d644494066a2a2817378f4f66cf9",
       "provenance-reconstruction-check.json": "a29f91708b5997dafcf688a7d2c7f037d946fca67ab063c94288b6bdbfc3bd01",
       "tt2_branch_fit_sweep.csv": "d74ee67cd5721d6529b52dcf9c76f6c5d7679d7e3a6e77a8e920383a649fb6b2"
-    },
-    "native_full_hashes_validated": 6,
-    "heldout_fit_provenance_models_validated": 76
+    }
   },
   "full_suite": {
     "command": [
@@ -1864,14 +1864,10 @@
       "-v"
     ],
     "exit_code": 0,
-    "test_count": 173,
-    "unittest_runtime_seconds": 15.2,
-    "wall_runtime_seconds": 16.794428799999878,
-    "passed": true,
-    "superseded_pre_fix_gate_archive_entries": [
-      "outputs/tables/endpoint_modes_oct07/task6-full-suite-before-writer-fix.txt",
-      "outputs/tables/endpoint_modes_oct07/task6-full-suite-before-writer-fix.json"
-    ]
+    "test_count": 177,
+    "unittest_runtime_seconds": 19.208,
+    "wall_runtime_seconds": 21.030151299999943,
+    "passed": true
   },
   "protected_production_source_checks": [
     {
@@ -2069,9 +2065,9 @@
     "slides/THUAT_TOAN_2/THUAT_TOAN_2.pptx": "a44be7ebc60cac33c40f8eb00fed88c03923d1576fe8ee44bb6f698a450c2ee9",
     "slides/THUAT_TOAN_3/THUAT_TOAN_3.pdf": "6730cd19744e92682fa54f16dd081de43f30f12bf316589c597aedc065955cba",
     "slides/THUAT_TOAN_3/THUAT_TOAN_3.pptx": "2c42d708cfc953a8f454e3d78944bfe7ae893f356c6248e07022682faabb7ebd",
-    "Source/assignment/HÃ†Â°Ã¡Â»â€ºng dÃ¡ÂºÂ«n BT - PhÃƒÂ¢n Ã„â€˜oÃ¡ÂºÂ¡n tÃƒÂ­n hiÃ¡Â»â€¡u thÃƒÂ nh tiÃ¡ÂºÂ¿ng nÃƒÂ³i vÃƒÂ  khoÃ¡ÂºÂ£ng lÃ¡ÂºÂ·ng_XLTHS_GK 2026.docx": "9eb6032de0c8cecac3d88d2825ca98fcfd956ce4d674c5dacd3544fec2899eab",
-    "Source/assignment/HÃ†Â°Ã¡Â»â€ºng dÃ¡ÂºÂ«n BT thi GK nhÃƒÂ³m 3-4 SV_PhÃƒÂ¢n Ã„â€˜oÃ¡ÂºÂ¡n tÃƒÂ­n hiÃ¡Â»â€¡u thÃƒÂ nh tiÃ¡ÂºÂ¿ng nÃƒÂ³i vÃƒÂ  khoÃ¡ÂºÂ£ng lÃ¡ÂºÂ·ng_XLTHS_GK 2026.docx": "d4adfb5c5100ab64a72cb390b6137b84bf3156c9475ecbbecc7fdc4b27b26005",
-    "Source/assignment/HÃ†Â°Ã¡Â»â€ºng dÃ¡ÂºÂ«n trÃƒÂ¬nh bÃƒÂ y slide vÃƒÂ  nÃ¡Â»â„¢p bÃƒÂ i thi.pdf": "6b3d0f7c16298f870f0626d8c35567e8a29985313db5a6c1d9d2561ddebf6e95",
+    "Source/assignment/Hướng dẫn BT - Phân đoạn tín hiệu thành tiếng nói và khoảng lặng_XLTHS_GK 2026.docx": "9eb6032de0c8cecac3d88d2825ca98fcfd956ce4d674c5dacd3544fec2899eab",
+    "Source/assignment/Hướng dẫn BT thi GK nhóm 3-4 SV_Phân đoạn tín hiệu thành tiếng nói và khoảng lặng_XLTHS_GK 2026.docx": "d4adfb5c5100ab64a72cb390b6137b84bf3156c9475ecbbecc7fdc4b27b26005",
+    "Source/assignment/Hướng dẫn trình bày slide và nộp bài thi.pdf": "6b3d0f7c16298f870f0626d8c35567e8a29985313db5a6c1d9d2561ddebf6e95",
     "Source/context/BAO_CAO_NGU_CANH_GIUA_KY.pdf": "0b953dcc887ca001cd81f6457800b1f6c2b4fad21b5f710010d6f5f44875641b",
     "Source/course_slides/Chapter6_AUDIO-SPEECH SIGNAL PROCESSING.pdf": "ad59aa3da530777b64cab70c5522cac12df2cbbdfecbff10623f69109c923747",
     "Source/examples/sampleFigure.bmp": "c08799016d7a932f0fa6fe823032feb19bdd03ac844703a2940d453a9626e4de",
@@ -2098,7 +2094,7 @@
     },
     "app/pipeline.py": {
       "before": "731eb6713b06a2cf1afedcb709aa3ba0d1ac0f40cbf6d1ce198e82e64fc5e4b9",
-      "after": "7bd39fd5a85dd5710624dfc8cd861a3bba5dce4f9b52b8afe401a50b70a5378b"
+      "after": "b478575982de890f28c230e97fdd800afde9a6fb089f2326727a8ecf3e6b91f2"
     },
     "app/plotting.py": {
       "before": "6305984bf9c47375433d3209d0ab19537436622843b9fb46a1c226f1c9155188",
@@ -2126,7 +2122,7 @@
     },
     "outputs/README.md": {
       "before": "e1d5067162ff8348fc4120ed23e6a78bcad720ac143cbf40a9ffac50fb584ae5",
-      "after": "a7293cb60f60c64ab6c8d44c2f0bea5bcc518dfff02b6b83d427fd1878f72f81"
+      "after": "b2becd009b07330128caf19b7a80f8cd9165f161b41d0499f0c9823be30bc0ec"
     },
     "reports/KET_QUA_HIEN_TAI.md": {
       "before": "f18145e934c0289f833cb7a167587564828ee2f82d2230372278f5ff4f6eef99",
@@ -2138,7 +2134,7 @@
     },
     "submission/README.md": {
       "before": "aed0d370ae6a24803dcf913fcd350fb8d35276925d5f9208ef44b00509a4aaa8",
-      "after": "f0ba7bb961af36f09ef2ba83f5e5f11fbed3680fd0510b4ceba38f836f1c4672"
+      "after": "df229130c4f80c83ae11d63de91686305b4c3e3e4d5be714862afd6f6d03aba6"
     }
   },
   "notebooks": [
@@ -2472,8 +2468,5 @@
       "invalid_file_names": "[]"
     }
   ],
-  "acceptance_runtime_seconds": 1.2192042000001493,
-  "verified_git_head": "c5e82dddf331145e8a9183019448b1b81a7b59d8",
-  "verification_logs_archive": "outputs/tables/endpoint_modes_oct07/verification_logs.zip",
-  "review_and_visual_status": "controller-owned independent final review/visual/archive pending"
+  "acceptance_runtime_seconds": 1.4142099000000599
 }

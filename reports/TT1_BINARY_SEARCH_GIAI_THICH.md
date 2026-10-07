@@ -276,7 +276,7 @@ python main_tt1.py --evaluate-all
 Mặc định chạy bốn test. `--file` chọn một WAV có LAB cùng tên. `--no-show` chỉ xuất file; `--evaluate-all` chấm cả tám WAV train/test và tự tắt cửa sổ.
 
 - [Model học được](../outputs/endpoint_modes/enhanced/models/tt1.json): ngưỡng, overlap, số vòng, noise.
-- [Bảng bốn test](../outputs/endpoint_modes/enhanced/tables/tt1/test_metrics.csv): MAE, RMSE, số vùng và status.
+- [Bảng bốn test chung](../outputs/endpoint_modes/enhanced/tables/all/test_metrics.csv): lọc `algorithm=tt1`; MAE, RMSE, số vùng và status.
 - [Ảnh phone_F2](../outputs/endpoint_modes/enhanced/figures/tt1/phone_F2.png): waveform, STE, High/Low, GT và final prediction.
 - [Diagnostic phone_F2](../outputs/endpoint_modes/enhanced/diagnostics/tt1/phone_F2.json): candidate và final được lưu riêng.
 

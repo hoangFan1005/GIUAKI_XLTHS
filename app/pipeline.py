@@ -562,7 +562,12 @@ def run_experiment(args):
                                             label="unlabeled" if label is None else "speech" if label else "silence"))
         write_csv(tables / "training_frames.csv", training_frames)
         statistics_path = run_folder / "dataset_statistics.csv" if input_path else tables / "dataset_statistics.csv"
-        write_csv(statistics_path, data_statistics(audio_train, "train") + data_statistics(audio_test, evaluation_split))
+        statistics_sources = audio_test if input_path else audio_train + audio_test
+        unique_sources = {str(Path(record["wav_path"]).resolve()): record for record in statistics_sources}
+        statistics_rows = []
+        for record in unique_sources.values():
+            statistics_rows.extend(data_statistics([record], record["split"]))
+        write_csv(statistics_path, statistics_rows)
         if "tt3" in models:
             values_by_class = {0: [], 1: []}
             for record in train_common:
@@ -620,7 +625,7 @@ def run_experiment(args):
         # Lưu từng run độc lập; demo một thuật toán không ghi đè bảng tổng hợp all.
         all_mode_rows.extend(metric_rows)
         write_csv(run_folder / "test_metrics.csv", metric_rows)
-        if evaluate_all and {"tt1", "tt2", "tt3"}.issubset(selected):
+        if evaluate_all and input_path is None and set(selected) == {"tt1", "tt2", "tt3"}:
             write_csv(tables / "all" / "test_metrics.csv", [row for row in metric_rows if row["split"]=="test"])
             write_csv(tables / "all" / "summary.csv", summarize([row for row in metric_rows if row["split"]=="test"]))
         write_csv(run_folder / "summary.csv", summarize(metric_rows))
@@ -660,8 +665,13 @@ def run_experiment(args):
 
     if len(modes) == 2:
         comparison = endpoint_mode_root('comparison', OUTPUT_DIR) / 'tables'
+        if not (evaluate_all and input_path is None and set(selected) == {"tt1", "tt2", "tt3"}):
+            comparison = comparison / run_name
+            if input_path:
+                comparison = comparison / 'single' / input_path.stem
         write_csv(comparison / 'all_metrics.csv', all_mode_rows)
         write_csv(comparison / 'all_summary.csv', summarize(all_mode_rows))
         test_rows = [row for row in all_mode_rows if row['split']=='test']
         write_csv(comparison / 'test_metrics.csv', test_rows)
         write_csv(comparison / 'test_summary.csv', summarize(test_rows))
+        print(f"Bảng so sánh endpoint: {comparison}")

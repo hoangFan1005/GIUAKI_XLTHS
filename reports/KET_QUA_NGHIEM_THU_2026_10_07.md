@@ -1,6 +1,6 @@
 # Nghiệm thu endpoint core/enhanced — 07/10/2026
 
-Gate tích hợp sau sửa writer/units đã PASS; bàn giao cuối chờ root hoàn tất review độc lập và archive. Không push/merge implementation.
+Gate tích hợp sau sửa final review đã PASS; bàn giao cuối chờ root hoàn tất scoped re-review, commit và archive. Không push/merge implementation.
 
 ## Phạm vi và các hàm đã thay đổi
 
@@ -12,7 +12,7 @@ Ba thuật toán giữ nguyên: TT1 Binary Search cân bằng diện tích nhầ
 
 ## Gate thực thi và môi trường
 
-Fresh suite sau second STABLE: **173 tests PASS**, 15.200 s unittest, 16.794 s wall, exit0. Baseline133 và Task1 gate137 là số lịch sử; số mới lấy từ output thật. Acceptance numeric/audit: 1.219 s.
+Fresh suite sau final-review-fix STABLE: **177 tests PASS**, 19.208 s unittest, 21.030 s wall, exit0. Baseline133, Task1 gate137 và pre-final-review-fix gate173 là số lịch sử; số mới lấy từ output thật. Acceptance numeric/audit: 1.414 s.
 
 Môi trường: Python **3.14.7**, Windows11; numpy 2.5.2, matplotlib 3.11.1, nbformat 5.11.1, nbclient 0.11.0. Python3.10 **chưa kiểm** vì không có môi trường3.10; không suy diễn từ3.14.
 
@@ -97,4 +97,10 @@ Tổng10MAE fold regressions,52alternative comparisons; count regression không 
 
 Ruling cho Task4/5 chạy song song vì research không chặn integration, native/model interfaces đã ổn định và file ownership tách rõ. Task4 sở hữu decision_timing/check_endpoint_robustness/research/focusedtests; Task5 sở hữu CLI/config/run_experiment/summary/plotting/notebooktools/docs/geometry audit guard. Cost nếu interface drift: focused integration fixes và rerun complete regression. Gate fullsuite/regression chỉ chạy sau root STABLE; không stage/commit cùng lúc. Không production timing/default change được phép. Reviewer tìm P2: `main_tt1 --evaluate-all` có thể ghi đè shared `tables/all` bằng subset. Writer nay chỉ ghi shared benchmark khi selected chứa đủ3algorithms; demo1algorithm giữ run riêng, regression test kiểm cả3fixed-entrypoints và shared bytes. Root còn sửa label units từ sum thành mean-square đúng với Energy=STE/N; số học không đổi,6models/digests/plots và3freshkernel notebooks+ZIP đã regenerate. Gate171tests trướcfix được giữ riêng; saufix freshsuite173PASS và acceptance48casesPASS. Đây là rerun có lý do source mới, không lặp suite không cần thiết.
 
-Root lưu final independent review và artifact visual acceptance ở mục bàn giao dưới đây trước cleanup. RED/GREEN các Task1–5, reviewer packages/reports và intermediate taskN logs được bảo toàn exact bytes/digests trong [verification_logs.zip](../outputs/tables/endpoint_modes_oct07/verification_logs.zip). Standalone retained: baseline.json/final_verification.json/final_regression.csv/final_core_enhanced.csv/final_summary.csv/timing_research CSV+JSON và báo cáo này. Không xóa protected hoặc unowned artifacts.
+Final review phát hiện shared comparison bị partial run ghi đè, entrypoint docs cũ và ba link guide thiếu file. Routing nay giữ canonical comparison chỉ cho đủ ba thuật toán/evaluate-all/no-file; partial xuất `comparison/tables/<run_name>[/single/<inputstem>]`, không bỏ kết quả. Bốn comparison CSV và shared TEST CSV mỗi mode được kiểm byte qua fixed-all-dataset, default TEST-only và all/fixed single-file; full command vẫn cập nhật benchmark. Ba guide dùng shared `tables/all/test_metrics.csv` hiện có và lọc cột algorithm.
+
+Ruling single-file statistics: chỉ ghi evaluated WAV trong dataset_statistics.csv scoped của run. Full mode statistics/training_frames đã có TRAIN; không lặp TRAIN trong single-file. Dedup theo resolved wav_path, không theo filename; nguồn external trùng basename TRAIN vẫn phân biệt. Cost là focused fixture tests và một refresh metadata-only bằng run_experiment thật; không đổi arithmetic/tuning hoặc chạy lại notebook kernels. Full mode statistics sửa 12 dòng trùng/all_dataset thành 8 nguồn unique với 4TRAIN/4TEST; hai CSV này là intentional deltas, 195/197 fresh artifacts còn lại byte exact. Old canonical CSV và 124 protected hashes giữ nguyên.
+
+Final fix RED: ba regression tests ghi 11 failures cho partial routing/statistics/guide links; doc RED riêng fail1. GREEN14 integration tests; một fresh fullsuite sau source STABLE. Gate173 trước fix và acceptance trước fix được giữ thành before-final-review-fix evidence. Saved audit cả ba notebook/15PNG, exact ba CODE ZIP entries và source digests PASS; run_experiment writer không được nhúng, notebook/ZIP bytes không đổi. `outputs/endpoint_modes/comparison/artifact_audit.json` là snapshot lịch sử Task5 units/pre-final-routing; source toàn file trong snapshot không được tuyên bố hiện hành. Xem final_verification.json cho arithmetic/native/model/notebook audit hiện hành và final-fix-metadata-refresh.json trong verification archive cho hashes hai intentional CSV.
+
+Root lưu final independent review và artifact visual acceptance ở mục bàn giao dưới đây trước cleanup. RED/GREEN các Task1–5, final-fix evidence, reviewer packages/reports và intermediate taskN logs được bảo toàn exact bytes/digests trong [verification_logs.zip](../outputs/tables/endpoint_modes_oct07/verification_logs.zip). Standalone retained: baseline.json/final_verification.json/final_regression.csv/final_core_enhanced.csv/final_summary.csv/timing_research CSV+JSON và báo cáo này. Không xóa protected hoặc unowned artifacts.

@@ -358,7 +358,7 @@ python main_tt3.py --evaluate-all
 Mặc định chạy bốn test; `--file` chọn một WAV có LAB cùng tên; `--no-show` chỉ xuất file; `--evaluate-all` chấm cả tám WAV và không mở cửa sổ.
 
 - [Model TT3](../outputs/endpoint_modes/enhanced/models/tt3.json): mean/std, nghiệm, sigma floor, T3, noise.
-- [Bảng metric TT3](../outputs/endpoint_modes/enhanced/tables/tt3/test_metrics.csv).
+- [Bảng metric chung TT3](../outputs/endpoint_modes/enhanced/tables/all/test_metrics.csv): lọc `algorithm=tt3` để đọc bốn TEST của thuật toán này.
 - [Ảnh phân phối train](../outputs/endpoint_modes/enhanced/figures/training/gaussian_distributions.png): minh họa mật độ từ tham số đã học, không chứng minh phân phối thực đúng Gaussian.
 - [Diagnostic phone_F2](../outputs/endpoint_modes/enhanced/diagnostics/tt3/phone_F2.json).
 - [Ảnh kết quả phone_F2](../outputs/endpoint_modes/enhanced/figures/tt3/phone_F2.png).

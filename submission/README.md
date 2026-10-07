@@ -1,12 +1,16 @@
 # Gói CODE chính — nghiệm thu 07/10/2026
 
-[JUPYTER_NOTEBOOKS_CODE_ONLY.zip](JUPYTER_NOTEBOOKS_CODE_ONLY.zip) là gói CODE hiện hành đã được kiểm tra nguồn/bytes ngày **07/10/2026**: đúng ba notebook đã thực thi, byte trùng file ngoài ZIP, không WAV/LAB/audio/module Python/slide. Ba notebook khớp model/metric/FINAL/ngưỡng với Python ở **24/24** trường hợp trên tám WAV, lưu tổng 15 PNG. Xem [hướng dẫn notebook](../notebooks/README.md) và [bằng chứng nghiệm thu](../outputs/tables/hotfix_oct06/verification.json).
+[JUPYTER_NOTEBOOKS_CODE_ONLY.zip](JUPYTER_NOTEBOOKS_CODE_ONLY.zip) là gói CODE hiện hành ngày **07/10/2026**: đúng ba notebook đã tái tạo và thực thi mới cho `core` và `enhanced`, byte trùng file ngoài ZIP, không WAV/LAB/audio/module Python/slide. Mỗi notebook lưu 16 dòng mode-file trên tám WAV (8 dòng mỗi mode) và 5 PNG, tổng 48 trường hợp thuật toán-mode-file và 15 PNG. Xem [hướng dẫn notebook](../notebooks/README.md), [báo cáo nghiệm thu hiện hành](../reports/KET_QUA_NGHIEM_THU_2026_10_07.md) và [final_verification.json](../outputs/tables/endpoint_modes_oct07/final_verification.json).
 
-Nghiệm thu hiện hành đạt **133/133 tests trong 13.862 s**, 0 regression trên 24 trường hợp; mean bốn TEST TT1/TT2/TT3 vẫn **20.00/13.75/12.50 ms**. Đợt sửa tài liệu và [khóa baseline](../outputs/tables/endpoint_modes_oct07/baseline.json) giữ số liệu này, không tái tạo notebook/ZIP. Năm trường hợp END muộn vẫn còn; không có tuyên bố cải thiện MAE.
+Gate suite mới sau sửa final review đạt **177/177 tests trong 19.208 s** (21.030 s wall), exit 0; số thực tế và bằng chứng nằm trong báo cáo/JSON nghiệm thu trên. Enhanced giữ **24/24** trường hợp exact, 0 numeric regression; mean bốn TEST TT1/TT2/TT3 vẫn **20.00/13.75/12.50 ms**. Core giữ các lỗi count/primary undefined trong đủ 48 trường hợp; không có tuyên bố cải thiện MAE cho mọi file.
 
-Ba model enhanced dùng giao thức TRAIN/schema 2: model/noise/W fit TRAIN trước TEST, TT2 W1–50 chấm FINAL trên bốn TRAIN (200 dòng), chọn W20 bằng tie preference 20 khi hòa. Candidate W1/F1 ≈ 0.898698 là diagnostic riêng. Metric chính là `mae_ms` / `rmse_ms`; thiếu/thừa vùng làm primary undefined. TEST đã được xem trong phát triển: `train_selected_reused_test`, `historical_test_exposure=true`; đổi protocol không tạo holdout độc lập.
+Sáu model (ba thuật toán × hai mode) dùng model schema 3 và metric schema 2: fit và khóa TRAIN trước đọc TEST. TT2 W1–50 chấm FINAL trên bốn TRAIN, **200 dòng mỗi mode**, enhanced chọn W20 bằng tie preference 20 khi hòa. Candidate W1/F1 ≈ 0.898698 là diagnostic riêng. Metric chính là `mae_ms` / `rmse_ms`; thiếu/thừa vùng làm primary undefined. TEST đã được xem trong phát triển: `train_selected_reused_test`, `historical_test_exposure=true`; đổi protocol không tạo holdout độc lập.
 
 `THUAT_TOAN_1.zip`, `THUAT_TOAN_2.zip`, `THUAT_TOAN_3.zip` và PPTX/PDF là **previous version (trước Stage1)**, cả chín binary giữ nguyên byte, chưa đồng bộ giao thức TRAIN/schema 2. Runtime đã chạy là Python 3.14; Python 3.10 chỉ kiểm tra cú pháp. CLI chấm cần WAV/LAB cùng tên. STT nhóm/họ tên/MSSV còn placeholder. Các trạng thái branch/push ngày 05/10 dưới đây là lịch sử, không mô tả trạng thái Git hiện tại.
+
+## Lịch sử hotfix / khóa baseline 07/10/2026
+
+Gate trước triển khai hai mode đạt **133/133 tests trong 13.862 s**, 24/24 trường hợp, ba model enhanced schema 2; mean TEST **20.00/13.75/12.50 ms**. Đợt sửa tài liệu và [khóa baseline](../outputs/tables/endpoint_modes_oct07/baseline.json) khi đó không tái tạo notebook/ZIP. Đây là bằng chứng lịch sử; CODE hiện hành đã được tái tạo cho hai mode. Xem [hotfix verification](../outputs/tables/hotfix_oct06/verification.json). Năm trường hợp END muộn vẫn còn.
 
 ## Lịch sử 05/10/2026
 
