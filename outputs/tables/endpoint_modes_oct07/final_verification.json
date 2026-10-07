@@ -1,6 +1,6 @@
 {
-  "handoff_status": "numeric and artifact acceptance passed; independent final review pending",
-  "verified_utc": "2026-10-07T11:00:26.190854+00:00",
+  "handoff_status": "complete_local_implementation_not_pushed",
+  "verified_utc": "2026-10-07T11:05:03.338882+00:00",
   "environment": {
     "python": "3.14.7 (tags/v3.14.7:823f032, Aug  5 2026, 10:51:32) [MSC v.1944 64 bit (AMD64)]",
     "executable": "H:\\GIUAKI_XLTHS\\.venv\\Scripts\\python.exe",
@@ -2122,7 +2122,7 @@
     },
     "outputs/README.md": {
       "before": "e1d5067162ff8348fc4120ed23e6a78bcad720ac143cbf40a9ffac50fb584ae5",
-      "after": "b2becd009b07330128caf19b7a80f8cd9165f161b41d0499f0c9823be30bc0ec"
+      "after": "08a5cf3b4919cc89075d77adde2b29c88db2b010f79ca3bfaac215868b8cfb76"
     },
     "reports/KET_QUA_HIEN_TAI.md": {
       "before": "f18145e934c0289f833cb7a167587564828ee2f82d2230372278f5ff4f6eef99",
@@ -2134,7 +2134,7 @@
     },
     "submission/README.md": {
       "before": "aed0d370ae6a24803dcf913fcd350fb8d35276925d5f9208ef44b00509a4aaa8",
-      "after": "df229130c4f80c83ae11d63de91686305b4c3e3e4d5be714862afd6f6d03aba6"
+      "after": "cb0bd3c018d00e0424c0f2a272519bce8facd480dd58c5b03ea42b8f7ab65df8"
     }
   },
   "notebooks": [
@@ -2468,5 +2468,49 @@
       "invalid_file_names": "[]"
     }
   ],
-  "acceptance_runtime_seconds": 1.4142099000000599
+  "acceptance_runtime_seconds": 1.475157500000023,
+  "execution_verified_git_head": "7271fb2ed39c6cf73e6de399e3d76fddb2a56ab3",
+  "final_review": {
+    "broad_review_head": "d6b616c",
+    "fix_head": "7271fb2",
+    "scoped_spec": "PASS",
+    "scoped_quality": "APPROVE",
+    "findings_addressed": 4,
+    "open_blockers": 0,
+    "records_in_archive": [
+      "final-review.md",
+      "final-scoped-review.md"
+    ]
+  },
+  "visual_acceptance": {
+    "core_phone_F2_figures_viewed": 3,
+    "notebooks": 3,
+    "notebook_pngs_viewed": 15,
+    "pending": null,
+    "observed": "Viewed all15notebookPNG and3corephone_F2 figures: readable axes/legends/MAE, FINAL boundaries only; additionally viewed regeneratedcoreTT2phone_F2 correct mean squared sample amplitude label and normalizedT"
+  },
+  "verification_archive": {
+    "path": "outputs/tables/endpoint_modes_oct07/verification_logs.zip",
+    "sha256": "62e1130b7c596ec0b7bc9e572fb470f2e486c96937d05fc7c56d4401dae0a2e4",
+    "exact_entries_verified": 126,
+    "loose_file_count_removed": 57,
+    "scratch_removed": true,
+    "cleanup_completed": true
+  },
+  "git_handoff": {
+    "backup_branch": "codex/backup-before-endpoint-modes-20261007",
+    "backup_commit": "5ceb289c51079d53b977f5316bcc70971d119c47",
+    "local_branch": "codex/endpoint-modes",
+    "implementation_pushed": false
+  },
+  "rulings": [
+    {
+      "decision": "Task4 research and Task5 integration ran in parallel with disjoint file ownership and root commit/regression gates.",
+      "cost_if_wrong": "Resolve interface drift and rerun regression; no automatic production timing/LOW changes."
+    },
+    {
+      "decision": "Single-file statistics contain evaluated WAV only; TRAIN context remains in full statistics/training_frames.",
+      "cost_if_wrong": "Readers needing TRAIN must open those additional tables; detector/calibration unchanged."
+    }
+  ]
 }

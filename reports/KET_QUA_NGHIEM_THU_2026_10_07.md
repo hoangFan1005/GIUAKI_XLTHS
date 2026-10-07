@@ -1,6 +1,6 @@
 # Nghiệm thu endpoint core/enhanced — 07/10/2026
 
-Gate tích hợp sau sửa final review đã PASS; bàn giao cuối chờ root hoàn tất scoped re-review, commit và archive. Không push/merge implementation.
+Đã hoàn tất implementation, nghiệm thu và independent scoped re-review: **spec PASS, quality APPROVE**. Backup đã push trước khi sửa; implementation giữ trên local `codex/endpoint-modes`, chưa push/merge. Slides giữ nguyên.
 
 ## Phạm vi và các hàm đã thay đổi
 
@@ -12,7 +12,7 @@ Ba thuật toán giữ nguyên: TT1 Binary Search cân bằng diện tích nhầ
 
 ## Gate thực thi và môi trường
 
-Fresh suite sau final-review-fix STABLE: **177 tests PASS**, 19.208 s unittest, 21.030 s wall, exit0. Baseline133, Task1 gate137 và pre-final-review-fix gate173 là số lịch sử; số mới lấy từ output thật. Acceptance numeric/audit: 1.414 s.
+Fresh suite sau final-review-fix STABLE: **177 tests PASS**, 19.208 s unittest, 21.030 s wall, exit0. Baseline133, Task1 gate137 và pre-final-review-fix gate173 là số lịch sử; số mới lấy từ output thật. Acceptance numeric/audit trước commit: 1.414 s; root chạy lại acceptance sau commit: **1.475 s**, exit0.
 
 Môi trường: Python **3.14.7**, Windows11; numpy 2.5.2, matplotlib 3.11.1, nbformat 5.11.1, nbclient 0.11.0. Python3.10 **chưa kiểm** vì không có môi trường3.10; không suy diễn từ3.14.
 
@@ -99,8 +99,22 @@ Ruling cho Task4/5 chạy song song vì research không chặn integration, nati
 
 Final review phát hiện shared comparison bị partial run ghi đè, entrypoint docs cũ và ba link guide thiếu file. Routing nay giữ canonical comparison chỉ cho đủ ba thuật toán/evaluate-all/no-file; partial xuất `comparison/tables/<run_name>[/single/<inputstem>]`, không bỏ kết quả. Bốn comparison CSV và shared TEST CSV mỗi mode được kiểm byte qua fixed-all-dataset, default TEST-only và all/fixed single-file; full command vẫn cập nhật benchmark. Ba guide dùng shared `tables/all/test_metrics.csv` hiện có và lọc cột algorithm.
 
-Ruling single-file statistics: chỉ ghi evaluated WAV trong dataset_statistics.csv scoped của run. Full mode statistics/training_frames đã có TRAIN; không lặp TRAIN trong single-file. Dedup theo resolved wav_path, không theo filename; nguồn external trùng basename TRAIN vẫn phân biệt. Cost là focused fixture tests và một refresh metadata-only bằng run_experiment thật; không đổi arithmetic/tuning hoặc chạy lại notebook kernels. Full mode statistics sửa 12 dòng trùng/all_dataset thành 8 nguồn unique với 4TRAIN/4TEST; hai CSV này là intentional deltas, 195/197 fresh artifacts còn lại byte exact. Old canonical CSV và 124 protected hashes giữ nguyên.
+Ruling single-file statistics: chỉ ghi evaluated WAV trong dataset_statistics.csv scoped của run. Full mode statistics/training_frames đã có TRAIN; không lặp TRAIN trong single-file. Dedup theo resolved wav_path, không theo filename; nguồn external trùng basename TRAIN vẫn phân biệt. Nếu cách chọn scope này không đúng nhu cầu người đọc, họ cần mở thêm full mode statistics/training_frames để xem TRAIN; detector/calibration không đổi. Chi phí thực thi là focused fixture tests và một refresh metadata-only, không chạy lại notebook kernels. Full mode statistics sửa 12 dòng trùng/all_dataset thành 8 nguồn unique với 4TRAIN/4TEST; hai CSV này là intentional deltas, 195/197 fresh artifacts còn lại byte exact. Old canonical CSV và 124 protected hashes giữ nguyên.
 
 Final fix RED: ba regression tests ghi 11 failures cho partial routing/statistics/guide links; doc RED riêng fail1. GREEN14 integration tests; một fresh fullsuite sau source STABLE. Gate173 trước fix và acceptance trước fix được giữ thành before-final-review-fix evidence. Saved audit cả ba notebook/15PNG, exact ba CODE ZIP entries và source digests PASS; run_experiment writer không được nhúng, notebook/ZIP bytes không đổi. `outputs/endpoint_modes/comparison/artifact_audit.json` là snapshot lịch sử Task5 units/pre-final-routing; source toàn file trong snapshot không được tuyên bố hiện hành. Xem final_verification.json cho arithmetic/native/model/notebook audit hiện hành và final-fix-metadata-refresh.json trong verification archive cho hashes hai intentional CSV.
 
 Root lưu final independent review và artifact visual acceptance ở mục bàn giao dưới đây trước cleanup. RED/GREEN các Task1–5, final-fix evidence, reviewer packages/reports và intermediate taskN logs được bảo toàn exact bytes/digests trong [verification_logs.zip](../outputs/tables/endpoint_modes_oct07/verification_logs.zip). Standalone retained: baseline.json/final_verification.json/final_regression.csv/final_core_enhanced.csv/final_summary.csv/timing_research CSV+JSON và báo cáo này. Không xóa protected hoặc unowned artifacts.
+
+
+## Bàn giao cuối và quyết định triển khai
+
+Review toàn nhánh tại d6b616c phát hiện bốn vấn đề export/docs. Một fix wave tại 7271fb2 đã xử lý đủ; independent scoped re-review kết luận **spec PASS, quality APPROVE, tất cả bốn findings ADDRESSED, không có blocker còn mở**. Full review và scoped review được giữ trong verification_logs.zip, theo đường dẫn gốc `.superpowers/sdd/2026-10-07-algorithm-baseline-and-endpoint-review/final-review.md` và `final-scoped-review.md`.
+
+Root đọc log **177 tests PASS**, kiểm saved notebook/ZIP, chạy post-commit acceptance: **24 enhanced exact, 48 scored, 124 protected exact**, 1.4751575 s. Root đã xem 15 notebook PNG, ba core phone_F2 figures và xem lại legend mean-square TT2 sau sửa. Mã nguồn đã kiểm tại `7271fb2`; thay đổi sau đó chỉ là metadata bàn giao/archive, không sửa source/tests/model/notebook.
+
+Hai quyết định (Rulings I made):
+
+1. Task4 nghiên cứu và Task5 tích hợp chạy song song với ownership tách rõ, root giữ commit/full-suite gates. Nếu interface drift thì phải sửa tích hợp và chạy lại hồi quy; không tự đổi timing/LOW production.
+2. Single-file statistics chỉ chứa evaluated WAV; TRAIN context ở full statistics/training_frames. Nếu người đọc cần TRAIN trong lượt single, họ phải mở thêm bảng đó; detector/calibration không đổi.
+
+Backup remote: `codex/backup-before-endpoint-modes-20261007`, `5ceb289c51079d53b977f5316bcc70971d119c47`. Giữ implementation tại local `codex/endpoint-modes` ở `H:/GIUAKI_XLTHS`, chưa push/merge bản sửa. Slides và ZIP Python cũ giữ nguyên. Archive kiểm exact bytes/SHA trước khi dọn. **Cleanup đã hoàn tất**: 126 entries giữ nguyên bytes, ZIP CRC/SHA PASS; 57 log/snapshot rời và workspace SDD tạm đã được dọn. Manifest: [verification_archive_manifest.json](../outputs/tables/endpoint_modes_oct07/verification_archive_manifest.json). ZIP SHA-256: `62e1130b7c596ec0b7bc9e572fb470f2e486c96937d05fc7c56d4401dae0a2e4`. Source, dữ liệu, slides, model, notebook và artifacts được bảo vệ không bị dọn.

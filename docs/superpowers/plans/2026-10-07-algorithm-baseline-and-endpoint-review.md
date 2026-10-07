@@ -10,7 +10,7 @@
 
 **Spec:** [Đề cập nhật nhóm 3–4](<H:/GIUAKI_XLTHS/Source/assignment/Hướng dẫn BT thi GK nhóm 3-4 SV_Phân đoạn tín hiệu thành tiếng nói và khoảng lặng_XLTHS_GK 2026.docx>), [phản biện mới](<C:/Users/Admin/Downloads/XAC_THUC_SO_SANH_VA_DE_XUAT_SUA_CODE (1).md>), [kế hoạch trước](H:/GIUAKI_XLTHS/reports/KE_HOACH_CAI_TIEN_ENDPOINT.md), các ràng buộc người dùng và phần thiết kế dưới đây. Phản biện là nguồn cần kiểm chứng; các khẳng định của tác giả không tự trở thành yêu cầu của thầy.
 
-**Trạng thái thực thi 07/10/2026:** Người dùng đã duyệt và implementation Tasks1–5 đã thực hiện trên local `codex/endpoint-modes`; backup remote `codex/backup-before-endpoint-modes-20261007` tại `5ceb289c51079d53b977f5316bcc70971d119c47`. Task6 gate sau tích hợp/sửa writer+units:173testsPASS,24enhancednumeric exact,48core/enhanced cases,124protected hashes và3freshnotebooks/CODEZIP. Review độc lập cuối/visual và archive do root hoàn tất trước bàn giao; không push/merge implementation. Chi tiết: [báo cáo nghiệm thu](../../../reports/KET_QUA_NGHIEM_THU_2026_10_07.md).
+**Trạng thái thực thi 07/10/2026:** Đã hoàn tất Tasks 1–6 trên local `codex/endpoint-modes`. Backup đã push: `codex/backup-before-endpoint-modes-20261007` tại `5ceb289c51079d53b977f5316bcc70971d119c47`. Gate cuối: **177 tests PASS**, 24 enhanced cases exact, 48 core/enhanced cases, 124 protected hashes exact; ba notebook/CODE ZIP đã kiểm. Independent scoped re-review: spec PASS, quality APPROVE, bốn findings đã xử lý. Archive kiểm SHA/bytes đủ 126 entries; đã dọn 57 log rời và workspace tạm thuộc phiên này. Implementation chưa push/merge; slides giữ nguyên. Chi tiết: [báo cáo nghiệm thu](../../../reports/KET_QUA_NGHIEM_THU_2026_10_07.md).
 
 **Ghi chép lập kế hoạch lịch sử (trước duyệt, không phải trạng thái hiện tại):** CHỜ NGƯỜI DÙNG DUYỆT. Ngày 07/10/2026. Lượt này chỉ đọc code, DOCX, artifacts và chạy probes đọc/số học nhỏ; chưa sửa code, chạy lại suite/kernel hay tái tạo artifacts. HEAD hiện là `d035dcb4d12e5f01abe7b33b6bd812a806193f1e`, nhưng working tree có các sửa Gaussian/notebook đã hoàn tất trước đó, chưa commit; đây mới là trạng thái phải giữ khi triển khai tiếp. Bằng chứng nghiệm thu trước là 133 tests, 24 trường hợp, không phải tests mới của lượt lập kế hoạch này.
 
@@ -110,10 +110,10 @@ Không đổi LOW TT1 thành T1 ngay: LOW thấp hơn có thể kéo thêm noise
 
 **Interfaces:** baseline capture gồm **3 model enhanced hiện tại và 24 kết quả** (8 WAV × 3 thuật toán), input/artifact hashes và versions. Core models mới chỉ có từ Task3.
 
-- [ ] Viết assertion cho W sweep current có TRAIN names, casefold-unique metric headers và README không gọi bảng current là TEST.
-- [ ] Chạy test RED cho hai README stale; khóa bảng trước sửa gồm FINAL/masks/metrics/T/W/LOW/HIGH và hash Source/data/slides/ZIP cũ.
-- [ ] Sửa đúng mô tả current TRAIN/schema 2; đưa thông tin05/10 về lịch sử, giữ historical exposure. Không đổi metric names/công thức.
-- [ ] Chạy tests mục tiêu và suite hiện có. Gate: số trước sửa khớp nghiệm thu07/10, docs phản ánh current artifacts; không regenerate số liệu chỉ vì đổi prose.
+- [x] Viết assertion cho W sweep current có TRAIN names, casefold-unique metric headers và README không gọi bảng current là TEST.
+- [x] Chạy test RED cho hai README stale; khóa bảng trước sửa gồm FINAL/masks/metrics/T/W/LOW/HIGH và hash Source/data/slides/ZIP cũ.
+- [x] Sửa đúng mô tả current TRAIN/schema 2; đưa thông tin05/10 về lịch sử, giữ historical exposure. Không đổi metric names/công thức.
+- [x] Chạy tests mục tiêu và suite hiện có. Gate: số trước sửa khớp nghiệm thu07/10, docs phản ánh current artifacts; không regenerate số liệu chỉ vì đổi prose.
 
 ### Task2 — Tách quyết định lõi và FINAL policy
 
@@ -124,10 +124,10 @@ Không đổi LOW TT1 thành T1 ngay: LOW thấp hơn có thể kéo thêm noise
 - Giữ `detect_regions(algorithm, features, duration, params) -> dict`; đọc `params['endpoint_mode']`, thiếu mode resolve enhanced. Policy ngoài `{core,enhanced}` báo lỗi.
 - Output hiện có mask/final_regions/predicted_boundaries/diagnostic giữ nguyên; thêm mode, native threshold/units, geometry, min speech và padding stage để không nhập nhằng. Ở `core`, `low_ste_threshold`/`high_ste_threshold`/`endpoint_noise` là `None` (JSON null, CSV ô trống), không tạo HIGH/LOW giả; threshold trực tiếp vẫn có trong native threshold/units. Sweep/export/auditor/plot phải đọc theo mode và chấp nhận các trường không áp dụng này.
 
-- [ ] Viết tests: TT1/TT3 equality làspeech; TT2 Energy equality làsilence theo dấu `>`; TT3 core-low giữ đúng raw inequality; core chạy không có endpoint_noise; enhanced vẫn reject low/unknown; legacy thiếu mode bằng enhanced.
-- [ ] Viết tests: estimated gap 190→gộp,200/210/250→giữ2; core vùng support80ms vẫn giữ, enhanced loại; không đổi input. WAV zero với model TRAIN hợp lệ không tạo vùng giả; empty features cho emptyregions; TT2 peak0 tránh divide-by-zero.
-- [ ] Chạy RED; thêm helper và branch core=raw decisions→merge internal gap 200→FINAL regions, không filter 100. Enhanced dùng logic hiện tại và noise guard của riêng branch đó.
-- [ ] Chạy tests mục tiêu: `python -m unittest tests.test_endpoint_modes tests.test_endpoints tests.test_endpoint_robustness tests.test_gaussian_direction_contract -v`. Gate: raw phù hợp inequalities, final không chứa padding/debug, enhanced giữ numeric baseline24 cases.
+- [x] Viết tests: TT1/TT3 equality làspeech; TT2 Energy equality làsilence theo dấu `>`; TT3 core-low giữ đúng raw inequality; core chạy không có endpoint_noise; enhanced vẫn reject low/unknown; legacy thiếu mode bằng enhanced.
+- [x] Viết tests: estimated gap 190→gộp,200/210/250→giữ2; core vùng support80ms vẫn giữ, enhanced loại; không đổi input. WAV zero với model TRAIN hợp lệ không tạo vùng giả; empty features cho emptyregions; TT2 peak0 tránh divide-by-zero.
+- [x] Chạy RED; thêm helper và branch core=raw decisions→merge internal gap 200→FINAL regions, không filter 100. Enhanced dùng logic hiện tại và noise guard của riêng branch đó.
+- [x] Chạy tests mục tiêu: `python -m unittest tests.test_endpoint_modes tests.test_endpoints tests.test_endpoint_robustness tests.test_gaussian_direction_contract -v`. Gate: raw phù hợp inequalities, final không chứa padding/debug, enhanced giữ numeric baseline24 cases.
 
 ### Task3 — Model và W phải khóa cùng policy
 
@@ -138,10 +138,10 @@ Không đổi LOW TT1 thành T1 ngay: LOW thấp hơn có thể kéo thêm noise
 - Giữ `sweep_final_weights(records, model, predictor, ...)` nhưng model mang policy và mỗi row/selection mang mode; predictor đi đúng policy đó. Row/manifest khóa cả endpoint_mode, boundary_convention, minimum_speech_ms, minimum_silence_ms và padding_stage; LOW/HIGH nullable theo contract Task2, không index rồi ép float cho core.
 - Model mới schema 3, metric schema 2; thêm endpoint_mode, feature/decision rule, minimum_speech_ms, boundary_convention và padding_stage. Model schema1/2 import resolve enhanced, không đổi provenance hoặc numeric params ngầm.
 
-- [ ] Viết RED: calibrator dùng đúng core/enhanced scorer; TEST/external records bị từ chối; TT1/TT3 core không phụ thuộc noise-floor fit; W candidate F1 không tự trở thành FINAL W; core LOW/HIGH null đi qua sweep/export/audit/plot không lỗi hoặc hiện ngưỡng giả.
-- [ ] Fit T1/T3 từ TRAIN như hiện tại, TT2 grid1…50 riêng mỗi policy; core min speech 0, enhanced100. Với enhanced, selectedW/T/noise và kết quả phải giữ như baseline. TT3 core-low được fit; enhanced vẫn reject ngay.
-- [ ] Khóa tất cả model/mode/W/noise trước TEST; lưu digest từng mode và mode-specific selection manifests. Primary mean undefined nếu count mismatch; báo invalid count rõ.
-- [ ] Chạy tests training/weight/modes. Gate: thay target TEST LAB không đổi detection/calibration; expected200 row TRAIN sweep mỗi mode TT2; không gọi W20 hoặc W1 là optimum duy nhất khi hòa.
+- [x] Viết RED: calibrator dùng đúng core/enhanced scorer; TEST/external records bị từ chối; TT1/TT3 core không phụ thuộc noise-floor fit; W candidate F1 không tự trở thành FINAL W; core LOW/HIGH null đi qua sweep/export/audit/plot không lỗi hoặc hiện ngưỡng giả.
+- [x] Fit T1/T3 từ TRAIN như hiện tại, TT2 grid1…50 riêng mỗi policy; core min speech 0, enhanced100. Với enhanced, selectedW/T/noise và kết quả phải giữ như baseline. TT3 core-low được fit; enhanced vẫn reject ngay.
+- [x] Khóa tất cả model/mode/W/noise trước TEST; lưu digest từng mode và mode-specific selection manifests. Primary mean undefined nếu count mismatch; báo invalid count rõ.
+- [x] Chạy tests training/weight/modes. Gate: thay target TEST LAB không đổi detection/calibration; expected200 row TRAIN sweep mỗi mode TT2; không gọi W20 hoặc W1 là optimum duy nhất khi hòa.
 
 ### Task4 — Thời gian biên và 200/100 ms: khảo sát TRAIN, không đổi default bằng TEST
 
@@ -149,11 +149,11 @@ Không đổi LOW TT1 thành T1 ngay: LOW thấp hơn có thể kéo thêm noise
 
 **Interfaces:** `decision_cells(features: dict, duration: float) -> tuple[list[float],list[float]]` dùng tâm và hop thực. Các cạnh nội bộ là midpoint giữa hai centers liên tiếp; cạnh ngoài 0/duration theo nearest-frame convention được công bố. Trả một cell không chồng lấn cho mỗi frame; không thay analysis window 25 ms. Chuỗi không frame trả([],[]).
 
-- [ ] Viết RED cho cell coverage/order/clipping và nhiều regions ở hai Fs; gap decision cells đúng190/200/210 ms; mép0/duration; chỉ một frame và đuôi ngắn. Không dùng `regions_to_mask` full 25ms support để chấm cell-basedregions.
-- [ ] Thực hiện helper và diagnostic branch dùng cells **nhất quán** cho START/END/gap/span/mask membership; không chỉ trừ15 ms END. Không coi jH là END của chính khungj.
-- [ ] Khảo sát tối đa các yếu tố đã khai báo: support hiện tại vs centered cells; min speech 0 vs100; riêng enhancedTT1 LOW gốc vsLOW=T1/HIGH=max(1.5T1,noise_upper). Thử từng yếu tố, không quét toàn bộ tổ hợp. Học trên 3 TRAIN, kiểm tra file TRAIN thứ 4 trong4 folds. Với TT2, **hiệu chỉnh lại W1…50 riêng cho từng nhánh thử nghiệm bằng chính geometry/cleanup/scorer của nhánh đó trên 3 fit files**, rồi khóa W để chấm file TRAIN giữ lại. Manifest ghi trial_id và geometry/filter/mode dùng cho chọn W; không dùng W đã chọn theo support-enhanced để gọi nhánh cells hoặc core là đã tối ưu.
-- [ ] Xuất START/END errors, regioncounts, full/valid-only MAE/RMSE và config provenance. Gate numeric: enhanced current unchanged; báo mọi fold regression. Chưa chọn convention từ TEST counterfactual ở phầnA.
-- [ ] Reuse48 waveforms physical190/200/210/250, hai Fs/sáu phase; thêm burst 75/95/100/105ms và audioedges/weak tails. Phân biệt tests duration-rule trên nhãn với characterization duration thực.
+- [x] Viết RED cho cell coverage/order/clipping và nhiều regions ở hai Fs; gap decision cells đúng190/200/210 ms; mép0/duration; chỉ một frame và đuôi ngắn. Không dùng `regions_to_mask` full 25ms support để chấm cell-basedregions.
+- [x] Thực hiện helper và diagnostic branch dùng cells **nhất quán** cho START/END/gap/span/mask membership; không chỉ trừ15 ms END. Không coi jH là END của chính khungj.
+- [x] Khảo sát tối đa các yếu tố đã khai báo: support hiện tại vs centered cells; min speech 0 vs100; riêng enhancedTT1 LOW gốc vsLOW=T1/HIGH=max(1.5T1,noise_upper). Thử từng yếu tố, không quét toàn bộ tổ hợp. Học trên 3 TRAIN, kiểm tra file TRAIN thứ 4 trong4 folds. Với TT2, **hiệu chỉnh lại W1…50 riêng cho từng nhánh thử nghiệm bằng chính geometry/cleanup/scorer của nhánh đó trên 3 fit files**, rồi khóa W để chấm file TRAIN giữ lại. Manifest ghi trial_id và geometry/filter/mode dùng cho chọn W; không dùng W đã chọn theo support-enhanced để gọi nhánh cells hoặc core là đã tối ưu.
+- [x] Xuất START/END errors, regioncounts, full/valid-only MAE/RMSE và config provenance. Gate numeric: enhanced current unchanged; báo mọi fold regression. Chưa chọn convention từ TEST counterfactual ở phầnA.
+- [x] Reuse48 waveforms physical190/200/210/250, hai Fs/sáu phase; thêm burst 75/95/100/105ms và audioedges/weak tails. Phân biệt tests duration-rule trên nhãn với characterization duration thực.
 
 **Giới hạn bắt buộc:** centered cells **không đủ** bảo đảm silence vật lý200 ms được giữ; window có speech một phần vẫn có thể bị phân loại speech. Không biến24 ca physical200/210 hiện fail thành pass bằng đổi GT/giảm ngưỡng 200. Đề yêu cầu lọc khoảng lặng ước lượng dưới200, không nêu convention END hay bảo đảm detector biết mọi silence thật. Nếu cần sửa estimator để giữ đúng silence vật lý quanh200, cần thiết kế refinement riêng dựa trên TRAIN/waveform, không chỉ đổi timestamp. Task này bàn giao khảo sát và khuyến nghị; áp dụng production convention/LOW mới cần trình người dùng kết quả cụ thể để quyết định, giữ default hiện tại trong lúc đó.
 
@@ -163,22 +163,22 @@ Không đổi LOW TT1 thành T1 ngay: LOW thấp hơn có thể kéo thêm noise
 
 **Interfaces:** CLI `--endpoint-mode {enhanced,core}`, defaultenhanced; thêm `--compare-endpoint-modes` xuất bảng headless2 modes, fit tất cả TRAIN trước đọc TEST. Notebook giữ một config mode chọn4 figure; tính/khóa `MODELS={'core':..., 'enhanced':...}` trước TEST, lưu model digests theo mode và source digest chung.
 
-- [ ] Viết RED: đường chạy mặc định vẫn 4 figure/một main call; figure metric FINAL của mode chọn; core plot Tnative và không giả vờ HIGH/LOW quyết định; enhanced plot HIGH/LOW thực.
-- [ ] Bảng gồm filename/split/algorithm/mode/GT-count/pred-count/START/END/primaryMAE/RMSE/status và các trường timing/filter/padding đã khóa; summarize group theo algorithm+mode, không gom hai mode thành một mean. Core LOW/HIGH null phải được export/audit đúng và không vẽ như threshold có tham gia detector.
-- [ ] Report so sánh bốn TEST riêng, támWAV riêng; raw/core và enhanced không gọi cùng là thuật toán gốc. Dùng `FINAL-region endpoint MAE` nếu muốn làm rõ nhiều regions; metric chính vẫn không bỏ lỗi lớn.
-- [ ] Notebook mỗi sinh viên chứa code riêng, bảng 8 WAV/mode, so sánh 4 TEST và threshold diagnostics; mỗi mode TT2 có 200 TRAIN rows. Generator phải nhúng cả `algorithm_decision` và các helper core được Task2 thêm vào, không chỉ ba hàm pipeline cũ. Giữ 4 TEST plots + 1 illustration của mode được chọn; runner kiểm tra models/mode/sweep/metrics/source digests đúng mode. RunAllSave độc lập vẫn được.
-- [ ] Rebuild→ba kernel mới→validate savedoutputs→ZIP exact3 notebooks byteequal. Lưu24 kết quả/mode (48 cho2 modes); diễn giải Gaussian là xấp xỉ theo đề, không chuyển fit sang gamma/lognormal. T1/T3 objectives khác nhau, không gán T3>T1 cho sigma đơn lẻ.
+- [x] Viết RED: đường chạy mặc định vẫn 4 figure/một main call; figure metric FINAL của mode chọn; core plot Tnative và không giả vờ HIGH/LOW quyết định; enhanced plot HIGH/LOW thực.
+- [x] Bảng gồm filename/split/algorithm/mode/GT-count/pred-count/START/END/primaryMAE/RMSE/status và các trường timing/filter/padding đã khóa; summarize group theo algorithm+mode, không gom hai mode thành một mean. Core LOW/HIGH null phải được export/audit đúng và không vẽ như threshold có tham gia detector.
+- [x] Report so sánh bốn TEST riêng, támWAV riêng; raw/core và enhanced không gọi cùng là thuật toán gốc. Dùng `FINAL-region endpoint MAE` nếu muốn làm rõ nhiều regions; metric chính vẫn không bỏ lỗi lớn.
+- [x] Notebook mỗi sinh viên chứa code riêng, bảng 8 WAV/mode, so sánh 4 TEST và threshold diagnostics; mỗi mode TT2 có 200 TRAIN rows. Generator phải nhúng cả `algorithm_decision` và các helper core được Task2 thêm vào, không chỉ ba hàm pipeline cũ. Giữ 4 TEST plots + 1 illustration của mode được chọn; runner kiểm tra models/mode/sweep/metrics/source digests đúng mode. RunAllSave độc lập vẫn được.
+- [x] Rebuild→ba kernel mới→validate savedoutputs→ZIP exact3 notebooks byteequal. Lưu24 kết quả/mode (48 cho2 modes); diễn giải Gaussian là xấp xỉ theo đề, không chuyển fit sang gamma/lognormal. T1/T3 objectives khác nhau, không gán T3>T1 cho sigma đơn lẻ.
 
 ### Task6 — Nghiệm thu và báo cáo để bàn giao
 
 **Files:** tạo một report kết quả thực thi trong `reports/`, một bảng before/after enhanced và một bảng core/enhanced trong outputs; cập nhật currentreport với link, không sửa lịch sử thành dữ liệu mới.
 
-- [ ] Chạy tests mục tiêu sau mỗi thay đổi lớn, toàn suite sau tích hợp; unit tests phải có RED/GREEN khi thêm hành vi. Số133 là baseline, không ấn định sốtests tương lai phải bằng133.
-- [ ] Enhanced: mọi24 FINAL/count/mask/quantitative metric/status trước–sau phải giữ; schema/provenance mới được đổi có chủ đích. Mọi thay đổi numeric bất ngờ là regression cần xử lý trước bàn giao.
-- [ ] Core: báo đúng số vùng, thiếu/thừa, MAE undefined; có thể cao hơn enhanced. Không chọn nhánh báo cáo theo file để chỉ lấy điểm tốt.
-- [ ] Chạy4 TEST sau khóa model, đánh giá8 WAV để regression; mean/median/min/max, counts và worstfiles riêng từng mode/algorithm. TEST đã được nhìn ở nhiều lượt phát triển, giữ disclosure.
-- [ ] Kiểm tra notebook độc lập/fresh source–output digests, model lock, ZIP không WAV/LAB; hash Source/data/slides/ZIP Python giữ nguyên. Dọn scratch do tác vụ tạo sau khi lưu evidence cần thiết.
-- [ ] Reviewer độc lập kiểm code+spec+actualartifacts; report rõ hàm sửa, before/after, mọi file xấu đi, giới hạn physical200/shortspeech và runtime3.10 chưa kiểm nếu không có môi trường.
+- [x] Chạy tests mục tiêu sau mỗi thay đổi lớn, toàn suite sau tích hợp; unit tests phải có RED/GREEN khi thêm hành vi. Số133 là baseline, không ấn định sốtests tương lai phải bằng133.
+- [x] Enhanced: mọi24 FINAL/count/mask/quantitative metric/status trước–sau phải giữ; schema/provenance mới được đổi có chủ đích. Mọi thay đổi numeric bất ngờ là regression cần xử lý trước bàn giao.
+- [x] Core: báo đúng số vùng, thiếu/thừa, MAE undefined; có thể cao hơn enhanced. Không chọn nhánh báo cáo theo file để chỉ lấy điểm tốt.
+- [x] Chạy4 TEST sau khóa model, đánh giá8 WAV để regression; mean/median/min/max, counts và worstfiles riêng từng mode/algorithm. TEST đã được nhìn ở nhiều lượt phát triển, giữ disclosure.
+- [x] Kiểm tra notebook độc lập/fresh source–output digests, model lock, ZIP không WAV/LAB; hash Source/data/slides/ZIP Python giữ nguyên. Dọn scratch do tác vụ tạo sau khi lưu evidence cần thiết.
+- [x] Reviewer độc lập kiểm code+spec+actualartifacts; report rõ hàm sửa, before/after, mọi file xấu đi, giới hạn physical200/shortspeech và runtime3.10 chưa kiểm nếu không có môi trường.
 
 ## D. Phân công và thứ tự
 

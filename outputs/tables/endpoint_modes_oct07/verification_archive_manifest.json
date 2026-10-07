@@ -1,0 +1,573 @@
+{
+  "archive": "outputs/tables/endpoint_modes_oct07/verification_logs.zip",
+  "archive_sha256": "62e1130b7c596ec0b7bc9e572fb470f2e486c96937d05fc7c56d4401dae0a2e4",
+  "exact_entries_verified": 126,
+  "entries": {
+    ".superpowers/sdd/2026-10-07-algorithm-baseline-and-endpoint-review/archive-evidence.py": {
+      "sha256": "91ee0a15af209c3a1fbd9f7dd7cd1bb06d6b2f971266442ef11103a7da51a091",
+      "size": 2430
+    },
+    ".superpowers/sdd/2026-10-07-algorithm-baseline-and-endpoint-review/capture-baseline.py": {
+      "sha256": "2f1811c20188144158bbc7fe386bc8b3ea7e128aecc7b50e21de665f22149036",
+      "size": 6781
+    },
+    ".superpowers/sdd/2026-10-07-algorithm-baseline-and-endpoint-review/final-fix-brief.md": {
+      "sha256": "ee0ca0e54981a1bf9708c27246035582c85a44ff3681152d5df7d0bfb5b03411",
+      "size": 4372
+    },
+    ".superpowers/sdd/2026-10-07-algorithm-baseline-and-endpoint-review/final-fix-metadata-refresh.py": {
+      "sha256": "55eaa25b31606a1d76fee773b84227a6dcf6864383fec846237be7171bf5a6a9",
+      "size": 1787
+    },
+    ".superpowers/sdd/2026-10-07-algorithm-baseline-and-endpoint-review/final-fix-report.md": {
+      "sha256": "5bf2be2987aeb0fb7245fbb0aecf795f548490b70b3033a42a8368b0cec0d9ea",
+      "size": 10662
+    },
+    ".superpowers/sdd/2026-10-07-algorithm-baseline-and-endpoint-review/final-fix-review-package.md": {
+      "sha256": "028431d63b06278c69ded5154de15d2372bc1389539f2208e1bb9829978b8fb0",
+      "size": 60857
+    },
+    ".superpowers/sdd/2026-10-07-algorithm-baseline-and-endpoint-review/final-fix-source-audit.py": {
+      "sha256": "4f0bbcd68d0977c0ae6bc6521833bcc90f86e526b7e92d4907495fff66bffc16",
+      "size": 2215
+    },
+    ".superpowers/sdd/2026-10-07-algorithm-baseline-and-endpoint-review/final-review-package.md": {
+      "sha256": "56defd8ad48eff336bf176c7dd07a18b93e11259f9539cbc7b07174b9d128650",
+      "size": 391392
+    },
+    ".superpowers/sdd/2026-10-07-algorithm-baseline-and-endpoint-review/final-review.md": {
+      "sha256": "02f5c7505d9ca2c5edb91650cf505ef5ef6db0309a29fadad3ec87410f42b892",
+      "size": 14226
+    },
+    ".superpowers/sdd/2026-10-07-algorithm-baseline-and-endpoint-review/final-scoped-review.md": {
+      "sha256": "41af8270323ec22ed415b109f1e09979e8a2b311d39c597e13c9d01c96fe4596",
+      "size": 8775
+    },
+    ".superpowers/sdd/2026-10-07-algorithm-baseline-and-endpoint-review/final-THUAT_TOAN_1.ipynb.newcode.txt": {
+      "sha256": "87decfeaf3d2a7a0cf0ff48e68bf6ecc73fa988e6b272b0f1be2f58d67267098",
+      "size": 68146
+    },
+    ".superpowers/sdd/2026-10-07-algorithm-baseline-and-endpoint-review/final-THUAT_TOAN_1.ipynb.oldcode.txt": {
+      "sha256": "1934a066b1bc85ded35ff22c44d0688e8550a39102e8f6eaea88a95ba5afcb74",
+      "size": 61358
+    },
+    ".superpowers/sdd/2026-10-07-algorithm-baseline-and-endpoint-review/final-THUAT_TOAN_2.ipynb.newcode.txt": {
+      "sha256": "2f9f7e9e5a07fd19dc2bdbf0f54c4b350655da5db8d2a08a4526d2a3b0a91830",
+      "size": 88476
+    },
+    ".superpowers/sdd/2026-10-07-algorithm-baseline-and-endpoint-review/final-THUAT_TOAN_2.ipynb.oldcode.txt": {
+      "sha256": "e8c5c99b3bf9e3bf0397c5f8b307f3e35de2167027c8bf4a98ea4dbeeb1d14c3",
+      "size": 79779
+    },
+    ".superpowers/sdd/2026-10-07-algorithm-baseline-and-endpoint-review/final-THUAT_TOAN_3.ipynb.newcode.txt": {
+      "sha256": "90e4c8afb41da0aed18814ecc991255a5b46c5d3111444347d4f73cac47b08d9",
+      "size": 69319
+    },
+    ".superpowers/sdd/2026-10-07-algorithm-baseline-and-endpoint-review/final-THUAT_TOAN_3.ipynb.oldcode.txt": {
+      "sha256": "2035f5c18d415f6e3f1350ed2072c5170e735f0a7bbbb79b8e2a38bfa8ea88f6",
+      "size": 62309
+    },
+    ".superpowers/sdd/2026-10-07-algorithm-baseline-and-endpoint-review/plan-path": {
+      "sha256": "c2d4d865a21b18acf422439fd0108033053cd1a587f3604759b8e91da3b5dc7d",
+      "size": 77
+    },
+    ".superpowers/sdd/2026-10-07-algorithm-baseline-and-endpoint-review/postcommit-acceptance.json": {
+      "sha256": "197c5582b6fb2bcad6c07604076128ce860e66b9edbaa946f1a75662112977a6",
+      "size": 418
+    },
+    ".superpowers/sdd/2026-10-07-algorithm-baseline-and-endpoint-review/progress.md": {
+      "sha256": "493068f8dd07f824e7bbffb6e2218c7f93e8629bed3e5bcea66d5855ba205046",
+      "size": 8680
+    },
+    ".superpowers/sdd/2026-10-07-algorithm-baseline-and-endpoint-review/review-package.ps1": {
+      "sha256": "4993a4a5e03a10d783056cc715c1d7fdbb7e22463a0124069b78b2f596939f74",
+      "size": 798
+    },
+    ".superpowers/sdd/2026-10-07-algorithm-baseline-and-endpoint-review/task-1-brief.md": {
+      "sha256": "dfc15ec9813f339a8786ee03a73c6243dce78974f9af01cb401a8a593fdfbded",
+      "size": 3373
+    },
+    ".superpowers/sdd/2026-10-07-algorithm-baseline-and-endpoint-review/task-1-report.md": {
+      "sha256": "f9807489620fa59b7c55651c8a6c7a77edca8fd005e208d8234ab098acd161f5",
+      "size": 6483
+    },
+    ".superpowers/sdd/2026-10-07-algorithm-baseline-and-endpoint-review/task-1-review-package.md": {
+      "sha256": "46c32e7615af487603dd296889b485a90e184713428c6692108dd97d484fa78e",
+      "size": 27764
+    },
+    ".superpowers/sdd/2026-10-07-algorithm-baseline-and-endpoint-review/task-1-review.md": {
+      "sha256": "13c7ae578216cb3d3d1dbe9226f1ab7f5cda36b05e36f380e7330e97708d3eb8",
+      "size": 3146
+    },
+    ".superpowers/sdd/2026-10-07-algorithm-baseline-and-endpoint-review/task-2-brief.md": {
+      "sha256": "b7803cb693aca62bf61b7fac0b6b415fd01c93cd2119915ad575b10b5ee15df3",
+      "size": 5049
+    },
+    ".superpowers/sdd/2026-10-07-algorithm-baseline-and-endpoint-review/task-2-report.md": {
+      "sha256": "d052a087952aff4ef2fc6e4f07d53249cfe39d74cdf28e98f4e7f53463580192",
+      "size": 5128
+    },
+    ".superpowers/sdd/2026-10-07-algorithm-baseline-and-endpoint-review/task-2-review-package.md": {
+      "sha256": "1bc60580e695e89d55efe1ebd47e9ffc3d95ab70749eac5949d485efc8bbcfb0",
+      "size": 23372
+    },
+    ".superpowers/sdd/2026-10-07-algorithm-baseline-and-endpoint-review/task-2-review.md": {
+      "sha256": "0bda53923d63e75c28b6a7f7a472c6789bef9ce3d81936481b13bb0eb74b3ff1",
+      "size": 4785
+    },
+    ".superpowers/sdd/2026-10-07-algorithm-baseline-and-endpoint-review/task-3-brief.md": {
+      "sha256": "6e4bcb22906d3d828ab6e7cb75333c142b78658ae43f3ef0bd83a4d3d17ce728",
+      "size": 3879
+    },
+    ".superpowers/sdd/2026-10-07-algorithm-baseline-and-endpoint-review/task-3-report.md": {
+      "sha256": "a662e6087a6ad7e645bfc5a5aa7ea045767519717075b153dae12e38e6f6068f",
+      "size": 6101
+    },
+    ".superpowers/sdd/2026-10-07-algorithm-baseline-and-endpoint-review/task-3-review-package.md": {
+      "sha256": "693653525d5ee6002350735e727414687c1c8881ec7dcde8e05b19aa8b7cb72d",
+      "size": 36300
+    },
+    ".superpowers/sdd/2026-10-07-algorithm-baseline-and-endpoint-review/task-3-review.md": {
+      "sha256": "b3465d5d988e5ba86e3722822323dde9ceaef03d59b090ca09c945f59f47ff37",
+      "size": 3623
+    },
+    ".superpowers/sdd/2026-10-07-algorithm-baseline-and-endpoint-review/task-4-brief.md": {
+      "sha256": "fe7942dd23358595a62a3a4c2af72830ea03a55438dcd076f3925d8b09a26056",
+      "size": 5744
+    },
+    ".superpowers/sdd/2026-10-07-algorithm-baseline-and-endpoint-review/task-4-inspect-evidence.py": {
+      "sha256": "092e951ff29ac33e8ef1b05c0b16ae0e5b397fd15b97ed94de5ffe1591537656",
+      "size": 995
+    },
+    ".superpowers/sdd/2026-10-07-algorithm-baseline-and-endpoint-review/task-4-preflight.md": {
+      "sha256": "e6540d50e3d87ac8c1f1c3beb7a84ae20944e4719cb1da63a19df7e48ea8a218",
+      "size": 7849
+    },
+    ".superpowers/sdd/2026-10-07-algorithm-baseline-and-endpoint-review/task-4-provenance-fix-review-package.md": {
+      "sha256": "9b141f7f1373d5f72e1e9d01f8ae73798ca87c3957476405af806451ddb586c4",
+      "size": 9669
+    },
+    ".superpowers/sdd/2026-10-07-algorithm-baseline-and-endpoint-review/task-4-provenance-fix-review.md": {
+      "sha256": "da85ac0e7ca85c4af5f70e19bd0a721a5da5e138742b52e46d1f44552a5e1482",
+      "size": 2446
+    },
+    ".superpowers/sdd/2026-10-07-algorithm-baseline-and-endpoint-review/task-4-provenance-reconstruction.py": {
+      "sha256": "1d4d4fcf5f4dc74fa25ec398d35a7621b8fb2a5eacdc747132b5771e79e99fe1",
+      "size": 1737
+    },
+    ".superpowers/sdd/2026-10-07-algorithm-baseline-and-endpoint-review/task-4-report.md": {
+      "sha256": "b22941602a3e990c526b267f35795233d854b99186625c6854bb17db8ef426ec",
+      "size": 10318
+    },
+    ".superpowers/sdd/2026-10-07-algorithm-baseline-and-endpoint-review/task-4-review-package.md": {
+      "sha256": "65698ceab1fa170ca231cc2a0c3590f59cf4a8e4cbe1b91d7e2303edf78d69b1",
+      "size": 32067
+    },
+    ".superpowers/sdd/2026-10-07-algorithm-baseline-and-endpoint-review/task-4-review.md": {
+      "sha256": "467696a8fa1b7b08777144fc477f8befef7dfacf328e5458e01b02046885e5b1",
+      "size": 7364
+    },
+    ".superpowers/sdd/2026-10-07-algorithm-baseline-and-endpoint-review/task-4-source-hash-gate.py": {
+      "sha256": "26eae055deb3083d8601be75ec8897defd147583dcb40313f985acf7435aef7f",
+      "size": 1628
+    },
+    ".superpowers/sdd/2026-10-07-algorithm-baseline-and-endpoint-review/task-5-brief.md": {
+      "sha256": "a75d22d802b41710dc30219c8432e265004a5c6a7e1509d008595a84f862cba2",
+      "size": 6828
+    },
+    ".superpowers/sdd/2026-10-07-algorithm-baseline-and-endpoint-review/task-5-fix-round1-report.md": {
+      "sha256": "dffeacf42922d41df5be2b944b5d5ee0add73d22f34b6e342789241d74bf1ee6",
+      "size": 3664
+    },
+    ".superpowers/sdd/2026-10-07-algorithm-baseline-and-endpoint-review/task-5-fix-round1-review-package.md": {
+      "sha256": "432e027f031324f9ec6e3283e04b8a67228b214c394db649abaf6a4450884d5e",
+      "size": 171080
+    },
+    ".superpowers/sdd/2026-10-07-algorithm-baseline-and-endpoint-review/task-5-fix-round1-review.md": {
+      "sha256": "860772082ac6244784c4b5370877d07d31ff3c9f90b0c4c9dc4f87ba81e2314d",
+      "size": 3452
+    },
+    ".superpowers/sdd/2026-10-07-algorithm-baseline-and-endpoint-review/task-5-report.md": {
+      "sha256": "00fdae9805f9892cc114781f629ab9fbcc38052785c068a2f06ead24c9a5a105",
+      "size": 6190
+    },
+    ".superpowers/sdd/2026-10-07-algorithm-baseline-and-endpoint-review/task-5-review-package.md": {
+      "sha256": "f05ac54b16799acf0897020fd8c3afb43dda1f145fdf24775f155c5244597c64",
+      "size": 282810
+    },
+    ".superpowers/sdd/2026-10-07-algorithm-baseline-and-endpoint-review/task-5-review.md": {
+      "sha256": "52b09050fee91da8d9ab668110c9554675b240212dd813c676e73dffcd8df5e8",
+      "size": 4835
+    },
+    ".superpowers/sdd/2026-10-07-algorithm-baseline-and-endpoint-review/task-6-brief.md": {
+      "sha256": "ddf8e0eb17e6f08a689df6cf841a9228ee23e3b8a69fe9eb74323d530ed40443",
+      "size": 5873
+    },
+    ".superpowers/sdd/2026-10-07-algorithm-baseline-and-endpoint-review/task-6-report.md": {
+      "sha256": "31b02c502fcb8bc5985b6ffa6c8baeb97f32f9aea47ccb7965d2fe00bbe866d6",
+      "size": 3956
+    },
+    ".superpowers/sdd/2026-10-07-algorithm-baseline-and-endpoint-review/task2-compare.py": {
+      "sha256": "ffc359a99b6ea61da5ee89e3d3786a496e75911a74c9f8138db51bb975cbf533",
+      "size": 1770
+    },
+    ".superpowers/sdd/2026-10-07-algorithm-baseline-and-endpoint-review/task3-regression.py": {
+      "sha256": "c4f79c3f86617301de1902c9a6c73910dae7c90f7b3ab827505815b82f243aa8",
+      "size": 3739
+    },
+    ".superpowers/sdd/2026-10-07-algorithm-baseline-and-endpoint-review/task5-audit.py": {
+      "sha256": "9408ec2fb96fab47e7f70a8ca418616ad2a98562e82e48e454e69b6a2ef9a6b6",
+      "size": 6214
+    },
+    ".superpowers/sdd/2026-10-07-algorithm-baseline-and-endpoint-review/task5-docs-edit.py": {
+      "sha256": "ef1370022423ef42edd86c3b4846e50f2bc4e6f8cb1206d5e10b7c2030ff9849",
+      "size": 6508
+    },
+    ".superpowers/sdd/2026-10-07-algorithm-baseline-and-endpoint-review/task5-edit.py": {
+      "sha256": "7b9780bec094b24551541c43768f70f6310d7ebebeea3d042052dc5c4ed91759",
+      "size": 7727
+    },
+    ".superpowers/sdd/2026-10-07-algorithm-baseline-and-endpoint-review/task5-notebook-edit.py": {
+      "sha256": "9b3d343cfe4fe0d3646741f2ad83461646feaffa967b3f61573406df66251580",
+      "size": 6500
+    },
+    ".superpowers/sdd/2026-10-07-algorithm-baseline-and-endpoint-review/task5-round1-before.json": {
+      "sha256": "ffa504c9130ee3fb3110e6492eebef82160b5faf28a8164480976b299104b19f",
+      "size": 90453
+    },
+    ".superpowers/sdd/2026-10-07-algorithm-baseline-and-endpoint-review/task5-runner-edit.py": {
+      "sha256": "c6462d08f9723234e1e5474a4d0027e85e6e5891fec671bc94e0b4e32dfade7b",
+      "size": 5899
+    },
+    ".superpowers/sdd/2026-10-07-algorithm-baseline-and-endpoint-review/task6-acceptance.py": {
+      "sha256": "277aaa6c6ce4b8e327c8a0b3150a9edb0edc641023a4c1d20d937336446f4876",
+      "size": 13678
+    },
+    ".superpowers/sdd/2026-10-07-algorithm-baseline-and-endpoint-review/task6-full-suite.py": {
+      "sha256": "a9fdf29abdd89f1b8752ac73c631b4e951d9d7f26c7a076d91261ad9f2f0be70",
+      "size": 1105
+    },
+    ".superpowers/sdd/2026-10-07-algorithm-baseline-and-endpoint-review/task6-report-write.py": {
+      "sha256": "03fcb3c11ffdd03be9eeb82d28745800dbf857b93c00ac07e94550e7d4c094d3",
+      "size": 15560
+    },
+    ".superpowers/sdd/2026-10-07-algorithm-baseline-and-endpoint-review/THUAT_TOAN_1.ipynb.newcode.txt": {
+      "sha256": "f4dfba60c6fd92011edb385e51078f410a0a15033add4a32713d9db2f3e7eefe",
+      "size": 68132
+    },
+    ".superpowers/sdd/2026-10-07-algorithm-baseline-and-endpoint-review/THUAT_TOAN_1.ipynb.oldcode.txt": {
+      "sha256": "1934a066b1bc85ded35ff22c44d0688e8550a39102e8f6eaea88a95ba5afcb74",
+      "size": 61358
+    },
+    ".superpowers/sdd/2026-10-07-algorithm-baseline-and-endpoint-review/THUAT_TOAN_2.ipynb.newcode.txt": {
+      "sha256": "1c5d2359626c3deebc5c6462202555c7404482a0945ad3195d01ab12337aa426",
+      "size": 88455
+    },
+    ".superpowers/sdd/2026-10-07-algorithm-baseline-and-endpoint-review/THUAT_TOAN_2.ipynb.oldcode.txt": {
+      "sha256": "e8c5c99b3bf9e3bf0397c5f8b307f3e35de2167027c8bf4a98ea4dbeeb1d14c3",
+      "size": 79779
+    },
+    ".superpowers/sdd/2026-10-07-algorithm-baseline-and-endpoint-review/THUAT_TOAN_3.ipynb.newcode.txt": {
+      "sha256": "3708579d5e6e07a99658ac548a7af37b12fd699e831b81f49973a0c576d2bc89",
+      "size": 69305
+    },
+    ".superpowers/sdd/2026-10-07-algorithm-baseline-and-endpoint-review/THUAT_TOAN_3.ipynb.oldcode.txt": {
+      "sha256": "2035f5c18d415f6e3f1350ed2072c5170e735f0a7bbbb79b8e2a38bfa8ea88f6",
+      "size": 62309
+    },
+    ".superpowers/sdd/2026-10-07-algorithm-baseline-and-endpoint-review/visual-review.json": {
+      "sha256": "096d1ff2402817f912da67163b945786a1d6c3946580782b35cfc19bc5022cff",
+      "size": 338
+    },
+    "outputs/tables/endpoint_modes_oct07/final-fix-diff-check.txt": {
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "size": 0
+    },
+    "outputs/tables/endpoint_modes_oct07/final-fix-doc-green.txt": {
+      "sha256": "525f66f121444b0b65c2d3716fcefa72ae995642cce5a8ae422c7c69c76f7d32",
+      "size": 485
+    },
+    "outputs/tables/endpoint_modes_oct07/final-fix-doc-red.txt": {
+      "sha256": "af144619a2e37f31bb67d9e6346e2526c851dc62129bdffdb6e70ebe1936442a",
+      "size": 5476
+    },
+    "outputs/tables/endpoint_modes_oct07/final-fix-green.txt": {
+      "sha256": "89bbde060932c6300abe6f1e56b46194930851afc312b0da964a7bb808552e10",
+      "size": 4926
+    },
+    "outputs/tables/endpoint_modes_oct07/final-fix-metadata-refresh.json": {
+      "sha256": "f5006eacc06196eb437aa4a3d9b682604095985c0f6ffac35e62fe41b5176ce4",
+      "size": 784
+    },
+    "outputs/tables/endpoint_modes_oct07/final-fix-metadata-refresh.txt": {
+      "sha256": "84b9174e11ef69d06ba6fd3cec5c69aa0546d417ec3710488129ba330d967978",
+      "size": 2971
+    },
+    "outputs/tables/endpoint_modes_oct07/final-fix-red.txt": {
+      "sha256": "ef1efab8fcb65e2e4958984fce63f64314d71a8eeffb71da463518cfa7d9d175",
+      "size": 33918
+    },
+    "outputs/tables/endpoint_modes_oct07/final-fix-source-audit.json": {
+      "sha256": "3bd32bfbb8356ec2e1b2b02f46558637bcda2ae51c97be5fbe4ec3e0f0e71945",
+      "size": 2887
+    },
+    "outputs/tables/endpoint_modes_oct07/final-fix-source-audit.txt": {
+      "sha256": "034a53d945e38535d8aa02989f78a59886a32d1d48c53e528a069f650575bea9",
+      "size": 381
+    },
+    "outputs/tables/endpoint_modes_oct07/task1-full-suite.txt": {
+      "sha256": "1b0fc3f07d6d190abe6ebec9b5d822de60694449b90353865f475b1b8b55be10",
+      "size": 21905
+    },
+    "outputs/tables/endpoint_modes_oct07/task1-verification.json": {
+      "sha256": "87e74190022f6281cc17f052ce9224b6a99a19406740812f9dde7cef72690596",
+      "size": 775
+    },
+    "outputs/tables/endpoint_modes_oct07/task2-enhanced-regression.json": {
+      "sha256": "171d6752306e79acd3548e2764e466cfe00d9307a36046b8d3374b7a4d07807b",
+      "size": 4299
+    },
+    "outputs/tables/endpoint_modes_oct07/task2-enhanced-regression.txt": {
+      "sha256": "67dcae9382b05cef020c2f6f1903cad927ce3c8f7f80bfa8735ff12818b8645d",
+      "size": 49
+    },
+    "outputs/tables/endpoint_modes_oct07/task2-full-suite-intermediate.txt": {
+      "sha256": "d9aa81bd6b34e21ded3d8d92df9caafbe06389d323c1e47f0a4267d93244c96c",
+      "size": 36426
+    },
+    "outputs/tables/endpoint_modes_oct07/task2-full-suite.txt": {
+      "sha256": "3dbc87ff45715bb61c54bcb0137a8b3ff4b01614e128d56d39700c495709a78b",
+      "size": 24641
+    },
+    "outputs/tables/endpoint_modes_oct07/task2-generator-green.txt": {
+      "sha256": "5f0a77f414dc153bdfda2e62ed3104aca4d2dfc2d61132484dc542ab55193cc1",
+      "size": 1098
+    },
+    "outputs/tables/endpoint_modes_oct07/task2-green.txt": {
+      "sha256": "0dea678d13dc991a7222585fc360734edaf2622112cfb59697870686b9f19d09",
+      "size": 6850
+    },
+    "outputs/tables/endpoint_modes_oct07/task2-red.txt": {
+      "sha256": "150fa6c4beaa9a2de367b94fddac68841abec2e04b02af177e38213cd19b4ba8",
+      "size": 22831
+    },
+    "outputs/tables/endpoint_modes_oct07/task3-bridge-green.txt": {
+      "sha256": "5047be5e3f970e58b76939775a4f6295bf4fd013580c27e8053409dd206db9f3",
+      "size": 7921
+    },
+    "outputs/tables/endpoint_modes_oct07/task3-bridge-red.txt": {
+      "sha256": "12db8d84c44cb0778f38bd45b4e91e5e2da843ca8ce54f663c7ed9bb8827522c",
+      "size": 7823
+    },
+    "outputs/tables/endpoint_modes_oct07/task3-core-selection.json": {
+      "sha256": "1b3fa3609fe1a84a634023b88841e5ed684362c72deadd6a31401af7a68130b0",
+      "size": 15617
+    },
+    "outputs/tables/endpoint_modes_oct07/task3-core-sweep.csv": {
+      "sha256": "db797e04658120af796b9525db6f522d7a3be32574bc6b4df2e9096d4c76e9ad",
+      "size": 39606
+    },
+    "outputs/tables/endpoint_modes_oct07/task3-enhanced-regression.json": {
+      "sha256": "79646bc18719af739554c28003d234574a9ece95e12033d46f04da5ad750c07c",
+      "size": 23368
+    },
+    "outputs/tables/endpoint_modes_oct07/task3-enhanced-regression.txt": {
+      "sha256": "13fed56170fe5dca8682521bd889a3ea605097ae1486152e2940a11273268a23",
+      "size": 2573
+    },
+    "outputs/tables/endpoint_modes_oct07/task3-enhanced-selection.json": {
+      "sha256": "119661d2b31d7719488ddb4160067654aae00791ff60e11b28d071020c5a599f",
+      "size": 17835
+    },
+    "outputs/tables/endpoint_modes_oct07/task3-enhanced-sweep.csv": {
+      "sha256": "780cb8070d52b650c3248c3458259d46d5ef6dbccd24e88ef479c26055b9fb16",
+      "size": 49380
+    },
+    "outputs/tables/endpoint_modes_oct07/task3-full-suite-intermediate.txt": {
+      "sha256": "3f7c17eebe1eee9fb1aaaf9e32d7aa3e37fbf8f70642a250a0b3010278763295",
+      "size": 26812
+    },
+    "outputs/tables/endpoint_modes_oct07/task3-full-suite.txt": {
+      "sha256": "ed6cbf893890480eeb91edd23502df1068dbf70271fad660307448cc1437b88f",
+      "size": 24808
+    },
+    "outputs/tables/endpoint_modes_oct07/task3-green.txt": {
+      "sha256": "89b945f8f8021c1cc02812a604bdabe85b385cf13a4a1c8c852c58260994d308",
+      "size": 4601
+    },
+    "outputs/tables/endpoint_modes_oct07/task3-red.txt": {
+      "sha256": "c73587f1df284f753a799b99cf85243c0eab3b25e9776984e0155c24c9a2fb78",
+      "size": 8973
+    },
+    "outputs/tables/endpoint_modes_oct07/task3-selection-audit-red.txt": {
+      "sha256": "214eacd0b207710d1468623555d6db43ff95325d582c688091907626d058bd45",
+      "size": 993
+    },
+    "outputs/tables/endpoint_modes_oct07/task6-acceptance-before-final-review-fix.txt": {
+      "sha256": "36a0950e938e104b2e6736c7002f3a4599605b446b8fc8818d2fbda5c6b1c016",
+      "size": 5934
+    },
+    "outputs/tables/endpoint_modes_oct07/task6-acceptance-before-writer-fix.txt": {
+      "sha256": "18c4f4cef3d4c0a3dbc01486d5e42f52fe2b438857591b1e24b90bab0f11e2c8",
+      "size": 5934
+    },
+    "outputs/tables/endpoint_modes_oct07/task6-acceptance.txt": {
+      "sha256": "48f46aa1563bc96718a6ed4dbe0d942721ad85a6103a44f288ca1e2c0fa26e7d",
+      "size": 5934
+    },
+    "outputs/tables/endpoint_modes_oct07/task6-full-suite-before-final-review-fix.json": {
+      "sha256": "4f7a58e486dbe0d7698c901ad7064e45a7bc92373a2e455464078c8a8992e765",
+      "size": 304
+    },
+    "outputs/tables/endpoint_modes_oct07/task6-full-suite-before-final-review-fix.txt": {
+      "sha256": "42b6a063d7c90cbb8b13c83c711151b44972d6404146f096504aa1004ff71cad",
+      "size": 30360
+    },
+    "outputs/tables/endpoint_modes_oct07/task6-full-suite-before-writer-fix.json": {
+      "sha256": "02fd1bf4d8dd0a1893689966bf41f8b1d56819e4a186fe8056549da61b092d7d",
+      "size": 306
+    },
+    "outputs/tables/endpoint_modes_oct07/task6-full-suite-before-writer-fix.txt": {
+      "sha256": "1a61b6d4b780c956177674c3e331ddaa8956e0a68df175cbd7af56ae3d333f09",
+      "size": 29990
+    },
+    "outputs/tables/endpoint_modes_oct07/task6-full-suite.json": {
+      "sha256": "cee918325f4e163876a9ebc7ac57d916d02f115a2bb5b43960e2ef004d63f675",
+      "size": 306
+    },
+    "outputs/tables/endpoint_modes_oct07/task6-full-suite.txt": {
+      "sha256": "a5d26b616a48b4a2233b870bebce10e51e29a03bab1fd9205437de4e4da98f03",
+      "size": 31244
+    },
+    "outputs/tables/endpoint_modes_oct07/task6-source-gate-initial.txt": {
+      "sha256": "1903553ae09332c75b68b2cbe496c01e47afc52da77ed57cc7f1bb01f1e775c8",
+      "size": 598
+    },
+    "outputs/tables/endpoint_modes_oct07/timing_research/branch-red.txt": {
+      "sha256": "851898c42a80cbcda257dd36539e043443a7404be6fe33a62f5f3f5cff3c553c",
+      "size": 2767
+    },
+    "outputs/tables/endpoint_modes_oct07/timing_research/focused-green.txt": {
+      "sha256": "2026c15905efaa9a21fb0f3f870794cedf632bd3a01c9b660b2d37d0848b9197",
+      "size": 3700
+    },
+    "outputs/tables/endpoint_modes_oct07/timing_research/fold-green.txt": {
+      "sha256": "7b5d0a79111ea9643c36c68327a4271747aeabffca93abdc8fea80918898f958",
+      "size": 312
+    },
+    "outputs/tables/endpoint_modes_oct07/timing_research/fold-red.txt": {
+      "sha256": "d7bb743576e71aeafd793663bfc9841146363035c1accfe2c82c5b199813908d",
+      "size": 1520
+    },
+    "outputs/tables/endpoint_modes_oct07/timing_research/helper-green.txt": {
+      "sha256": "3d044757495eda42d4b60172e7a5dc49e57fab0ed408cb209d373100101bac72",
+      "size": 1381
+    },
+    "outputs/tables/endpoint_modes_oct07/timing_research/provenance-diffcheck.txt": {
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "size": 0
+    },
+    "outputs/tables/endpoint_modes_oct07/timing_research/provenance-focused-green.txt": {
+      "sha256": "02c5fbf77927cdb46074581b008b956d94f2f04e0aefeb5684a985920d921af2",
+      "size": 3922
+    },
+    "outputs/tables/endpoint_modes_oct07/timing_research/provenance-green.txt": {
+      "sha256": "5d28705da81f64ab2ab2c1bf31deced7b22dce72ced33b6d4f3f2f4afd2569b5",
+      "size": 324
+    },
+    "outputs/tables/endpoint_modes_oct07/timing_research/provenance-reconstruction-check.json": {
+      "sha256": "a29f91708b5997dafcf688a7d2c7f037d946fca67ab063c94288b6bdbfc3bd01",
+      "size": 1738
+    },
+    "outputs/tables/endpoint_modes_oct07/timing_research/provenance-reconstruction-check.txt": {
+      "sha256": "e26960d154176c42019276accb34f661cd9e3942d545b7eb69f29d0775a1da30",
+      "size": 123
+    },
+    "outputs/tables/endpoint_modes_oct07/timing_research/provenance-red.txt": {
+      "sha256": "3a03e330b119cb42652172044dbfdb599ea524a2bf8d2fd58dd4828bf244625d",
+      "size": 1212
+    },
+    "outputs/tables/endpoint_modes_oct07/timing_research/red.txt": {
+      "sha256": "c2a11b26b3ccc1e9a45e172158a9b22cc36bc32c9a57387a9aa377f7b77902da",
+      "size": 3136
+    },
+    "outputs/tables/endpoint_modes_oct07/timing_research/run.txt": {
+      "sha256": "560a5466da60db044091269d5304afbbd2db79fa16b7bba9cc896b81bd5046de",
+      "size": 220
+    },
+    "outputs/tables/endpoint_modes_oct07/timing_research/scoped-diffcheck.txt": {
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "size": 0
+    },
+    "outputs/tables/endpoint_modes_oct07/timing_research/source-hash-gate.txt": {
+      "sha256": "3a2e2e93a2ea9a44d1c61f7ce0c2a9db406b6cd9072dfb6852a18b0425024ca1",
+      "size": 72
+    },
+    "outputs/tables/endpoint_modes_oct07/final_verification-before-final-review-fix.json": {
+      "sha256": "0837eeb2f2b5085995eedce0931b58e867ff944a9728b259411025908032f562",
+      "size": 89179
+    }
+  },
+  "loose_run_files_to_remove": [
+    "H:\\GIUAKI_XLTHS\\outputs\\tables\\endpoint_modes_oct07\\final-fix-diff-check.txt",
+    "H:\\GIUAKI_XLTHS\\outputs\\tables\\endpoint_modes_oct07\\final-fix-doc-green.txt",
+    "H:\\GIUAKI_XLTHS\\outputs\\tables\\endpoint_modes_oct07\\final-fix-doc-red.txt",
+    "H:\\GIUAKI_XLTHS\\outputs\\tables\\endpoint_modes_oct07\\final-fix-green.txt",
+    "H:\\GIUAKI_XLTHS\\outputs\\tables\\endpoint_modes_oct07\\final-fix-metadata-refresh.json",
+    "H:\\GIUAKI_XLTHS\\outputs\\tables\\endpoint_modes_oct07\\final-fix-metadata-refresh.txt",
+    "H:\\GIUAKI_XLTHS\\outputs\\tables\\endpoint_modes_oct07\\final-fix-red.txt",
+    "H:\\GIUAKI_XLTHS\\outputs\\tables\\endpoint_modes_oct07\\final-fix-source-audit.json",
+    "H:\\GIUAKI_XLTHS\\outputs\\tables\\endpoint_modes_oct07\\final-fix-source-audit.txt",
+    "H:\\GIUAKI_XLTHS\\outputs\\tables\\endpoint_modes_oct07\\task1-full-suite.txt",
+    "H:\\GIUAKI_XLTHS\\outputs\\tables\\endpoint_modes_oct07\\task1-verification.json",
+    "H:\\GIUAKI_XLTHS\\outputs\\tables\\endpoint_modes_oct07\\task2-enhanced-regression.json",
+    "H:\\GIUAKI_XLTHS\\outputs\\tables\\endpoint_modes_oct07\\task2-enhanced-regression.txt",
+    "H:\\GIUAKI_XLTHS\\outputs\\tables\\endpoint_modes_oct07\\task2-full-suite-intermediate.txt",
+    "H:\\GIUAKI_XLTHS\\outputs\\tables\\endpoint_modes_oct07\\task2-full-suite.txt",
+    "H:\\GIUAKI_XLTHS\\outputs\\tables\\endpoint_modes_oct07\\task2-generator-green.txt",
+    "H:\\GIUAKI_XLTHS\\outputs\\tables\\endpoint_modes_oct07\\task2-green.txt",
+    "H:\\GIUAKI_XLTHS\\outputs\\tables\\endpoint_modes_oct07\\task2-red.txt",
+    "H:\\GIUAKI_XLTHS\\outputs\\tables\\endpoint_modes_oct07\\task3-bridge-green.txt",
+    "H:\\GIUAKI_XLTHS\\outputs\\tables\\endpoint_modes_oct07\\task3-bridge-red.txt",
+    "H:\\GIUAKI_XLTHS\\outputs\\tables\\endpoint_modes_oct07\\task3-core-selection.json",
+    "H:\\GIUAKI_XLTHS\\outputs\\tables\\endpoint_modes_oct07\\task3-core-sweep.csv",
+    "H:\\GIUAKI_XLTHS\\outputs\\tables\\endpoint_modes_oct07\\task3-enhanced-regression.json",
+    "H:\\GIUAKI_XLTHS\\outputs\\tables\\endpoint_modes_oct07\\task3-enhanced-regression.txt",
+    "H:\\GIUAKI_XLTHS\\outputs\\tables\\endpoint_modes_oct07\\task3-enhanced-selection.json",
+    "H:\\GIUAKI_XLTHS\\outputs\\tables\\endpoint_modes_oct07\\task3-enhanced-sweep.csv",
+    "H:\\GIUAKI_XLTHS\\outputs\\tables\\endpoint_modes_oct07\\task3-full-suite-intermediate.txt",
+    "H:\\GIUAKI_XLTHS\\outputs\\tables\\endpoint_modes_oct07\\task3-full-suite.txt",
+    "H:\\GIUAKI_XLTHS\\outputs\\tables\\endpoint_modes_oct07\\task3-green.txt",
+    "H:\\GIUAKI_XLTHS\\outputs\\tables\\endpoint_modes_oct07\\task3-red.txt",
+    "H:\\GIUAKI_XLTHS\\outputs\\tables\\endpoint_modes_oct07\\task3-selection-audit-red.txt",
+    "H:\\GIUAKI_XLTHS\\outputs\\tables\\endpoint_modes_oct07\\task6-acceptance-before-final-review-fix.txt",
+    "H:\\GIUAKI_XLTHS\\outputs\\tables\\endpoint_modes_oct07\\task6-acceptance-before-writer-fix.txt",
+    "H:\\GIUAKI_XLTHS\\outputs\\tables\\endpoint_modes_oct07\\task6-acceptance.txt",
+    "H:\\GIUAKI_XLTHS\\outputs\\tables\\endpoint_modes_oct07\\task6-full-suite-before-final-review-fix.json",
+    "H:\\GIUAKI_XLTHS\\outputs\\tables\\endpoint_modes_oct07\\task6-full-suite-before-final-review-fix.txt",
+    "H:\\GIUAKI_XLTHS\\outputs\\tables\\endpoint_modes_oct07\\task6-full-suite-before-writer-fix.json",
+    "H:\\GIUAKI_XLTHS\\outputs\\tables\\endpoint_modes_oct07\\task6-full-suite-before-writer-fix.txt",
+    "H:\\GIUAKI_XLTHS\\outputs\\tables\\endpoint_modes_oct07\\task6-full-suite.json",
+    "H:\\GIUAKI_XLTHS\\outputs\\tables\\endpoint_modes_oct07\\task6-full-suite.txt",
+    "H:\\GIUAKI_XLTHS\\outputs\\tables\\endpoint_modes_oct07\\task6-source-gate-initial.txt",
+    "H:\\GIUAKI_XLTHS\\outputs\\tables\\endpoint_modes_oct07\\timing_research\\branch-red.txt",
+    "H:\\GIUAKI_XLTHS\\outputs\\tables\\endpoint_modes_oct07\\timing_research\\focused-green.txt",
+    "H:\\GIUAKI_XLTHS\\outputs\\tables\\endpoint_modes_oct07\\timing_research\\fold-green.txt",
+    "H:\\GIUAKI_XLTHS\\outputs\\tables\\endpoint_modes_oct07\\timing_research\\fold-red.txt",
+    "H:\\GIUAKI_XLTHS\\outputs\\tables\\endpoint_modes_oct07\\timing_research\\helper-green.txt",
+    "H:\\GIUAKI_XLTHS\\outputs\\tables\\endpoint_modes_oct07\\timing_research\\provenance-diffcheck.txt",
+    "H:\\GIUAKI_XLTHS\\outputs\\tables\\endpoint_modes_oct07\\timing_research\\provenance-focused-green.txt",
+    "H:\\GIUAKI_XLTHS\\outputs\\tables\\endpoint_modes_oct07\\timing_research\\provenance-green.txt",
+    "H:\\GIUAKI_XLTHS\\outputs\\tables\\endpoint_modes_oct07\\timing_research\\provenance-reconstruction-check.json",
+    "H:\\GIUAKI_XLTHS\\outputs\\tables\\endpoint_modes_oct07\\timing_research\\provenance-reconstruction-check.txt",
+    "H:\\GIUAKI_XLTHS\\outputs\\tables\\endpoint_modes_oct07\\timing_research\\provenance-red.txt",
+    "H:\\GIUAKI_XLTHS\\outputs\\tables\\endpoint_modes_oct07\\timing_research\\red.txt",
+    "H:\\GIUAKI_XLTHS\\outputs\\tables\\endpoint_modes_oct07\\timing_research\\run.txt",
+    "H:\\GIUAKI_XLTHS\\outputs\\tables\\endpoint_modes_oct07\\timing_research\\scoped-diffcheck.txt",
+    "H:\\GIUAKI_XLTHS\\outputs\\tables\\endpoint_modes_oct07\\timing_research\\source-hash-gate.txt",
+    "H:\\GIUAKI_XLTHS\\outputs\\tables\\endpoint_modes_oct07\\final_verification-before-final-review-fix.json"
+  ],
+  "scratch_to_remove_after_final_review": "H:\\GIUAKI_XLTHS\\.superpowers\\sdd\\2026-10-07-algorithm-baseline-and-endpoint-review",
+  "loose_file_count_removed": 57,
+  "cleanup_completed": true
+}
